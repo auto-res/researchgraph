@@ -1,1 +1,1 @@
-# researchchain
+# ResearchChain

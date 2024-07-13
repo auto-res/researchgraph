@@ -1,0 +1,30 @@
+[tool.poetry]
+name = "researchchain"
+version = "0.1.0"
+description = ""
+authors = ["toma tanaka <ulti4929@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+openai = "^1.35.13"
+
+
+[tool.poetry.group.dev.dependencies]
+ruff = "^0.5.1"
+
+
+[tool.poetry.group.docs.dependencies]
+sphinx = "^4.5.0"
+sphinx-autobuild = "^2021.3.14"
+sphinx-book-theme = "^0.3.3"
+sphinx-rtd-theme = "^1.0.0"
+sphinx-typlog-theme = "^0.8.0"
+sphinx-panels = "^0.6.0"
+sphinx-copybutton = "^0.5.1"
+linkchecker = "^10.2.1"
+myst-nb = "^0.17.1"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

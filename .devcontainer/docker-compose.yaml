@@ -1,0 +1,8 @@
+version: '3'
+services:
+  researchchain:
+    build:
+      dockerfile: dev.Dockerfile
+      context: ..
+    volumes:
+      - ..:/workspaces/researchchain:cached
