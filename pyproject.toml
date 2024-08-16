@@ -9,6 +9,7 @@ readme = "README.md"
 python = "^3.9"
 openai = "^1.35.13"
 llmlinks = "^0.1.4"
+ipykernel = "^6.29.5"
 
 
 [tool.poetry.group.dev.dependencies]
