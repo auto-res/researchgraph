@@ -1,5 +1,5 @@
 {
-    "input" : [],
-    "ouput" : [],
-    "prompt" : "",
+    "input": ["content","report_example"],
+    "output": ["report"],
+    "prompt": " You have to extract the paper info in in JSON format.Read all the papers abouve and make a report in JSON formatt\n\n== REPORT EXAMPLE ==\n{report_example}== RELATED PAPERS ==\n{content}"
 }
