@@ -15,7 +15,17 @@
 	"workspaceFolder": "/workspaces/researchchain",
 
 	// Prevent the container from shutting down
-	"overrideCommand": true
+	"overrideCommand": true,
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"ms-python.python",
+				"ms-toolsai.jupyter",
+				"github.copilot",
+				"charliermarsh.ruff",
+			]
+		}
+	}
 
 	// Features to add to the dev container. More info: https://containers.dev/features
 	// "features": {

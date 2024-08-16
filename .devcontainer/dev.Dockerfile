@@ -1,15 +1,30 @@
-FROM python:3.9.13-slim
+# 使用するUbuntuのバージョンを指定
+FROM ubuntu:22.04
 
-#ARG PYTHON_VIRTUALENV_HOME=/home/vscode/researchchain-py-env
+# 必要なパッケージのインストール
+RUN apt-get update && apt-get install -y \
+    python3.10 \
+    python3-pip \
+    git \
+    curl
 
-#ENV VIRTUAL_ENV=$PYTHON_VIRTUALENV_HOME
-#ENV PATH="$PYTHON_VIRTUALENV_HOME/bin:$PATH"
+RUN ln -s /usr/bin/python3 /usr/bin/python
 
-#RUN python3 -m venv ${PYTHON_VIRTUALENV_HOME} && \
-#    $PYTHON_VIRTUALENV_HOME/bin/pip install --upgrade pip
+# Poetryのインストール
+RUN curl -sSL https://install.python-poetry.org | python3 -
 
-WORKDIR /workspaces/researchchain
+# 環境変数の設定
+ENV PATH="${PATH}:/root/.local/bin"
 
-#COPY pyproject.toml poetry.lock ./
+# 作業ディレクトリの設定
+WORKDIR /app
 
-RUN pip install openai
+# pyproject.toml と poetry.lock ファイルをコピー
+COPY pyproject.toml /app/
+COPY poetry.lock /app/
+
+# Poetryを使って依存関係をインストール
+RUN poetry install
+
+# Poetryの仮想環境パスをPATHに追加
+ENV PATH="/workspaces/llmlink/.venv/bin:$PATH"
