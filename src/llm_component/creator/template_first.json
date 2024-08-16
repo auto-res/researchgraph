@@ -1,0 +1,5 @@
+{
+    "input" : ["objective", "pre_method_B", "patch_method_A"],
+    "ouput" : ["post_method"],
+    "prompt" : "",
+}
