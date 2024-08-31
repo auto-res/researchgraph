@@ -1,15 +1,21 @@
-FROM python:3.9.13-slim
+FROM ubuntu:22.04
 
-#ARG PYTHON_VIRTUALENV_HOME=/home/vscode/researchchain-py-env
+RUN apt-get update && apt-get install -y \
+    python3.10 \
+    python3-pip \
+    git \
+    curl
 
-#ENV VIRTUAL_ENV=$PYTHON_VIRTUALENV_HOME
-#ENV PATH="$PYTHON_VIRTUALENV_HOME/bin:$PATH"
+RUN ln -s /usr/bin/python3 /usr/bin/python
 
-#RUN python3 -m venv ${PYTHON_VIRTUALENV_HOME} && \
-#    $PYTHON_VIRTUALENV_HOME/bin/pip install --upgrade pip
+RUN curl -sSL https://install.python-poetry.org | python3 -
 
-WORKDIR /workspaces/researchchain
+ENV PATH="${PATH}:/root/.local/bin"
+RUN poetry config virtualenvs.in-project true
 
-#COPY pyproject.toml poetry.lock ./
+WORKDIR /app
+COPY pyproject.toml poetry.lock /app/
 
-RUN pip install openai
+#RUN poetry install 
+
+ENV PATH="/app/.venv/bin:$PATH"

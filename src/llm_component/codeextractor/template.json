@@ -1,5 +1,5 @@
 {
-    "input" : [],
-    "ouput" : [],
+    "input" : ["folder_structure", "github_file"],
+    "ouput" : ["pre_method"],
     "prompt" : "",
 }
