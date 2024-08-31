@@ -1,5 +1,5 @@
 {
-    "input": ["content","report_example"],
+    "input": ["content"],
     "output": ["report"],
-    "prompt": " You have to extract the paper info in in JSON format.Read all the papers abouve and make a report in JSON formatt\n\n== REPORT EXAMPLE ==\n{report_example}== RELATED PAPERS ==\n{content}"
+    "prompt": "You have to extract the paper info in in JSON format. Read all the papers abouve and make a report in JSON formatt\n\n== REPORT EXAMPLE ==\n  { \"paper_id\": \"8729441d734782c3ed532a7d2d9611b438c0a09a\", \"paper_abstract\": \"This paper presents a novel approach to decoding speech from EEG signals using a Brain-Machine Interface (BMI). We leverage the capabilities of contrastive learning and advanced neural networks to enhance the accuracy and efficiency of the decoding process. The proposed method is validated through extensive experiments and achieves state-of-the-art performance.\", \"github_url\": \"https://github.com/username/repo\", \"paper_pseudo_code\": [ \"1. Collect EEG and corresponding speech data\",\n \"2. Preprocess the data by applying bandpass filtering and normalization\",\n \"3. Segment the EEG data into 5-second epochs\",\n \"4. Encode the speech data using wav2vec\",\n \"5. Use a contrastive learning approach (CLIP) to align the EEG and encoded speech data\",\n \"6. Train a neural network model to decode speech from EEG\",\n \"7. Evaluate the model performance using metrics such as accuracy and loss\"\n ], }== RELATED PAPERS ==\n{content}"
 }
