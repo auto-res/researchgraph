@@ -1,21 +1,33 @@
 FROM ubuntu:22.04
 
+# 必要なパッケージのインストール
 RUN apt-get update && apt-get install -y \
     python3.10 \
     python3-pip \
     git \
-    curl
+    curl \
+    locales
 
 RUN ln -s /usr/bin/python3 /usr/bin/python
+RUN locale-gen en_US.UTF-8
 
+# Poetryのインストール
 RUN curl -sSL https://install.python-poetry.org | python3 -
 
+# 環境変数の設定
 ENV PATH="${PATH}:/root/.local/bin"
-RUN poetry config virtualenvs.in-project true
 
+# 作業ディレクトリの設定
 WORKDIR /app
-COPY pyproject.toml poetry.lock /app/
 
-#RUN poetry install 
+# pyproject.toml と poetry.lock ファイルをコピー
+COPY pyproject.toml /app/
+COPY poetry.lock /app/
 
-ENV PATH="/app/.venv/bin:$PATH"
+# Poetryを使って依存関係をインストール
+RUN poetry install
+
+#RUN poetry run pre-commit install
+
+# Poetryの仮想環境パスをPATHに追加
+ENV PATH="/workspaces/llmlink/.venv/bin:$PATH"

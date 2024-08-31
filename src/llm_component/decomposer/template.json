@@ -1,5 +1,0 @@
-{
-    "input" : ["objective", "pre_method"],
-    "ouput" : ["pre_method_A", "pre_method_B"],
-    "prompt" : "",
-}

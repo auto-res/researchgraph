@@ -1,0 +1,5 @@
+{
+    "input_variables": ["source", "language"],
+    "output_variables": ["output"],
+    "prompt_template": "<source_text>\n{source}\n</source_text>\n<target_language>\n{language}\n</target_language>\n<rule>\nsource_text タグで与えられた文章を target_language で指定された言語に翻訳して output タグを用いて出力せよ．\n</rule>"
+}
