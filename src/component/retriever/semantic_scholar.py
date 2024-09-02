@@ -2,12 +2,15 @@
 import os
 import shutil
 import requests
-from langchain.document_loaders import PyPDFLoader
+from langchain_community.document_loaders import PyPDFLoader
 from semanticscholar import SemanticScholar
 
 class SemanticScholarRetriever:
-    def __init__(self, save_pdf_dir='data/PDF/'):
-        self.save_pdf_dir = save_pdf_dir
+    def __init__(self, save_dir):
+        self.save_dir = save_dir
+        print("SemanticScholarRetriever initialized")
+        print("input: ['keywords']")
+        print("output: ['collection_of_papers_1']")
 
     def download_from_arxiv_id(self, arxiv_id, save_dir):
         """Download PDF file from arXiv
@@ -77,12 +80,12 @@ class SemanticScholarRetriever:
         DOI_ids = [item['externalIds'] for item in results.items]
         arxiv_ids = [item['ArXiv'] for item in DOI_ids if 'ArXiv' in item]
 
-        self.download_from_arxiv_ids(arxiv_ids[:3], self.save_pdf_dir)
+        self.download_from_arxiv_ids(arxiv_ids[:3], self.save_dir)
 
         # ディレクトリ内のすべてのPDFファイルを処理
-        for idx, filename in enumerate(os.listdir(self.save_pdf_dir)):
+        for idx, filename in enumerate(os.listdir(self.save_dir)):
             if filename.endswith('.pdf'):
-                pdf_path = os.path.join(self.save_pdf_dir, filename)
+                pdf_path = os.path.join(self.save_dir, filename)
                 paper_content = self.convert_pdf_to_text(pdf_path)
                 paper_key = f"paper_1_{idx+1}"
                 memory["collection_of_papers_1"][paper_key] = paper_content
@@ -91,10 +94,11 @@ class SemanticScholarRetriever:
     
     
 if __name__ == "__main__":
+    save_dir = "/workspaces/researchchain/data"
     memory = {
         "keywords": ["llm", "optimizer", "loss function"],
         "collection_of_papers_1": {}
     }
-    retriever = SemanticScholarRetriever()
+    retriever = SemanticScholarRetriever(save_dir=save_dir)
     memory = retriever(memory)
     print(memory)

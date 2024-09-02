@@ -17,6 +17,12 @@ class LLMComponent:
                 self.json_data = json_data
         else:
             raise ValueError("Either json_file_path or json_data must be provided.")
+        self.input = self.json_data.get('input')
+        self.output = self.json_data.get('output')
+        self.prompt_template = self.json_data.get('prompt')
+        print("LLMComponent initialized")
+        print(f"input: {self.input}")
+        print(f"output: {self.output}")
 
     def __call__(self, memory_):
         """LLMComponentの実行
@@ -28,44 +34,39 @@ class LLMComponent:
             _type_: _description_
         """
         llm = LLMClient(self.llm_name)
-        data = self.json_data
-
-        input_variables = data.get('input_variables')
-        output_variables = data.get('output_variables')
-        prompt_template = data.get('prompt_template')
         
         # LLMを複数回実行する場合
-        if isinstance(input_variables[0], list):
-            num_loop = len(input_variables)
+        if isinstance(self.input[0], list):
+            num_loop = len(self.input)
             for i in range(num_loop):
+                prompt = self.prompt_template[i]
                 func = LLMFunction(
                     llm, 
-                    prompt_template[i],
-                    input_variables[i],
-                    output_variables[i],
+                    prompt,
+                    self.input[i],
+                    self.output[i],
                 )
                 
-                kwargs = {key: memory_[key] for key in input_variables[i]}
+                kwargs = {key: memory_[key] for key in self.input[i]}
                 response = func(**kwargs)
-                for key in output_variables[i]:
+                print(response)
+                for key in self.output[i]:
                     memory_[key] = response[key][0]
             
         # LLMを一回だけ実行する場合
         else:
             func = LLMFunction(
                 llm, 
-                prompt_template,
-                input_variables,
-                output_variables,
+                self.prompt_template,
+                self.input,
+                self.output,
             )
             
-            kwargs = {key: memory_[key] for key in input_variables}
+            kwargs = {key: memory_[key] for key in self.input}
             response = func(**kwargs)
-            for key in output_variables:
+            for key in self.output:
                 memory_[key] = response[key][0]
         return memory_
-
-
 
 
 if __name__ == "__main__":
