@@ -49,7 +49,6 @@ class LLMComponent:
                 
                 kwargs = {key: memory_[key] for key in self.input[i]}
                 response = func(**kwargs)
-                print(response)
                 for key in self.output[i]:
                     memory_[key] = response[key][0]
             

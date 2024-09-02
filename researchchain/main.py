@@ -32,16 +32,17 @@ if __name__ == "__main__":
 
     memory = {
         'environment' : 'The following two experimental environments are available・Fine tuning of the LLM and experiments with rewriting the Optimizer or loss function.・Verification of the accuracy of prompt engineering.',
-        'objective' : 'Combining two papers to create a new methodology'
+        'objective' : 'Combining two papers to create a new methodology',
+        'keywords' : 'LLM'
     }
 
-    memory = keyworder(memory)
+    #memory = keyworder(memory)
+    #print(memory)
+    memory = retriever(memory)
     print(memory)
-    #memory = retriever(memory)
     #memory = selector(memory)
     #memory = extractor(memory)
     #memory = githubretriever(memory)
     #memory = codeextractor(memory)
     #memory = decomposer(memory)
 
-# %%
