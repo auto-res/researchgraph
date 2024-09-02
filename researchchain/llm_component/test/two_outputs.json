@@ -1,0 +1,5 @@
+{
+    "input": ["source", "language"],
+    "output": ["output", "output2"],
+    "prompt": "<source>{source}</source>\n<language>{language}</language>\n<rule>source_text タグで与えられた文章を target_language で指定された言語に翻訳して outputタグを用いて出力せよ．さらに，翻訳したものをドイツ語に翻訳しoutput2タグを用いて出力してください．</rule>"
+}

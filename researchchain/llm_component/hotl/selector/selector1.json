@@ -1,0 +1,5 @@
+{
+    "input" : ["objective", "environment", "collection_of_papers_1"],
+    "output" : ["selected_paper"],
+    "prompt" : "You are an expert researcher tasked with selecting the most relevant paper for a specific research objective and environment. Given the following objective and environment, review the provided papers and choose the one that best aligns with the requirements. Please output the selected paper in JSON format.\n\n== OBJECTIVE ==\n{objective}\n\n== ENVIRONMENT ==\n{environment}\n\n== PAPERS ==\n{papers_text}\n\n== OUTPUT FORMAT ==\n== OUTPUT FORMAT ==\n{\n  \"selected_paper\": paper_i_j \n }"
+}
