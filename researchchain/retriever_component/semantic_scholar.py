@@ -91,17 +91,16 @@ class SemanticScholarRetriever:
                 paper_content = self.convert_pdf_to_text(pdf_path)
                 paper_key = f"paper_1_{idx+1}"
                 memory[self.output_variable][paper_key] = paper_content
-    
         return memory
-    
-    
+
+
 if __name__ == "__main__":
     save_dir = "/workspaces/researchchain/data"
-    search_variable = "keywords"
+    search_variable = "keywords_1"
     output_variable = "collection_of_papers_1"
-    
+
     memory = {
-        "keywords": ["llm", "optimizer", "loss function"],
+        "keywords": ["LLM"],
         "collection_of_papers_1": {}
     }
     retriever = SemanticScholarRetriever(save_dir=save_dir, search_variable=search_variable, output_variable=output_variable)
