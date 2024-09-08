@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "researchchain"
-version = "0.1.4"
+version = "0.1.6"
 description = ""
 authors = ["toma tanaka <ulti4929@gmail.com>"]
 readme = "README.md"

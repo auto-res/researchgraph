@@ -14,7 +14,7 @@ class SemanticScholarRetriever:
         print(f"input: {search_variable}")
         print(f"output: {output_variable}")
 
-    def download_from_arxiv_id(self, arxiv_id, save_dir):
+    def download_from_arxiv_id(self, arxiv_id):
         """Download PDF file from arXiv
 
         Args:
@@ -26,13 +26,13 @@ class SemanticScholarRetriever:
         response = requests.get(url, stream=True)
 
         if response.status_code == 200:
-            with open(os.path.join(save_dir, f"{arxiv_id}.pdf"), 'wb') as file:
+            with open(os.path.join(self.save_dir, f"{arxiv_id}.pdf"), 'wb') as file:
                 shutil.copyfileobj(response.raw, file)
-            print(f"Downloaded {arxiv_id}.pdf to {save_dir}")
+            print(f"Downloaded {arxiv_id}.pdf to {self.save_dir}")
         else:
             print(f"Failed to download {arxiv_id}.pdf")
 
-    def download_from_arxiv_ids(self, arxiv_ids, save_dir):
+    def download_from_arxiv_ids(self, arxiv_ids):
         """Download PDF files from arXiv
 
         Args:
@@ -40,14 +40,14 @@ class SemanticScholarRetriever:
             save_dir (_type_): _description_
         """
         # save_dirが存在しない場合、ディレクトリを作成
-        if not os.path.exists(save_dir):
-            os.makedirs(save_dir)
+        if not os.path.exists(self.save_dir):
+            os.makedirs(self.save_dir)
         else :
-            shutil.rmtree(save_dir)
-            os.makedirs(save_dir)
+            shutil.rmtree(self.save_dir)
+            os.makedirs(self.save_dir)
 
         for arxiv_id in arxiv_ids:
-            self.download_from_arxiv_id(arxiv_id, save_dir)
+            self.download_from_arxiv_id(arxiv_id)
 
     def convert_pdf_to_text(self, pdf_path):
         """Convert PDF file to text
@@ -81,9 +81,13 @@ class SemanticScholarRetriever:
 
         DOI_ids = [item['externalIds'] for item in results.items]
         arxiv_ids = [item['ArXiv'] for item in DOI_ids if 'ArXiv' in item]
+        print(arxiv_ids)
 
-        self.download_from_arxiv_ids(arxiv_ids[:3], self.save_dir)
+        self.download_from_arxiv_ids(arxiv_ids[:3])
 
+        if self.output_variable not in memory:
+            memory[self.output_variable] = {}
+        
         # ディレクトリ内のすべてのPDFファイルを処理
         for idx, filename in enumerate(os.listdir(self.save_dir)):
             if filename.endswith('.pdf'):
@@ -96,12 +100,11 @@ class SemanticScholarRetriever:
 
 if __name__ == "__main__":
     save_dir = "/workspaces/researchchain/data"
-    search_variable = "keywords_1"
-    output_variable = "collection_of_papers_1"
+    search_variable = "keywords"
+    output_variable = "collection_of_papers"
 
     memory = {
-        "keywords": ["LLM"],
-        "collection_of_papers_1": {}
+        "keywords": ["LLM"]
     }
     retriever = SemanticScholarRetriever(save_dir=save_dir, search_variable=search_variable, output_variable=output_variable)
     memory = retriever(memory)
