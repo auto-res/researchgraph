@@ -3,11 +3,13 @@ import subprocess
 import glob
 
 class GithubRetriever:
-    def __init__(self, save_dir):
+    def __init__(self, save_dir, search_variable, output_variable):
         self.save_dir = save_dir
+        self.search_variable = search_variable
+        self.output_variable = output_variable
         print("GithubRetriever initialized")
-        print("input: ['github_url']")
-        print("output: ['folder_structure', 'github_file']")
+        print(f"input: {self.search_variable}")
+        print(f"output: {self.output_variable}")
     
     def get_folder_structure(self, path='.'):
         try:
@@ -38,19 +40,21 @@ class GithubRetriever:
         return folder_structure,result
 
     def __call__(self, memory):
-        github_url = memory["github_url"]
+        github_url = memory[self.search_variable]
         self.git_clone(github_url)
         folder_structure,get_file = self.get_py_files(github_url)
-        memory["folder_structure"] = folder_structure
-        memory["github_file"] = get_file
+        memory[self.output_variable[0]] = folder_structure
+        memory[self.output_variable[1]] = get_file
         return memory
 
 
 if __name__ == "__main__":
     save_dir = "/workspaces/researchchain/data"
+    search_variable = "github_url"
+    output_variable = ["folder_structure", "github_file"]
     memory = {
         "github_url": "https://github.com/fuyu-quant/IBLM"
     }
-    githubretriever = GithubRetriever(save_dir=save_dir)
+    githubretriever = GithubRetriever(save_dir=save_dir, search_variable=search_variable, output_variable=output_variable)
     memory = githubretriever(memory)
     print(memory)

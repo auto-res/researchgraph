@@ -6,11 +6,13 @@ from langchain_community.document_loaders import PyPDFLoader
 from semanticscholar import SemanticScholar
 
 class SemanticScholarRetriever:
-    def __init__(self, save_dir):
+    def __init__(self, save_dir, search_variable, output_variable):
         self.save_dir = save_dir
+        self.search_variable = search_variable
+        self.output_variable = output_variable
         print("SemanticScholarRetriever initialized")
-        print("input: ['keywords']")
-        print("output: ['collection_of_papers_1']")
+        print(f"input: {search_variable}")
+        print(f"output: {output_variable}")
 
     def download_from_arxiv_id(self, arxiv_id, save_dir):
         """Download PDF file from arXiv
@@ -72,7 +74,7 @@ class SemanticScholarRetriever:
             memory (_type_): _description_
         """
         sch = SemanticScholar()
-        results = sch.search_paper(memory["keywords"][0], limit=10)
+        results = sch.search_paper(memory[self.search_variable][0], limit=10)
         for item in results.items:
             print(item.title)
             print(item.paperId)
@@ -88,17 +90,20 @@ class SemanticScholarRetriever:
                 pdf_path = os.path.join(self.save_dir, filename)
                 paper_content = self.convert_pdf_to_text(pdf_path)
                 paper_key = f"paper_1_{idx+1}"
-                memory["collection_of_papers_1"][paper_key] = paper_content
+                memory[self.output_variable][paper_key] = paper_content
     
         return memory
     
     
 if __name__ == "__main__":
     save_dir = "/workspaces/researchchain/data"
+    search_variable = "keywords"
+    output_variable = "collection_of_papers_1"
+    
     memory = {
         "keywords": ["llm", "optimizer", "loss function"],
         "collection_of_papers_1": {}
     }
-    retriever = SemanticScholarRetriever(save_dir=save_dir)
+    retriever = SemanticScholarRetriever(save_dir=save_dir, search_variable=search_variable, output_variable=output_variable)
     memory = retriever(memory)
     print(memory)
