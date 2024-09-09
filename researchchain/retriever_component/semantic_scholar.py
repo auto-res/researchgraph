@@ -1,15 +1,18 @@
 # %%
 import os
+import json
 import shutil
 import requests
 from langchain_community.document_loaders import PyPDFLoader
 from semanticscholar import SemanticScholar
 
 class SemanticScholarRetriever:
-    def __init__(self, save_dir, search_variable, output_variable):
+    def __init__(self, save_dir, search_variable, output_variable, num_keywords, num_retrieve_paper):
         self.save_dir = save_dir
         self.search_variable = search_variable
         self.output_variable = output_variable
+        self.num_keywords = num_keywords
+        self.num_retrieve_paper = num_retrieve_paper
         print("SemanticScholarRetriever initialized")
         print(f"input: {search_variable}")
         print(f"output: {output_variable}")
@@ -73,17 +76,25 @@ class SemanticScholarRetriever:
         Args:
             memory (_type_): _description_
         """
+        keywords_list = json.loads(memory[self.search_variable])
+        keywords_list = [keywords_list[:self.num_keywords]]
+        
         sch = SemanticScholar()
-        results = sch.search_paper(memory[self.search_variable][0], limit=10)
-        for item in results.items:
-            print(item.title)
-            print(item.paperId)
+
+        all_search_results = []
+        for search_term in keywords_list:
+            results = sch.search_paper(search_term, limit=self.num_retrieve_paper)
+            all_search_results.append(results)
+            
+        for results in all_search_results:
+            for item in results.items:
+                print(item.title)
+                print(item.paperId)
 
         DOI_ids = [item['externalIds'] for item in results.items]
         arxiv_ids = [item['ArXiv'] for item in DOI_ids if 'ArXiv' in item]
-        print(arxiv_ids)
 
-        self.download_from_arxiv_ids(arxiv_ids[:3])
+        self.download_from_arxiv_ids(arxiv_ids[:self.num_retrieve_paper])
 
         if self.output_variable not in memory:
             memory[self.output_variable] = {}
@@ -104,8 +115,13 @@ if __name__ == "__main__":
     output_variable = "collection_of_papers"
 
     memory = {
-        "keywords": ["LLM"]
+        "keywords": "[\"Grokking\"]"
     }
-    retriever = SemanticScholarRetriever(save_dir=save_dir, search_variable=search_variable, output_variable=output_variable)
+    retriever = SemanticScholarRetriever(
+        save_dir=save_dir, 
+        search_variable=search_variable, 
+        output_variable=output_variable,
+        num_retrieve_paper=1
+        )
     memory = retriever(memory)
     print(memory)

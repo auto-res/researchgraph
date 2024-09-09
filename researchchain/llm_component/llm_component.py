@@ -49,7 +49,10 @@ class LLMComponent:
                 kwargs = {key: memory_[key] for key in self.input[i]}
                 response = func(**kwargs)
                 for key in self.output[i]:
-                    memory_[key] = response[key][0]
+                    if response[key]:
+                        memory_[key] = response[key][0]
+                    else:
+                        print(f"Warning: No data returned for [{response[key]}]")
             
         # LLMを一回だけ実行する場合
         else:
@@ -68,6 +71,7 @@ class LLMComponent:
 
 
 if __name__ == "__main__":
+    """
     memory = {
         'source': 'Hello World!!',
         'language': 'japanese',
@@ -105,3 +109,37 @@ if __name__ == "__main__":
     translate4 = LLMComponent(json_data=json_data)
     memory4 = translate4(llm_name, memory.copy())
     print(memory4)
+    """
+
+    llm_name = 'gpt-4o-2024-08-06'
+    memory = {
+        "environment" : 
+        """
+        The following two experimental environments are available
+        ・Fine tuning of the LLM and experiments with rewriting the Optimizer or loss function.
+        ・Verification of the accuracy of prompt engineering.
+        """,
+        "objective" : 
+        """
+        Batch Size Grokking: Assessing the impact of the training batchsize on the grokking phenomenon. Modify the experiments to dynamically adjust the batch size during training, starting with a small batch size and gradually increasing it. This could potentially lead to faster generalization on the validation set.
+        """
+        ,
+    }
+    json_data = {
+        "input" : [
+            ["environment","objective"],
+            ["environment","objective", "keywords_mid_thought_1"]
+            ],
+        "output" : [
+            ["keywords_mid_thought_1", "keywords_1"],
+            ["keywords_1"]
+            ],
+        "prompt" : [
+            "You have to think of a 5 KEYWORDs regarding academic search. There is a ojbective and limitation that we can handle, so you have to first interpret what the objective really means in keyword search. Answer step by step what do we need when thinking keywords.== OBJECTIVE ==\n{objective}== LIMITATION ==\n{environment}",
+            "You have to think of a 5 KEYWORDs in in JSON format. Read all the information and make a report in JSON formatt\n\n You have to write keyword ONLY.\n\n== REPORT EXAMPLE ==\n{report_example}== OBJECTIVE ==\n{objective}== LIMITATION ==\n{environment}== THOUGHT ==\n{keywords_mid_thought}"
+            ]
+    }
+    keyworder1 = LLMComponent(json_data = json_data)
+
+    # 実行
+    memory = keyworder1(llm_name, memory)
