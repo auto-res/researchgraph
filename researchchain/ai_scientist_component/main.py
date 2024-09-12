@@ -63,32 +63,15 @@ def main(args):
     results_dir = osp.join("results", args.experiment)
 
     idea_generator = IdeaGenerationComponent()
-    memory = idea_generator(
-        base_dir=base_dir,
-        client=client,
-        model=args.model,
-        memory_={},
-        skip_generation=args.skip_idea_generation,
-        max_num_generations=args.num_ideas,
-        num_reflections=NUM_REFLECTIONS,
-    )
+    memory = {}
+    memory = idea_generator(base_dir, client, args.model, memory, args.skip_idea_generation, args.num_ideas, NUM_REFLECTIONS)
     ideas = memory["ideas"]
 
     idea_executor = IdeaExecutionComponent()
     for idea in ideas:
         print(f"Processing idea: {idea['Name']}")
         try:
-            memory = idea_executor(
-                base_dir,
-                results_dir,
-                idea,
-                args.model,
-                client,
-                client_model,
-                args.writeup,
-                args.improvement,
-                memory,
-            )
+            memory = idea_executor(base_dir, results_dir, idea, args.model, client, client_model, args.writeup, args.improvement, memory)
             print(f"Completed idea: {idea['Name']}, Success: {memory['is_idea_execution_successful']}")
         except Exception as e:
             print(f"Failed to evaluate idea {idea['Name']}: {str(e)}")
