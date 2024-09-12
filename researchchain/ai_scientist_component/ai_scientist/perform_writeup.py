@@ -9,6 +9,11 @@ from ai_scientist.llm import get_response_from_llm, extract_json_between_markers
 import re
 import json
 
+from typing import Dict, Any
+
+from aider.coders import Coder
+from aider.models import Model
+from aider.io import InputOutput
 
 # GENERATE LATEX
 def generate_latex(coder, folder_name, pdf_file, timeout=30, num_error_corrections=5):
@@ -396,12 +401,26 @@ Ensure the citation is well-integrated into the text.'''
     return aider_prompt, False
 
 class WriteupComponent:
-    def __init__(self):
-        pass
+    def __init__(self, writeup_file: str, exp_file: str, notes: str, model: str, io: InputOutput):
+        fnames = [exp_file, writeup_file, notes]
+        if model == "deepseek-coder-v2-0724":
+            main_model = Model("deepseek/deepseek-coder")
+        elif model == "llama3.1-405b":
+            main_model = Model("openrouter/meta-llama/llama-3.1-405b-instruct")
+        else:
+            main_model = Model(model)
+        self.coder = Coder.create(
+            main_model=main_model,
+            fnames=fnames,
+            io=io,
+            stream=False,
+            use_git=False,
+            edit_format="diff",
+        )
 
     # PERFORM WRITEUP
     def __call__(
-        self, idea, folder_name, coder, cite_client, cite_model, memory_, num_cite_rounds=20
+        self, idea: Dict[str, Any], folder_name: str, memory_: Dict[str, Any], cite_client: Any, cite_model: str, num_cite_rounds=20
     ):
         memory_["writeup"] = False
         # CURRENTLY ASSUMES LATEX
@@ -415,9 +434,9 @@ class WriteupComponent:
     Before every paragraph, please include a brief description of what you plan to write in that paragraph in a comment.
 
     Be sure to first name the file and use *SEARCH/REPLACE* blocks to perform these edits.
-    """
-        coder_out = coder.run(abstract_prompt)
-        coder_out = coder.run(
+        """
+        coder_out = self.coder.run(abstract_prompt)
+        coder_out = self.coder.run(
             refinement_prompt.format(section="Abstract")
             .replace(r"{{", "{")
             .replace(r"}}", "}")
@@ -443,8 +462,8 @@ class WriteupComponent:
 
     Be sure to first name the file and use *SEARCH/REPLACE* blocks to perform these edits.
     """
-            coder_out = coder.run(section_prompt)
-            coder_out = coder.run(
+            coder_out = self.coder.run(section_prompt)
+            coder_out = self.coder.run(
                 refinement_prompt.format(section=section)
                 .replace(r"{{", "{")
                 .replace(r"}}", "}")
@@ -461,8 +480,8 @@ class WriteupComponent:
     Do not modify `references.bib` to add any new citations, this will be filled in at a later stage.
 
     Be sure to first name the file and use *SEARCH/REPLACE* blocks to perform these edits.
-    """
-        coder_out = coder.run(section_prompt)
+        """
+        coder_out = self.coder.run(section_prompt)
 
         # Fill paper with cites.
         for _ in range(num_cite_rounds):
@@ -481,16 +500,16 @@ class WriteupComponent:
                 draft = draft.replace(search_str, f"{bibtex_string}{search_str}")
                 with open(osp.join(folder_name, "latex", "template.tex"), "w") as f:
                     f.write(draft)
-                coder_out = coder.run(prompt)
+                coder_out = self.coder.run(prompt)
 
-        coder_out = coder.run(
+        coder_out = self.coder.run(
             refinement_prompt.format(section="Related Work")
             .replace(r"{{", "{")
             .replace(r"}}", "}")
         )
 
         ## SECOND REFINEMENT LOOP
-        coder.run(
+        self.coder.run(
             """Great job! Now that there is a complete draft of the entire paper, let's refine each section again.
     First, re-think the Title if necessary. Keep this concise and descriptive of the paper's concept, but try by creative with it."""
         )
@@ -504,7 +523,7 @@ class WriteupComponent:
             "Results",
             "Conclusion",
         ]:
-            coder_out = coder.run(
+            coder_out = self.coder.run(
                 second_refinement_prompt.format(
                     section=section, tips=per_section_tips[section]
                 )
@@ -512,128 +531,163 @@ class WriteupComponent:
                 .replace(r"}}", "}")
             )
 
-        generate_latex(coder, folder_name, f"{folder_name}/{idea['Name']}.pdf")
+        generate_latex(self.coder, folder_name, f"{folder_name}/{idea['Name']}.pdf")
         memory_["writeup"] = True
         return True
-        
 
+def perform_improvement(review, coder):
+    improvement_prompt = '''The following review has been created for your research paper:
+"""
+{review}
+"""
 
-if __name__ == "__main__":
-    from aider.coders import Coder
-    from aider.models import Model
-    from aider.io import InputOutput
-    import json
-
-    parser = argparse.ArgumentParser(description="Perform writeup for a project")
-    parser.add_argument("--folder", type=str)
-    parser.add_argument("--no-writing", action="store_true", help="Only generate")
-    parser.add_argument(
-        "--model",
-        type=str,
-        default="gpt-4o-2024-05-13",
-        choices=[
-            "claude-3-5-sonnet-20240620",
-            "gpt-4o-2024-05-13",
-            "deepseek-coder-v2-0724",
-            "llama3.1-405b",
-            # Anthropic Claude models via Amazon Bedrock
-            "bedrock/anthropic.claude-3-sonnet-20240229-v1:0",
-            "bedrock/anthropic.claude-3-5-sonnet-20240620-v1:0",
-            "bedrock/anthropic.claude-3-haiku-20240307-v1:0",
-            "bedrock/anthropic.claude-3-opus-20240229-v1:0"
-            # Anthropic Claude models Vertex AI
-            "vertex_ai/claude-3-opus@20240229",
-            "vertex_ai/claude-3-5-sonnet@20240620",
-            "vertex_ai/claude-3-sonnet@20240229",
-            "vertex_ai/claude-3-haiku@20240307"
-        ],
-        help="Model to use for AI Scientist.",
+Improve the text using the review.'''.format(
+        review=json.dumps(review)
     )
-    args = parser.parse_args()
-    if args.model == "claude-3-5-sonnet-20240620":
-        import anthropic
+    coder_out = coder.run(improvement_prompt)
 
-        print(f"Using Anthropic API with model {args.model}.")
-        client_model = "claude-3-5-sonnet-20240620"
-        client = anthropic.Anthropic()
-    elif args.model.startswith("bedrock") and "claude" in args.model:
-        import anthropic
-
-        # Expects: bedrock/<MODEL_ID>
-        client_model = args.model.split("/")[-1]
-
-        print(f"Using Amazon Bedrock with model {client_model}.")
-        client = anthropic.AnthropicBedrock()
-    elif args.model.startswith("vertex_ai") and "claude" in args.model:
-        import anthropic
-
-        # Expects: vertex_ai/<MODEL_ID>
-        client_model = args.model.split("/")[-1]
-
-        print(f"Using Vertex AI with model {client_model}.")
-        client = anthropic.AnthropicVertex()
-    elif args.model == "gpt-4o-2024-05-13":
-        import openai
-
-        print(f"Using OpenAI API with model {args.model}.")
-        client_model = "gpt-4o-2024-05-13"
-        client = openai.OpenAI()
-    elif args.model == "deepseek-coder-v2-0724":
-        import openai
-
-        print(f"Using OpenAI API with {args.model}.")
-        client_model = "deepseek-coder-v2-0724"
-        client = openai.OpenAI(
-            api_key=os.environ["DEEPSEEK_API_KEY"], base_url="https://api.deepseek.com"
+class DraftImprovementComponent:
+    def __init__(self, writeup_file: str, exp_file: str, notes: str, model: str, io: InputOutput):
+        fnames = [exp_file, writeup_file, notes]
+        if model == "deepseek-coder-v2-0724":
+            main_model = Model("deepseek/deepseek-coder")
+        elif model == "llama3.1-405b":
+            main_model = Model("openrouter/meta-llama/llama-3.1-405b-instruct")
+        else:
+            main_model = Model(model)
+        self.coder = Coder.create(
+            main_model=main_model,
+            fnames=fnames,
+            io=io,
+            stream=False,
+            use_git=False,
+            edit_format="diff",
         )
-    elif args.model == "llama3.1-405b":
-        import openai
 
-        print(f"Using OpenAI API with {args.model}.")
-        client_model = "meta-llama/llama-3.1-405b-instruct"
-        client = openai.OpenAI(
-            api_key=os.environ["OPENROUTER_API_KEY"],
-            base_url="https://openrouter.ai/api/v1",
+    def __call__(self, review: str, folder_name: str, idea: Dict[str, Any], memory_: Dict[str, Any]):
+        perform_improvement(review, self.coder)
+        generate_latex(
+            self.coder, folder_name, f"{folder_name}/{idea['Name']}_improved.pdf"
         )
-    else:
-        raise ValueError(f"Model {args.model} not recognized.")
-    print("Make sure you cleaned the Aider logs if re-generating the writeup!")
-    folder_name = args.folder
-    idea_name = osp.basename(folder_name)
-    exp_file = osp.join(folder_name, "experiment.py")
-    vis_file = osp.join(folder_name, "plot.py")
-    notes = osp.join(folder_name, "notes.txt")
-    model = args.model
-    writeup_file = osp.join(folder_name, "latex", "template.tex")
-    ideas_file = osp.join(folder_name, "ideas.json")
-    with open(ideas_file, "r") as f:
-        ideas = json.load(f)
-    for idea in ideas:
-        if idea["Name"] in idea_name:
-            print(f"Found idea: {idea['Name']}")
-            break
-    if idea["Name"] not in idea_name:
-        raise ValueError(f"Idea {idea_name} not found")
-    fnames = [exp_file, writeup_file, notes]
-    io = InputOutput(yes=True, chat_history_file=f"{folder_name}/{idea_name}_aider.txt")
-    if args.model == "deepseek-coder-v2-0724":
-        main_model = Model("deepseek/deepseek-coder")
-    elif args.model == "llama3.1-405b":
-        main_model = Model("openrouter/meta-llama/llama-3.1-405b-instruct")
-    else:
-        main_model = Model(model)
-    coder = Coder.create(
-        main_model=main_model,
-        fnames=fnames,
-        io=io,
-        stream=False,
-        use_git=False,
-        edit_format="diff",
-    )
-    if args.no_writing:
-        generate_latex(coder, args.folder, f"{args.folder}/test.pdf")
-    else:
-        try:
-            perform_writeup(idea, folder_name, coder, client, client_model)
-        except Exception as e:
-            print(f"Failed to perform writeup: {e}")
+        memory_["writeup_improved"] = True
+        return True
+
+# if __name__ == "__main__":
+#     from aider.coders import Coder
+#     from aider.models import Model
+#     from aider.io import InputOutput
+#     import json
+
+#     parser = argparse.ArgumentParser(description="Perform writeup for a project")
+#     parser.add_argument("--folder", type=str)
+#     parser.add_argument("--no-writing", action="store_true", help="Only generate")
+#     parser.add_argument(
+#         "--model",
+#         type=str,
+#         default="gpt-4o-2024-05-13",
+#         choices=[
+#             "claude-3-5-sonnet-20240620",
+#             "gpt-4o-2024-05-13",
+#             "deepseek-coder-v2-0724",
+#             "llama3.1-405b",
+#             # Anthropic Claude models via Amazon Bedrock
+#             "bedrock/anthropic.claude-3-sonnet-20240229-v1:0",
+#             "bedrock/anthropic.claude-3-5-sonnet-20240620-v1:0",
+#             "bedrock/anthropic.claude-3-haiku-20240307-v1:0",
+#             "bedrock/anthropic.claude-3-opus-20240229-v1:0"
+#             # Anthropic Claude models Vertex AI
+#             "vertex_ai/claude-3-opus@20240229",
+#             "vertex_ai/claude-3-5-sonnet@20240620",
+#             "vertex_ai/claude-3-sonnet@20240229",
+#             "vertex_ai/claude-3-haiku@20240307"
+#         ],
+#         help="Model to use for AI Scientist.",
+#     )
+#     args = parser.parse_args()
+#     if args.model == "claude-3-5-sonnet-20240620":
+#         import anthropic
+
+#         print(f"Using Anthropic API with model {args.model}.")
+#         client_model = "claude-3-5-sonnet-20240620"
+#         client = anthropic.Anthropic()
+#     elif args.model.startswith("bedrock") and "claude" in args.model:
+#         import anthropic
+
+#         # Expects: bedrock/<MODEL_ID>
+#         client_model = args.model.split("/")[-1]
+
+#         print(f"Using Amazon Bedrock with model {client_model}.")
+#         client = anthropic.AnthropicBedrock()
+#     elif args.model.startswith("vertex_ai") and "claude" in args.model:
+#         import anthropic
+
+#         # Expects: vertex_ai/<MODEL_ID>
+#         client_model = args.model.split("/")[-1]
+
+#         print(f"Using Vertex AI with model {client_model}.")
+#         client = anthropic.AnthropicVertex()
+#     elif args.model == "gpt-4o-2024-05-13":
+#         import openai
+
+#         print(f"Using OpenAI API with model {args.model}.")
+#         client_model = "gpt-4o-2024-05-13"
+#         client = openai.OpenAI()
+#     elif args.model == "deepseek-coder-v2-0724":
+#         import openai
+
+#         print(f"Using OpenAI API with {args.model}.")
+#         client_model = "deepseek-coder-v2-0724"
+#         client = openai.OpenAI(
+#             api_key=os.environ["DEEPSEEK_API_KEY"], base_url="https://api.deepseek.com"
+#         )
+#     elif args.model == "llama3.1-405b":
+#         import openai
+
+#         print(f"Using OpenAI API with {args.model}.")
+#         client_model = "meta-llama/llama-3.1-405b-instruct"
+#         client = openai.OpenAI(
+#             api_key=os.environ["OPENROUTER_API_KEY"],
+#             base_url="https://openrouter.ai/api/v1",
+#         )
+#     else:
+#         raise ValueError(f"Model {args.model} not recognized.")
+#     print("Make sure you cleaned the Aider logs if re-generating the writeup!")
+#     folder_name = args.folder
+#     idea_name = osp.basename(folder_name)
+#     exp_file = osp.join(folder_name, "experiment.py")
+#     vis_file = osp.join(folder_name, "plot.py")
+#     notes = osp.join(folder_name, "notes.txt")
+#     model = args.model
+#     writeup_file = osp.join(folder_name, "latex", "template.tex")
+#     ideas_file = osp.join(folder_name, "ideas.json")
+#     with open(ideas_file, "r") as f:
+#         ideas = json.load(f)
+#     for idea in ideas:
+#         if idea["Name"] in idea_name:
+#             print(f"Found idea: {idea['Name']}")
+#             break
+#     if idea["Name"] not in idea_name:
+#         raise ValueError(f"Idea {idea_name} not found")
+#     fnames = [exp_file, writeup_file, notes]
+#     io = InputOutput(yes=True, chat_history_file=f"{folder_name}/{idea_name}_aider.txt")
+#     if args.model == "deepseek-coder-v2-0724":
+#         main_model = Model("deepseek/deepseek-coder")
+#     elif args.model == "llama3.1-405b":
+#         main_model = Model("openrouter/meta-llama/llama-3.1-405b-instruct")
+#     else:
+#         main_model = Model(model)
+#     coder = Coder.create(
+#         main_model=main_model,
+#         fnames=fnames,
+#         io=io,
+#         stream=False,
+#         use_git=False,
+#         edit_format="diff",
+#     )
+#     if args.no_writing:
+#         generate_latex(coder, args.folder, f"{args.folder}/test.pdf")
+#     else:
+#         try:
+#             perform_writeup(idea, folder_name, coder, client, client_model)
+#         except Exception as e:
+#             print(f"Failed to perform writeup: {e}")

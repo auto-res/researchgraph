@@ -8,6 +8,9 @@ import json
 from aider.coders import Coder
 from typing import Dict, Any
 
+from aider.coders import Coder
+from aider.models import Model
+
 MAX_ITERS = 4
 MAX_RUNS = 5
 MAX_STDERR_OUTPUT = 1500
@@ -115,12 +118,27 @@ def run_plotting(folder_name, timeout=600):
         return 1, next_prompt
     
 class ExperimentComponent:
-    def __init__(self, folder_name: str, coder: Coder, baseline_results: Dict[str, Any], memory_: Dict[str, Any]):
-        pass
+    def __init__(self, exp_file: str, vis_file: str, notes: str, model: str, io: InputOutput):
+        fnames = [exp_file, vis_file, notes]
+        if model == "deepseek-coder-v2-0724":
+            main_model = Model("deepseek/deepseek-coder")
+        elif model == "llama3.1-405b":
+            main_model = Model("openrouter/meta-llama/llama-3.1-405b-instruct")
+        else:
+            main_model = Model(model)
+
+        self.coder = Coder.create(
+            main_model=main_model,
+            fnames=fnames,
+            io=io,
+            stream=False,
+            use_git=False,
+            edit_format="diff",
+        )   
 
     # PERFORM EXPERIMENTS
     # TODO: experiment の call の引数として何が適切なのかを考えたい
-    def __call__(self, idea: Dict[str, Any], memory_: Dict[str, Any], folder_name: str, coder: Coder, baseline_results: Dict[str, Any]) -> bool:
+    def __call__(self, idea: Dict[str, Any], memory_: Dict[str, Any], folder_name: str, baseline_results: Dict[str, Any]) -> bool:
         ## RUN EXPERIMENT
         current_iter = 0
         run = 1
@@ -134,7 +152,7 @@ class ExperimentComponent:
             if current_iter >= MAX_ITERS:
                 print("Max iterations reached")
                 break
-            coder_out = coder.run(next_prompt)
+            coder_out = self.coder.run(next_prompt)
             print(coder_out)
             if "ALL_COMPLETED" in coder_out:
                 break
@@ -160,7 +178,7 @@ class ExperimentComponent:
     We will be running the command `python plot.py` to generate the plots.
     """
         while True:
-            coder_out = coder.run(next_prompt)
+            coder_out = self.coder.run(next_prompt)
             return_code, next_prompt = run_plotting(folder_name)
             current_iter += 1
             if return_code == 0 or current_iter >= MAX_ITERS:
@@ -170,7 +188,7 @@ class ExperimentComponent:
 
     Somebody else will be using `notes.txt` to write a report on this in the future.
     """
-        coder.run(next_prompt)
+        self.coder.run(next_prompt)
 
         memory_["is_experiment_successful"] = True
 

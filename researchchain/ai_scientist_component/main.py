@@ -19,7 +19,7 @@ from ai_scientist.perform_review import perform_review, load_paper, perform_impr
 
 from ai_scientist.generate_ideas import IdeaGenerationComponent
 from ai_scientist.perform_experiments import ExperimentComponent
-from ai_scientist.perform_writeup import WriteupComponent
+from ai_scientist.perform_writeup import WriteupComponent, DraftImprovementComponent
 from ai_scientist.perform_review import ReviewComponent
 NUM_REFLECTIONS = 3
 
@@ -171,39 +171,24 @@ def do_idea(
         log = open(log_path, "a")
         sys.stdout = log
         sys.stderr = log
+    io = InputOutput(
+        yes=True, chat_history_file=f"{folder_name}/{idea_name}_aider.txt"
+    )  # io は experiment でも　writeup でも共有なので、main.py で定義する　
     try:
         print_time()
         print(f"*Starting idea: {idea_name}*")
         ## PERFORM EXPERIMENTS
-        fnames = [exp_file, vis_file, notes]
-        io = InputOutput(
-            yes=True, chat_history_file=f"{folder_name}/{idea_name}_aider.txt"
-        )
-        if model == "deepseek-coder-v2-0724":
-            main_model = Model("deepseek/deepseek-coder")
-        elif model == "llama3.1-405b":
-            main_model = Model("openrouter/meta-llama/llama-3.1-405b-instruct")
-        else:
-            main_model = Model(model)
-        coder = Coder.create(
-            main_model=main_model,
-            fnames=fnames,
+        experiment_runner = ExperimentComponent(
+            exp_file=exp_file,
+            vis_file=vis_file,
+            notes=notes,
+            model=model,
             io=io,
-            stream=False,
-            use_git=False,
-            edit_format="diff",
         )
-
         print_time()
         print(f"*Starting Experiments*")
         try:
-            experiment_runner = ExperimentComponent(
-                folder_name=folder_name,
-                coder=coder,
-                baseline_results=baseline_results,
-                memory_=memory_,
-            )
-            memory_ = experiment_runner(idea=idea, memory_=memory_, folder_name=folder_name, coder=coder, baseline_results=baseline_results)
+            memory_ = experiment_runner(idea=idea, memory_=memory_, folder_name=folder_name, baseline_results=baseline_results)
             success = memory_["is_experiment_successful"]
             # success = perform_experiments(idea, folder_name, coder, baseline_results)
         except Exception as e:
@@ -220,24 +205,15 @@ def do_idea(
         ## PERFORM WRITEUP
         if writeup == "latex":
             writeup_file = osp.join(folder_name, "latex", "template.tex")
-            fnames = [exp_file, writeup_file, notes]
-            if model == "deepseek-coder-v2-0724":
-                main_model = Model("deepseek/deepseek-coder")
-            elif model == "llama3.1-405b":
-                main_model = Model("openrouter/meta-llama/llama-3.1-405b-instruct")
-            else:
-                main_model = Model(model)
-            coder = Coder.create(
-                main_model=main_model,
-                fnames=fnames,
+            paper_writer = WriteupComponent(
+                exp_file=exp_file,
+                writeup_file=writeup_file,
+                notes=notes,
+                model=model,
                 io=io,
-                stream=False,
-                use_git=False,
-                edit_format="diff",
             )
             try:
-                paper_writer = WriteupComponent()
-                memory_ = paper_writer(idea, folder_name, coder, client, client_model, memory_)
+                memory_ = paper_writer(idea, folder_name, client, client_model, memory_)
                 # perform_writeup(idea, folder_name, coder, client, client_model)
             except Exception as e:
                 print(f"Failed to perform writeup: {e}")
@@ -276,10 +252,15 @@ def do_idea(
             print_time()
             print(f"*Starting Improvement*")
             try:
-                perform_improvement(review, coder)
-                generate_latex(
-                    coder, folder_name, f"{folder_name}/{idea['Name']}_improved.pdf"
+                draft_improver = DraftImprovementComponent(
+                    writeup_file=writeup_file,
+                    exp_file=exp_file,
+                    notes=notes,
+                    model=model,
+                    io=io,
                 )
+                draft_improver(review, folder_name, idea, memory_)
+
                 paper_text = load_paper(f"{folder_name}/{idea['Name']}_improved.pdf")
                 reviewer = ReviewComponent()
                 memory_ = reviewer(

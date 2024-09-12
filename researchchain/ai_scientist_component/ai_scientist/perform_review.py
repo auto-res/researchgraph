@@ -389,15 +389,3 @@ Review {i + 1}/{len(reviews)}:
     )
     meta_review = extract_json_between_markers(llm_review)
     return meta_review
-
-
-def perform_improvement(review, coder):
-    improvement_prompt = '''The following review has been created for your research paper:
-"""
-{review}
-"""
-
-Improve the text using the review.'''.format(
-        review=json.dumps(review)
-    )
-    coder_out = coder.run(improvement_prompt)
