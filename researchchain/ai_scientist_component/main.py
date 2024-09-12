@@ -1,31 +1,13 @@
 import openai
 import os.path as osp
-import shutil
-import json
 import argparse
-import multiprocessing
 import torch
 import os
-import time
-import sys
-from aider.coders import Coder
-from aider.models import Model
-from aider.io import InputOutput
-from datetime import datetime
-from ai_scientist.generate_ideas import generate_ideas, check_idea_novelty
-from ai_scientist.perform_experiments import perform_experiments
-from ai_scientist.perform_writeup import perform_writeup, generate_latex
-from ai_scientist.perform_review import perform_review, load_paper, perform_improvement
 
 from ai_scientist.generate_ideas import IdeaGenerationComponent
-from ai_scientist.perform_experiments import ExperimentComponent
-from ai_scientist.perform_writeup import WriteupComponent, DraftImprovementComponent
-from ai_scientist.perform_review import ReviewComponent
+from ai_scientist.execute_idea import IdeaExecutionComponent
+
 NUM_REFLECTIONS = 3
-
-
-def print_time():
-    print(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 
 
 def parse_arguments():
@@ -96,209 +78,8 @@ def parse_arguments():
     return parser.parse_args()
 
 
-def get_available_gpus(gpu_ids=None):
-    if gpu_ids is not None:
-        return [int(gpu_id) for gpu_id in gpu_ids.split(",")]
-    return list(range(torch.cuda.device_count()))
-
-
-# def worker(
-#     queue,
-#     base_dir,
-#     results_dir,
-#     model,
-#     client,
-#     client_model,
-#     writeup,
-#     improvement,
-#     gpu_id,
-# ):
-#     os.environ["CUDA_VISIBLE_DEVICES"] = str(gpu_id)
-#     print(f"Worker {gpu_id} started.")
-#     while True:
-#         idea = queue.get()
-#         if idea is None:
-#             break
-#         success = do_idea(
-#             base_dir,
-#             results_dir,
-#             idea,
-#             model,
-#             client,
-#             client_model,
-#             writeup,
-#             improvement,
-#             log_file=True,
-#         )
-#         print(f"Completed idea: {idea['Name']}, Success: {success}")
-#     print(f"Worker {gpu_id} finished.")
-
-
-def do_idea(
-    base_dir,
-    results_dir,
-    idea,
-    model,
-    client,
-    client_model,
-    writeup,
-    improvement,
-    log_file=False,
-):
-    ## CREATE PROJECT FOLDER
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    idea_name = f"{timestamp}_{idea['Name']}"
-    folder_name = osp.join(results_dir, idea_name)
-    assert not osp.exists(folder_name), f"Folder {folder_name} already exists."
-    destination_dir = folder_name
-    shutil.copytree(base_dir, destination_dir, dirs_exist_ok=True)
-    with open(osp.join(base_dir, "run_0", "final_info.json"), "r") as f:
-        baseline_results = json.load(f)
-    baseline_results = {k: v["means"] for k, v in baseline_results.items()}
-    exp_file = osp.join(folder_name, "experiment.py")
-    vis_file = osp.join(folder_name, "plot.py")
-    notes = osp.join(folder_name, "notes.txt")
-    with open(notes, "w") as f:
-        f.write(f"# Title: {idea['Title']}\n")
-        f.write(f"# Experiment description: {idea['Experiment']}\n")
-        f.write(f"## Run 0: Baseline\n")
-        f.write(f"Results: {baseline_results}\n")
-        f.write(f"Description: Baseline results.\n")
-    if log_file:
-        original_stdout = sys.stdout
-        original_stderr = sys.stderr
-        log_path = osp.join(folder_name, "log.txt")
-        log = open(log_path, "a")
-        sys.stdout = log
-        sys.stderr = log
-    io = InputOutput(
-        yes=True, chat_history_file=f"{folder_name}/{idea_name}_aider.txt"
-    )  # io は experiment でも　writeup でも共有なので、main.py で定義する　
-    try:
-        print_time()
-        print(f"*Starting idea: {idea_name}*")
-        ## PERFORM EXPERIMENTS
-        experiment_runner = ExperimentComponent(
-            exp_file=exp_file,
-            vis_file=vis_file,
-            notes=notes,
-            model=model,
-            io=io,
-        )
-        print_time()
-        print(f"*Starting Experiments*")
-        try:
-            memory_ = experiment_runner(idea=idea, memory_=memory_, folder_name=folder_name, baseline_results=baseline_results)
-            success = memory_["is_experiment_successful"]
-            # success = perform_experiments(idea, folder_name, coder, baseline_results)
-        except Exception as e:
-            print(f"Error during experiments: {e}")
-            print(f"Experiments failed for idea {idea_name}")
-            return False
-
-        if not success:
-            print(f"Experiments failed for idea {idea_name}")
-            return False
-
-        print_time()
-        print(f"*Starting Writeup*")
-        ## PERFORM WRITEUP
-        if writeup == "latex":
-            writeup_file = osp.join(folder_name, "latex", "template.tex")
-            paper_writer = WriteupComponent(
-                exp_file=exp_file,
-                writeup_file=writeup_file,
-                notes=notes,
-                model=model,
-                io=io,
-            )
-            try:
-                memory_ = paper_writer(idea, folder_name, client, client_model, memory_)
-                # perform_writeup(idea, folder_name, coder, client, client_model)
-            except Exception as e:
-                print(f"Failed to perform writeup: {e}")
-                return False
-            print("Done writeup")
-        else:
-            raise ValueError(f"Writeup format {writeup} not supported.")
-
-        print_time()
-        print(f"*Starting Review*")
-        ## REVIEW PAPER
-        if writeup == "latex":
-            try:
-                paper_text = load_paper(f"{folder_name}/{idea['Name']}.pdf")
-                reviewer = ReviewComponent()
-                memory_ = reviewer(
-                    paper_text,
-                    model="gpt-4o-2024-05-13",
-                    client=openai.OpenAI(),
-                    memory_=memory_,
-                    num_reflections=5,
-                    num_fs_examples=1,
-                    num_reviews_ensemble=5,
-                    temperature=0.1,
-                )
-                review = memory_["review"]
-                # Store the review in separate review.txt file
-                with open(osp.join(folder_name, "review.txt"), "w") as f:
-                    f.write(json.dumps(review, indent=4))
-            except Exception as e:
-                print(f"Failed to perform review: {e}")
-                return False
-
-        ## IMPROVE WRITEUP
-        if writeup == "latex" and improvement:
-            print_time()
-            print(f"*Starting Improvement*")
-            try:
-                draft_improver = DraftImprovementComponent(
-                    writeup_file=writeup_file,
-                    exp_file=exp_file,
-                    notes=notes,
-                    model=model,
-                    io=io,
-                )
-                draft_improver(review, folder_name, idea, memory_)
-
-                paper_text = load_paper(f"{folder_name}/{idea['Name']}_improved.pdf")
-                reviewer = ReviewComponent()
-                memory_ = reviewer(
-                    paper_text,
-                    model="gpt-4o-2024-05-13",
-                    client=openai.OpenAI(),
-                    memory_=memory_,
-                    num_reflections=5,
-                    num_fs_examples=1,
-                    num_reviews_ensemble=5,
-                    temperature=0.1,
-                )
-                review = memory_["review"]
-                # Store the review in separate review.txt file
-                with open(osp.join(folder_name, "review_improved.txt"), "w") as f:
-                    f.write(json.dumps(review))
-            except Exception as e:
-                print(f"Failed to perform improvement: {e}")
-                return False
-        return True
-    except Exception as e:
-        print(f"Failed to evaluate idea {idea_name}: {str(e)}")
-        return False
-    finally:
-        print("FINISHED IDEA")
-        if log_file:
-            sys.stdout = original_stdout
-            sys.stderr = original_stderr
-            log.close()
-
-
 if __name__ == "__main__":
     args = parse_arguments()
-
-    # Check available GPUs and adjust parallel processes if necessary
-    available_gpus = get_available_gpus(args.gpus)
-
-    print(f"Using GPUs: {available_gpus}")
 
     # Create client
     if args.model == "claude-3-5-sonnet-20240620":
@@ -373,7 +154,8 @@ if __name__ == "__main__":
     for idea in ideas:
         print(f"Processing idea: {idea['Name']}")
         try:
-            success = do_idea(
+            idea_executor = IdeaExecutionComponent()
+            memory_ = idea_executor(
                 base_dir,
                 results_dir,
                 idea,
@@ -382,8 +164,10 @@ if __name__ == "__main__":
                 client_model,
                 args.writeup,
                 args.improvement,
+                memory_,
             )
-            print(f"Completed idea: {idea['Name']}, Success: {success}")
+
+            print(f"Completed idea: {idea['Name']}, Success: {memory_["is_idea_execution_successful"]}")
         except Exception as e:
             print(f"Failed to evaluate idea {idea['Name']}: {str(e)}")
 

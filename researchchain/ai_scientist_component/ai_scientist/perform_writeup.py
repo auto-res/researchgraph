@@ -532,8 +532,8 @@ class WriteupComponent:
             )
 
         generate_latex(self.coder, folder_name, f"{folder_name}/{idea['Name']}.pdf")
-        memory_["writeup"] = True
-        return True
+        memory_["is_writeup_successful"] = True
+        return memory_
 
 def perform_improvement(review, coder):
     improvement_prompt = '''The following review has been created for your research paper:
@@ -569,8 +569,8 @@ class DraftImprovementComponent:
         generate_latex(
             self.coder, folder_name, f"{folder_name}/{idea['Name']}_improved.pdf"
         )
-        memory_["writeup_improved"] = True
-        return True
+        memory_["is_improvement_successful"] = True
+        return memory_
 
 # if __name__ == "__main__":
 #     from aider.coders import Coder
