@@ -17,6 +17,10 @@ from ai_scientist.perform_experiments import perform_experiments
 from ai_scientist.perform_writeup import perform_writeup, generate_latex
 from ai_scientist.perform_review import perform_review, load_paper, perform_improvement
 
+from ai_scientist.generate_ideas import IdeaGenerationComponent
+from ai_scientist.perform_experiments import ExperimentComponent
+from ai_scientist.perform_writeup import WriteupComponent
+from ai_scientist.perform_review import ReviewComponent
 NUM_REFLECTIONS = 3
 
 
@@ -71,12 +75,6 @@ def parse_arguments():
         default="latex",
         choices=["latex"],
         help="What format to use for writeup",
-    )
-    parser.add_argument(
-        "--parallel",
-        type=int,
-        default=0,
-        help="Number of parallel processes to run. 0 for sequential execution.",
     )
     parser.add_argument(
         "--improvement",
@@ -199,7 +197,15 @@ def do_idea(
         print_time()
         print(f"*Starting Experiments*")
         try:
-            success = perform_experiments(idea, folder_name, coder, baseline_results)
+            experiment_runner = ExperimentComponent(
+                folder_name=folder_name,
+                coder=coder,
+                baseline_results=baseline_results,
+                memory_=memory_,
+            )
+            memory_ = experiment_runner(idea=idea, memory_=memory_, folder_name=folder_name, coder=coder, baseline_results=baseline_results)
+            success = memory_["is_experiment_successful"]
+            # success = perform_experiments(idea, folder_name, coder, baseline_results)
         except Exception as e:
             print(f"Error during experiments: {e}")
             print(f"Experiments failed for idea {idea_name}")
@@ -230,7 +236,9 @@ def do_idea(
                 edit_format="diff",
             )
             try:
-                perform_writeup(idea, folder_name, coder, client, client_model)
+                paper_writer = WriteupComponent()
+                memory_ = paper_writer(idea, folder_name, coder, client, client_model, memory_)
+                # perform_writeup(idea, folder_name, coder, client, client_model)
             except Exception as e:
                 print(f"Failed to perform writeup: {e}")
                 return False
@@ -244,15 +252,18 @@ def do_idea(
         if writeup == "latex":
             try:
                 paper_text = load_paper(f"{folder_name}/{idea['Name']}.pdf")
-                review = perform_review(
+                reviewer = ReviewComponent()
+                memory_ = reviewer(
                     paper_text,
                     model="gpt-4o-2024-05-13",
                     client=openai.OpenAI(),
+                    memory_=memory_,
                     num_reflections=5,
                     num_fs_examples=1,
                     num_reviews_ensemble=5,
                     temperature=0.1,
                 )
+                review = memory_["review"]
                 # Store the review in separate review.txt file
                 with open(osp.join(folder_name, "review.txt"), "w") as f:
                     f.write(json.dumps(review, indent=4))
@@ -270,15 +281,18 @@ def do_idea(
                     coder, folder_name, f"{folder_name}/{idea['Name']}_improved.pdf"
                 )
                 paper_text = load_paper(f"{folder_name}/{idea['Name']}_improved.pdf")
-                review = perform_review(
+                reviewer = ReviewComponent()
+                memory_ = reviewer(
                     paper_text,
                     model="gpt-4o-2024-05-13",
                     client=openai.OpenAI(),
+                    memory_=memory_,
                     num_reflections=5,
                     num_fs_examples=1,
                     num_reviews_ensemble=5,
                     temperature=0.1,
                 )
+                review = memory_["review"]
                 # Store the review in separate review.txt file
                 with open(osp.join(folder_name, "review_improved.txt"), "w") as f:
                     f.write(json.dumps(review))
@@ -302,11 +316,6 @@ if __name__ == "__main__":
 
     # Check available GPUs and adjust parallel processes if necessary
     available_gpus = get_available_gpus(args.gpus)
-    if args.parallel > len(available_gpus):
-        print(
-            f"Warning: Requested {args.parallel} parallel processes, but only {len(available_gpus)} GPUs available. Adjusting to {len(available_gpus)}."
-        )
-        args.parallel = len(available_gpus)
 
     print(f"Using GPUs: {available_gpus}")
 
@@ -365,64 +374,22 @@ if __name__ == "__main__":
 
     base_dir = osp.join("templates", args.experiment)
     results_dir = osp.join("results", args.experiment)
-    ideas = generate_ideas(
-        base_dir,
+
+    # NOTE: IdeaGenerationComponent ベースに変更
+    memory_ = {}
+    idea_generator = IdeaGenerationComponent()
+    memory = idea_generator(
+        base_dir=base_dir,
         client=client,
-        model=client_model,
+        model=args.model,
+        memory_=memory_,
         skip_generation=args.skip_idea_generation,
         max_num_generations=args.num_ideas,
         num_reflections=NUM_REFLECTIONS,
     )
-    ideas = check_idea_novelty(
-        ideas,
-        base_dir=base_dir,
-        client=client,
-        model=client_model,
-    )
+    ideas = memory["ideas"]
 
-    with open(osp.join(base_dir, "ideas.json"), "w") as f:
-        json.dump(ideas, f, indent=4)
-
-    novel_ideas = [idea for idea in ideas if idea["novel"]]
-    # novel_ideas = list(reversed(novel_ideas))
-
-    # if args.parallel > 0:
-    #     print(f"Running {args.parallel} parallel processes")
-    #     queue = multiprocessing.Queue()
-    #     for idea in novel_ideas:
-    #         queue.put(idea)
-
-    #     processes = []
-    #     for i in range(args.parallel):
-    #         gpu_id = available_gpus[i % len(available_gpus)]
-    #         p = multiprocessing.Process(
-    #             target=worker,
-    #             args=(
-    #                 queue,
-    #                 base_dir,
-    #                 results_dir,
-    #                 args.model,
-    #                 client,
-    #                 client_model,
-    #                 args.writeup,
-    #                 args.improvement,
-    #                 gpu_id,
-    #             ),
-    #         )
-    #         p.start()
-    #         time.sleep(150)
-    #         processes.append(p)
-
-    #     # Signal workers to exit
-    #     for _ in range(args.parallel):
-    #         queue.put(None)
-
-    #     for p in processes:
-    #         p.join()
-
-    #     print("All parallel processes completed.")
-    # else:
-    for idea in novel_ideas:
+    for idea in ideas:
         print(f"Processing idea: {idea['Name']}")
         try:
             success = do_idea(
