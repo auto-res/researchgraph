@@ -35,8 +35,8 @@ class GithubRetriever:
         for i in py_filelist:
             with open(i) as f:
                 file_read = f.read()
-        py_text.append('<FILE='+i+'> \n'+file_read.replace('\n\n', '\n').replace('\n\n', '\n')+'</FILE> \n')
-        result = ''.join(py_text)
+            py_text.append('<FILE='+i+'> \n'+file_read.replace('\n\n', '\n').replace('\n\n', '\n')+'</FILE> \n')
+            result = ''.join(py_text)
         return folder_structure,result
 
     def __call__(self, memory):
