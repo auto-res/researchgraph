@@ -1,37 +1,26 @@
-[tool.poetry]
+[project]
 name = "researchchain"
-version = "0.1.11"
-description = ""
-authors = ["toma tanaka <ulti4929@gmail.com>"]
+version = "0.2.2"
+description = "Add your description here"
 readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "langchain-community>=0.2.15",
+    "langchain>=0.2.15",
+    "langgraph>=0.2.23",
+    "llmlinks==0.1.15",
+    "openai>=1.35.13",
+    "pypdf>=4.3.1",
+    "semanticscholar>=0.8.4",
+]
 
-[tool.poetry.dependencies]
-python = "^3.9"
-openai = "^1.35.13"
-llmlinks = "^0.1.4"
-langchain = "^0.2.15"
-langchain-community = "^0.2.15"
-semanticscholar = "^0.8.4"
-pypdf = "^4.3.1"
+[tool.uv]
+dev-dependencies = [
+    "ipykernel>=6.29.5",
+    "jupyter>=1.1.1",
+    "ruff>=0.6.7",
+]
 
-
-[tool.poetry.group.dev.dependencies]
-ruff = "^0.5.1"
-jupyter = "^1.0.0"
-ipykernel = "^6.29.5"
-
-
-[tool.poetry.group.docs.dependencies]
-sphinx = "^4.5.0"
-sphinx-autobuild = "^2021.3.14"
-sphinx-book-theme = "^0.3.3"
-sphinx-rtd-theme = "^1.0.0"
-sphinx-typlog-theme = "^0.8.0"
-sphinx-panels = "^0.6.0"
-sphinx-copybutton = "^0.5.1"
-linkchecker = "^10.2.1"
-myst-nb = "^0.17.1"
-
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["researchchain"]
