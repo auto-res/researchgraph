@@ -1,7 +1,9 @@
 services:
   researchchain:
     build:
-      dockerfile: dev.Dockerfile
-      context: /Users/tanakatouma/vscode/researchchain/.devcontainer
+      context: ../
+      dockerfile: ./.devcontainer/dev.Dockerfile
+    env_file:
+      - ../.env
     volumes:
       - ..:/workspaces/researchchain:cached

@@ -1,15 +1,22 @@
-FROM python:3.9.13-slim
+FROM ubuntu:22.04
 
-#ARG PYTHON_VIRTUALENV_HOME=/home/vscode/researchchain-py-env
 
-#ENV VIRTUAL_ENV=$PYTHON_VIRTUALENV_HOME
-#ENV PATH="$PYTHON_VIRTUALENV_HOME/bin:$PATH"
+# 必要なパッケージのインストール
+RUN apt-get update && apt-get install -y \
+    git \
+    curl \
+    locales && \
+    rm -rf /var/lib/apt/lists/*
 
-#RUN python3 -m venv ${PYTHON_VIRTUALENV_HOME} && \
-#    $PYTHON_VIRTUALENV_HOME/bin/pip install --upgrade pip
+# ロケールの設定
+RUN locale-gen en_US.UTF-8
+ENV LANG=en_US.UTF-8
+ENV LC_ALL=en_US.UTF-8
 
-WORKDIR /workspaces/researchchain
+# uvのインストール
+RUN curl -LsSf https://astral.sh/uv/install.sh | bash || exit 1
 
-#COPY pyproject.toml poetry.lock ./
+# uvのPATH設定
+ENV PATH="/root/.uv/bin:$PATH"
 
-RUN pip install openai
+RUN bash -lc 'uv python install 3.11'
