@@ -11,6 +11,7 @@ ResearchChainの特徴としては以下のものが挙げられます。
   💻 <a href="https://www.autores.one">[プロジェクトサイト]</a> |
 </p>
 
+![ResearchChainのアーキテクチャ図](images/research_graph.png "ResearchChain")
 
 ## 目次
 
