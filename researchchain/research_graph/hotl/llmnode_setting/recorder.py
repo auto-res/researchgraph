@@ -1,5 +1,0 @@
-recorder = {
-    "input" : [],
-    "output" : [],
-    "prompt" : "",
-}

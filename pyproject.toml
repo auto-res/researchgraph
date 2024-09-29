@@ -28,3 +28,6 @@ dev-dependencies = [
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["researchgraph"]
+
+[tool.ruff]
+ignore = ["E731","F841","F821","E741"]
