@@ -8,6 +8,11 @@ from ai_scientist.execute_idea import IdeaExecutionComponent
 NUM_REFLECTIONS = 3
 
 
+class AIscientist:
+    def __call__(self, *args: argparse.Any, **kwds: argparse.Any) -> argparse.Any:
+        pass
+
+
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Run AI scientist experiments")
     parser.add_argument(
