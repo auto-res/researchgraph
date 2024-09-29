@@ -5,6 +5,7 @@ FROM ubuntu:22.04
 RUN apt-get update && apt-get install -y \
     git \
     curl \
+    build-essential \
     locales && \
     rm -rf /var/lib/apt/lists/*
 
@@ -19,4 +20,4 @@ RUN curl -LsSf https://astral.sh/uv/install.sh | bash || exit 1
 # uvのPATH設定
 ENV PATH="/root/.uv/bin:$PATH"
 
-RUN bash -lc 'uv python install 3.11'
+RUN bash -lc 'uv python install 3.10'
