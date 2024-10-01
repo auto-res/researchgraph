@@ -4,7 +4,7 @@ from typing_extensions import TypedDict
 from langgraph.graph import StateGraph
 
 from researchgraph.llmnode import LLMNode
-from researchgraph.retrievenode import SemanticScholarNode
+from researchgraph.retrievenode import OpenAlexNode
 from researchgraph.retrievenode import GithubNode
 from researchgraph.evaluatenode import LLMEvaluateNode
 
@@ -107,23 +107,23 @@ class AIIntegrator:
             "keyworder2", LLMNode(llm_name=llm_name, setting=keyworder2_setting)
         )
         graph_builder.add_node(
-            "semanticscholarretriever1",
-            SemanticScholarNode(
-                save_dir=self.save_dir,
+            "openalexretriever1",
+            OpenAlexNode(
+                save_dir=save_dir,
                 search_variable="keywords_1",
                 output_variable="collection_of_papers_1",
-                num_keywords=self.num_keywords,
-                num_retrieve_paper=self.num_retrieve_paper,
+                num_keywords=1,
+                num_retrieve_paper=1,
             ),
         )
         graph_builder.add_node(
-            "semanticscholarretriever2",
-            SemanticScholarNode(
-                save_dir=self.save_dir,
+            "openalexretriever2",
+            OpenAlexNode(
+                save_dir=save_dir,
                 search_variable="keywords_2",
                 output_variable="collection_of_papers_2",
-                num_keywords=self.num_keywords,
-                num_retrieve_paper=self.num_retrieve_paper,
+                num_keywords=1,
+                num_retrieve_paper=1,
             ),
         )
         graph_builder.add_node(
@@ -188,14 +188,14 @@ class AIIntegrator:
         )
 
         # make edges
-        graph_builder.add_edge("keyworder1", "semanticscholarretriever1")
-        graph_builder.add_edge("semanticscholarretriever1", "selector1")
+        graph_builder.add_edge("keyworder1", "openalexretriever1")
+        graph_builder.add_edge("openalexretriever1", "selector1")
         graph_builder.add_edge("selector1", "extractor1")
         graph_builder.add_edge("extractor1", "githubretriever1")
         graph_builder.add_edge("githubretriever1", "codeextractor1")
         graph_builder.add_edge("selector1", "keyworder2")
-        graph_builder.add_edge("keyworder2", "semanticscholarretriever2")
-        graph_builder.add_edge("semanticscholarretriever2", "selector2")
+        graph_builder.add_edge("keyworder2", "openalexretriever2")
+        graph_builder.add_edge("openalexretriever2", "selector2")
         graph_builder.add_edge("selector2", "extractor2")
         graph_builder.add_edge("extractor2", "githubretriever2")
         graph_builder.add_edge("githubretriever2", "codeextractor2")
@@ -236,6 +236,20 @@ if __name__ == "__main__":
     num_keywords = 1
     num_retrieve_paper = 1
     research_graph = AIIntegrator(llm_name, save_dir, num_keywords, num_retrieve_paper)
-    research_graph.visualize(save_dir)
 
-# %%
+    # visualize the graph
+    image_dir = "/workspaces/researchgraph/images/"
+    research_graph.visualize(image_dir)
+
+    # execute the graph
+    state = {
+        "environment": """
+        The following two experimental environments are available
+        ・Fine tuning of the LLM and experiments with rewriting the Optimizer or loss function.
+        ・Verification of the accuracy of prompt engineering.
+        """,
+        "objective": """
+        Batch Size Grokking: Assessing the impact of the training batchsize on the grokking phenomenon. Modify the experiments to dynamically adjust the batch size during training, starting with a small batch size and gradually increasing it. This could potentially lead to faster generalization on the validation set.
+        """,
+    }
+    research_graph(state)
