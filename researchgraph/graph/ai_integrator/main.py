@@ -1,51 +1,49 @@
 # %%
-# import sys
-# sys.path.append('/workspaces/researchchain')
-
 from IPython.display import Image
 from typing_extensions import TypedDict
 from langgraph.graph import StateGraph
 
-from researchchain.llmnode.llmnode import LLMNode
-from researchchain.research_graph.hotl.llmnode_setting.keyworder import (
+from researchgraph.llmnode import LLMNode
+from researchgraph.retrievenode import SemanticScholarNode
+from researchgraph.retrievenode import GithubNode
+from researchgraph.evaluatenode import LLMEvaluateNode
+
+
+from researchgraph.graph.ai_integrator.llmnode_setting.keyworder import (
     keyworder1_setting,
     keyworder2_setting,
 )
-from researchchain.research_graph.hotl.llmnode_setting.selector import (
+from researchgraph.graph.ai_integrator.llmnode_setting.selector import (
     selector1_setting,
     selector2_setting,
 )
-from researchchain.research_graph.hotl.llmnode_setting.extractor import (
+from researchgraph.graph.ai_integrator.llmnode_setting.extractor import (
     extractor1_setting,
     extractor2_setting,
 )
-from researchchain.research_graph.hotl.llmnode_setting.codeextractor import (
+from researchgraph.graph.ai_integrator.llmnode_setting.codeextractor import (
     codeextractor1_setting,
     codeextractor2_setting,
 )
-from researchchain.research_graph.hotl.llmnode_setting.creator import creator_setting
-from researchchain.research_graph.hotl.llmnode_setting.verifier import (
+from researchgraph.graph.ai_integrator.llmnode_setting.creator import creator_setting
+from researchgraph.graph.ai_integrator.llmnode_setting.verifier import (
     verifier1_setting,
     verifier2_setting,
 )
-from researchchain.research_graph.hotl.llmnode_setting.coder import (
+from researchgraph.graph.ai_integrator.llmnode_setting.coder import (
     coder1_setting,
     coder2_setting,
 )
-from researchchain.research_graph.hotl.llmnode_setting.debugger import (
+from researchgraph.graph.ai_integrator.llmnode_setting.debugger import (
     debugger1_setting,
     debugger2_setting,
 )
-from researchchain.research_graph.hotl.llmnode_setting.comparator import (
+from researchgraph.graph.ai_integrator.llmnode_setting.comparator import (
     comparator_setting,
 )
 
-from researchchain.retrievenode.semantic_scholar import SemanticScholarNode
-from researchchain.retrievenode.github import GithubNode
 
-from researchchain.evaluatenode.llmevaluate_node import LLMEvaluateNode
-
-from researchchain.research_graph.hotl.branch import (
+from researchgraph.graph.ai_integrator.branch import (
     branchcontroller1,
     branchcontroller2,
     branchcontroller3,
@@ -228,14 +226,16 @@ class AIIntegrator:
 
     def visualize(self, path):
         image = Image(self.graph.get_graph().draw_mermaid_png())
-        with open(path + "research_graph.png", "wb") as f:
+        with open(path + "ai_integrator_graph.png", "wb") as f:
             f.write(image.data)
 
 
 if __name__ == "__main__":
     llm_name = "gpt-4o-2024-08-06"
-    save_dir = "/workspaces/researchchain/data/"
+    save_dir = "/workspaces/researchgraph/data/"
     num_keywords = 1
     num_retrieve_paper = 1
     research_graph = AIIntegrator(llm_name, save_dir, num_keywords, num_retrieve_paper)
     research_graph.visualize(save_dir)
+
+# %%

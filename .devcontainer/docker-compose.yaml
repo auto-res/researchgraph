@@ -7,3 +7,5 @@ services:
       - ../.env
     volumes:
       - ..:/workspaces/researchgraph:cached
+    environment:
+      - PYTHONPATH=/workspaces/researchgraph

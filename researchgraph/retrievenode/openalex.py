@@ -151,7 +151,7 @@ class OpenAlexNode:
 
 
 if __name__ == "__main__":
-    save_dir = "./workspaces/researchchain/data"
+    save_dir = "./workspaces/researchgraph/data"
     search_variable = "keywords"
     output_variable = "collection_of_papers"
 

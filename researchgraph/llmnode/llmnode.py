@@ -7,12 +7,6 @@ from langgraph.graph import StateGraph
 from llmlinks.link import LLMLink
 from llmlinks.llm_client import LLMClient
 
-from llm_node_setting_template import (
-    translater1_setting,
-    translater2_setting,
-    translater3_setting,
-)
-
 
 class State(TypedDict):
     source: str
@@ -79,6 +73,12 @@ class LLMNode:
 
 
 if __name__ == "__main__":
+    from llm_node_setting_template import (
+        translater1_setting,
+        translater2_setting,
+        translater3_setting,
+    )
+
     llm_name = "gpt-4o-2024-08-06"
     # llm_name = 'o1-preview-2024-09-12'
     # llm_name = 'o1-mini-2024-09-12'
