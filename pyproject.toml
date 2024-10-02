@@ -1,6 +1,6 @@
 [project]
-name = "researchchain"
-version = "0.2.2"
+name = "researchgraph"
+version = "0.0.8"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -16,11 +16,13 @@ dependencies = [
 
 [tool.uv]
 dev-dependencies = [
+    "bump2version>=1.0.1",
     "ipykernel>=6.29.5",
     "jupyter>=1.1.1",
+    "pre-commit>=3.8.0",
     "ruff>=0.6.7",
 ]
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["researchchain"]
+include = ["researchgraph"]
