@@ -12,6 +12,7 @@ ResearchChainの特徴としては以下のものが挙げられます。
 </p>
 
 ![ResearchChainのアーキテクチャ図](images/research_graph.png "ResearchChain")
+![ResearchChainのイラスト図](images/images.png "ResearchChain")
 
 
 ## 目次
