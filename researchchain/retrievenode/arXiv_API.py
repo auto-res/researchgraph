@@ -2,11 +2,12 @@ import os
 import json
 import shutil
 import requests
+from langchain_community.document_loaders import PyPDFLoader
 import arxiv
 
 from typing import Any
 from typing_extensions import TypedDict
-from langchain_community.document_loaders import PyPDFLoader
+
 from langgraph.graph import StateGraph
 
 
@@ -98,14 +99,20 @@ class ArxivNode:
         keywords_list = keywords_list[: self.num_keywords]
 
         all_search_results = []
+
+        client = arxiv.Client(
+            num_retries=3,  # 再試行の設定
+            page_size=self.num_retrieve_paper  # ページサイズを設定
+        )
+
         for search_term in keywords_list:
-            print(f"Searching for: {search_term}")
             search = arxiv.Search(
                 query=search_term,
                 max_results=self.num_retrieve_paper,
                 sort_by=arxiv.SortCriterion.SubmittedDate,
             )
-            results = list(search.results())
+            
+            results = list(client.results(search))
             all_search_results.extend(results)
 
         arxiv_ids = []
@@ -131,11 +138,13 @@ class ArxivNode:
 
 
 if __name__ == "__main__":
-    save_dir = "./data"
+    save_dir = "/workspaces/researchchain/data"
     search_variable = "keywords"
     output_variable = "collection_of_papers"
 
-    memory = {"keywords": '["Grokking"]'}
+    memory = {
+        "keywords": '["Grokking"]'
+    }
 
     graph_builder = StateGraph(State)
     graph_builder.add_node(
