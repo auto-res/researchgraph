@@ -22,24 +22,21 @@ class SemanticScholarNode:
         save_dir,
         search_variable,
         output_variable,
-        num_keywords,
         num_retrieve_paper,
     ):
         self.save_dir = save_dir
         self.search_variable = search_variable
         self.output_variable = output_variable
-        self.num_keywords = num_keywords
         self.num_retrieve_paper = num_retrieve_paper
         print("SemanticScholarRetriever initialized")
         print(f"input: {search_variable}")
         print(f"output: {output_variable}")
 
-    def download_from_arxiv_id(self, arxiv_id):
+    def _download_from_arxiv_id(self, arxiv_id: str) -> None:
         """Download PDF file from arXiv
 
         Args:
             arxiv_id (_type_): _description_
-            save_dir (_type_): _description_
         """
 
         url = f"https://arxiv.org/pdf/{arxiv_id}.pdf"
@@ -52,7 +49,7 @@ class SemanticScholarNode:
         else:
             print(f"Failed to download {arxiv_id}.pdf")
 
-    def download_from_arxiv_ids(self, arxiv_ids):
+    def _download_from_arxiv_ids(self, arxiv_ids: list[str]) -> None:
         """Download PDF files from arXiv
 
         Args:
@@ -67,9 +64,9 @@ class SemanticScholarNode:
             os.makedirs(self.save_dir)
 
         for arxiv_id in arxiv_ids:
-            self.download_from_arxiv_id(arxiv_id)
+            self._download_from_arxiv_id(arxiv_id)
 
-    def convert_pdf_to_text(self, pdf_path):
+    def _convert_pdf_to_text(self, pdf_path: str) -> str:
         """Convert PDF file to text
 
         Args:
@@ -94,7 +91,7 @@ class SemanticScholarNode:
             state (_type_): _description_
         """
         keywords_list = json.loads(state[self.search_variable])
-        keywords_list = [keywords_list[: self.num_keywords]]
+        # keywords_list = [keywords_list[: self.num_keywords]]
 
         sch = SemanticScholar()
 
@@ -103,35 +100,30 @@ class SemanticScholarNode:
             results = sch.search_paper(search_term, limit=self.num_retrieve_paper)
             all_search_results.append(results)
 
-        for results in all_search_results:
-            for item in results.items:
-                print(item.title)
-                print(item.paperId)
-
-        DOI_ids = [item["externalIds"] for item in results.items]
+        DOI_ids = [
+            item["externalIds"]
+            for results in all_search_results
+            for item in results.items
+        ]
         arxiv_ids = [item["ArXiv"] for item in DOI_ids if "ArXiv" in item]
 
-        self.download_from_arxiv_ids(arxiv_ids[: self.num_retrieve_paper])
+        self._download_from_arxiv_ids(arxiv_ids[: self.num_retrieve_paper])
 
-        if self.output_variable not in state:
-            state[self.output_variable] = {}
-
-        # ディレクトリ内のすべてのPDFファイルを処理
+        paper_list_dict = {}
         for idx, filename in enumerate(os.listdir(self.save_dir)):
             if filename.endswith(".pdf"):
                 pdf_path = os.path.join(self.save_dir, filename)
-                paper_content = self.convert_pdf_to_text(pdf_path)
-                paper_key = f"paper_1_{idx+1}"
-                state[self.output_variable][paper_key] = paper_content
-        return state
+                paper_content = self._convert_pdf_to_text(pdf_path)
+                paper_key = f"paper_{idx+1}"
+                paper_list_dict[paper_key] = paper_content
+
+        return {self.output_variable: paper_list_dict}
 
 
 if __name__ == "__main__":
     save_dir = "/workspaces/researchgraph/data"
     search_variable = "keywords"
     output_variable = "collection_of_papers"
-
-    memory = {"keywords": '["Grokking"]'}
 
     graph_builder = StateGraph(State)
     graph_builder.add_node(
@@ -140,8 +132,7 @@ if __name__ == "__main__":
             save_dir=save_dir,
             search_variable=search_variable,
             output_variable=output_variable,
-            num_keywords=1,
-            num_retrieve_paper=1,
+            num_retrieve_paper=3,
         ),
     )
     graph_builder.set_entry_point("semanticscholarretriever")
