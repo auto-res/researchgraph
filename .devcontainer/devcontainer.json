@@ -1,8 +1,8 @@
 {
-	"name": "researchchain",
+	"name": "researchgraph",
 	"dockerComposeFile": "docker-compose.yaml",
-	"service": "researchchain",
-	"workspaceFolder": "/workspaces/researchchain",
+	"service": "researchgraph",
+	"workspaceFolder": "/workspaces/researchgraph",
 	"overrideCommand": true,
 	"customizations": {
 		"vscode": {

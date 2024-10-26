@@ -1,0 +1,5 @@
+recorder = {
+    "input": [],
+    "output": [],
+    "prompt": "",
+}

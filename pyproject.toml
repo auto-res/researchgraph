@@ -1,6 +1,6 @@
 [project]
-name = "researchchain"
-version = "0.2.2"
+name = "researchgraph"
+version = "0.0.8"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -8,19 +8,28 @@ dependencies = [
     "langchain-community>=0.2.15",
     "langchain>=0.2.15",
     "langgraph>=0.2.23",
-    "llmlinks==0.1.15",
+    "llmlinks==0.1.34",
     "openai>=1.35.13",
+    "pyalex>=0.15.1",
+    "pydantic>=2.9.2",
     "pypdf>=4.3.1",
     "semanticscholar>=0.8.4",
+    "tomli-w>=1.0.0",
+    "tomli>=2.0.1",
 ]
 
 [tool.uv]
 dev-dependencies = [
+    "bump2version>=1.0.1",
     "ipykernel>=6.29.5",
     "jupyter>=1.1.1",
+    "pre-commit>=3.8.0",
     "ruff>=0.6.7",
 ]
 
+[tool.ruff]
+ignore = ["E731","F841","F821","E741"]
+
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["researchchain"]
+include = ["researchgraph"]
