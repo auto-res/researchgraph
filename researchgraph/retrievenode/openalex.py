@@ -129,29 +129,23 @@ class OpenAlexNode:
                     continue
 
                 arxiv_ids.append(arxiv_id)
-
             self.download_from_arxiv_ids(arxiv_ids[: self.num_retrieve_paper])
 
-        # DOI_ids = [item['doi'] for item in results.items]
-        # arxiv_ids = [item['ArXiv'] for item in DOI_ids if 'ArXiv' in item]
-
-        # self.download_from_arxiv_ids(arxiv_ids[:self.num_retrieve_paper])
-
-        if self.output_variable not in state:
-            state[self.output_variable] = {}
-
-        # ディレクトリ内のすべてのPDFファイルを処理
-        for idx, filename in enumerate(os.listdir(self.save_dir)):
-            if filename.endswith(".pdf"):
-                pdf_path = os.path.join(self.save_dir, filename)
-                paper_content = self.convert_pdf_to_text(pdf_path)
-                paper_key = f"paper_1_{idx+1}"
-                state[self.output_variable][paper_key] = paper_content
-        return state
+        return {
+            self.output_variable: {
+                f"paper_{idx + 1}": {
+                    "full_text": self.convert_pdf_to_text(
+                        os.path.join(self.save_dir, filename)
+                    )
+                }
+                for idx, filename in enumerate(os.listdir(self.save_dir))
+                if filename.endswith(".pdf")
+            }
+        }
 
 
 if __name__ == "__main__":
-    save_dir = "./workspaces/researchgraph/data"
+    save_dir = "/workspaces/researchgraph/data"
     search_variable = "keywords"
     output_variable = "collection_of_papers"
 
@@ -165,7 +159,7 @@ if __name__ == "__main__":
             search_variable=search_variable,
             output_variable=output_variable,
             num_keywords=1,
-            num_retrieve_paper=1,
+            num_retrieve_paper=3,
         ),
     )
     graph_builder.set_entry_point("openalexretriever")
@@ -174,4 +168,4 @@ if __name__ == "__main__":
 
     memory = {"keywords": '["Grokking"]'}
 
-    graph.invoke(memory, debug=True)
+    graph.invoke(memory)

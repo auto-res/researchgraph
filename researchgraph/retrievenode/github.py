@@ -62,9 +62,10 @@ class GithubNode:
         github_url = state[self.search_variable]
         self.git_clone(github_url)
         folder_structure, get_file = self.get_py_files(github_url)
-        state[self.output_variable[0]] = folder_structure
-        state[self.output_variable[1]] = get_file
-        return state
+        return {
+            self.output_variable[0]: folder_structure,
+            self.output_variable[1]: get_file,
+        }
 
 
 if __name__ == "__main__":

@@ -7,6 +7,12 @@ from langgraph.graph import StateGraph
 from llmlinks.link import LLMLink
 from llmlinks.llm_client import LLMClient
 
+from .llm_node_setting_template import (
+    translater1_setting,
+    translater2_setting,
+    translater3_setting,
+)
+
 
 class State(TypedDict):
     source: str
@@ -48,11 +54,7 @@ class LLMNode:
 
                 kwargs = {key: state[key] for key in self.input[i]}
                 response = func(**kwargs)
-                for key in self.output[i]:
-                    if response[key]:
-                        state[key] = response[key][0]
-                    else:
-                        print(f"Warning: No data returned for [{response[key]}]")
+                return {key: response[key] for key in self.output[i]}
 
         else:
             func = LLMLink(
@@ -63,22 +65,12 @@ class LLMNode:
             )
 
             kwargs = {key: state[key] for key in self.input}
-            print(kwargs)
             response = func(**kwargs)
-            print(response)
-            for key in self.output:
-                state[key] = response[key][0]
 
-        return state
+        return {key: response[key] for key in self.output}
 
 
 if __name__ == "__main__":
-    from llm_node_setting_template import (
-        translater1_setting,
-        translater2_setting,
-        translater3_setting,
-    )
-
     llm_name = "gpt-4o-2024-08-06"
     # llm_name = 'o1-preview-2024-09-12'
     # llm_name = 'o1-mini-2024-09-12'
