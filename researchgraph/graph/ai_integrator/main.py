@@ -4,23 +4,12 @@ from typing_extensions import TypedDict
 from langgraph.graph import StateGraph
 
 from researchgraph.llmnode import LLMNode
-from researchgraph.retrievenode import OpenAlexNode
+
+# from researchgraph.retrievenode import OpenAlexNode
 from researchgraph.retrievenode import GithubNode
 from researchgraph.evaluatenode import LLMEvaluateNode
 
 
-from researchgraph.graph.ai_integrator.llmnode_setting.keyworder import (
-    keyworder1_setting,
-    keyworder2_setting,
-)
-from researchgraph.graph.ai_integrator.llmnode_setting.selector import (
-    selector1_setting,
-    selector2_setting,
-)
-from researchgraph.graph.ai_integrator.llmnode_setting.extractor import (
-    extractor1_setting,
-    extractor2_setting,
-)
 from researchgraph.graph.ai_integrator.llmnode_setting.codeextractor import (
     codeextractor1_setting,
     codeextractor2_setting,
@@ -101,42 +90,16 @@ class AIIntegrator:
 
         # make nodes
         graph_builder.add_node(
-            "keyworder1", LLMNode(llm_name=llm_name, setting=keyworder1_setting)
-        )
-        graph_builder.add_node(
-            "keyworder2", LLMNode(llm_name=llm_name, setting=keyworder2_setting)
-        )
-        graph_builder.add_node(
-            "openalexretriever1",
-            OpenAlexNode(
-                save_dir=save_dir,
-                search_variable="keywords_1",
-                output_variable="collection_of_papers_1",
-                num_keywords=1,
-                num_retrieve_paper=1,
+            "csvretriever1",
+            CSVNode(
+                csv_file_path="/workspaces/researchgraph/data/optimization_algorithm.csv"
             ),
         )
         graph_builder.add_node(
-            "openalexretriever2",
-            OpenAlexNode(
-                save_dir=save_dir,
-                search_variable="keywords_2",
-                output_variable="collection_of_papers_2",
-                num_keywords=1,
-                num_retrieve_paper=1,
+            "csvretriever2",
+            CSVNode(
+                csv_file_path="/workspaces/researchgraph/data/optimization_algorithm.csv"
             ),
-        )
-        graph_builder.add_node(
-            "extractor1", LLMNode(llm_name=llm_name, setting=extractor1_setting)
-        )
-        graph_builder.add_node(
-            "extractor2", LLMNode(llm_name=llm_name, setting=extractor2_setting)
-        )
-        graph_builder.add_node(
-            "selector1", LLMNode(llm_name=llm_name, setting=selector1_setting)
-        )
-        graph_builder.add_node(
-            "selector2", LLMNode(llm_name=llm_name, setting=selector2_setting)
         )
         graph_builder.add_node(
             "githubretriever1",
@@ -153,6 +116,9 @@ class AIIntegrator:
                 search_variable="github_url_1",
                 output_variable=["folder_structure_1", "github_file_1"],
             ),
+        )
+        graph_builder.add_node(
+            "arixivretriever1",
         )
         graph_builder.add_node(
             "codeextractor1", LLMNode(llm_name=llm_name, setting=codeextractor1_setting)
