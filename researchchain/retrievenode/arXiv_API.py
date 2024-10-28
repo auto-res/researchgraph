@@ -7,7 +7,6 @@ import arxiv
 
 from typing import Any
 from typing_extensions import TypedDict
-
 from langgraph.graph import StateGraph
 
 
@@ -18,13 +17,13 @@ class State(TypedDict):
 
 class ArxivNode:
     def __init__(
-        self,
-        save_dir,
-        search_variable,
-        output_variable,
-        num_keywords,
-        num_retrieve_paper,
-    ):
+            self, 
+            save_dir, 
+            search_variable, 
+            output_variable, 
+            num_keywords, 
+            num_retrieve_paper
+        ):
         self.save_dir = save_dir
         self.search_variable = search_variable
         self.output_variable = output_variable
@@ -45,7 +44,7 @@ class ArxivNode:
         response = requests.get(url, stream=True)
 
         if response.status_code == 200:
-            with open(os.path.join(self.save_dir, f"{arxiv_id}.pdf"), "wb") as file:
+            with open(os.path.join(self.save_dir, f"{arxiv_id}.pdf"), 'wb') as file:
                 shutil.copyfileobj(response.raw, file)
             print(f"Downloaded {arxiv_id}.pdf to {self.save_dir}")
         else:
@@ -60,7 +59,7 @@ class ArxivNode:
         # Create the save directory if it doesn't exist
         if not os.path.exists(self.save_dir):
             os.makedirs(self.save_dir)
-        else:
+        else :
             # Clear the directory if it already exists
             shutil.rmtree(self.save_dir)
             os.makedirs(self.save_dir)
@@ -96,8 +95,7 @@ class ArxivNode:
             State: Updated state with downloaded papers
         """
         keywords_list = json.loads(state[self.search_variable])
-        keywords_list = keywords_list[: self.num_keywords]
-
+        # keywords_list = keywords_list[: self.num_keywords]
         all_search_results = []
 
         client = arxiv.Client(
@@ -114,6 +112,7 @@ class ArxivNode:
             
             results = list(client.results(search))
             all_search_results.extend(results)
+        print(f"all_search_results {len(all_search_results)}")
 
         arxiv_ids = []
         for result in all_search_results:
@@ -122,14 +121,14 @@ class ArxivNode:
             print(f"arXiv ID: {arxiv_id}")
             arxiv_ids.append(arxiv_id)
 
-        self.download_from_arxiv_ids(arxiv_ids[: self.num_retrieve_paper])
+        self.download_from_arxiv_ids(arxiv_ids)
 
         if self.output_variable not in state:
             state[self.output_variable] = {}
 
         # Process downloaded PDFs
         for idx, filename in enumerate(os.listdir(self.save_dir)):
-            if filename.endswith(".pdf"):
+            if filename.endswith('.pdf'):
                 pdf_path = os.path.join(self.save_dir, filename)
                 paper_content = self.convert_pdf_to_text(pdf_path)
                 paper_key = f"paper_{idx+1}"
@@ -143,7 +142,7 @@ if __name__ == "__main__":
     output_variable = "collection_of_papers"
 
     memory = {
-        "keywords": '["Grokking"]'
+        "keywords": '["Grokking", "Separability"]'
     }
 
     graph_builder = StateGraph(State)
@@ -153,14 +152,15 @@ if __name__ == "__main__":
             save_dir=save_dir,
             search_variable=search_variable,
             output_variable=output_variable,
-            num_keywords=1,
-            num_retrieve_paper=1,
-        ),
+            num_keywords=2,
+            num_retrieve_paper=5,
+            # num_retrieve_paper=1,
+        )
     )
     graph_builder.set_entry_point("arxivretriever")
     graph_builder.set_finish_point("arxivretriever")
     graph = graph_builder.compile()
 
-    memory = {"keywords": '["Grokking"]'}
+    memory = {"keywords": '["Grokking", "Separability"]'}
 
     graph.invoke(memory, debug=True)
