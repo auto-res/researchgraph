@@ -1,6 +1,6 @@
 # %%
-from typing import Any
-from typing_extensions import TypedDict
+from typing import Any, TypedDict
+from pydantic import DirectoryPath
 from langgraph.graph import StateGraph
 
 import subprocess
@@ -11,11 +11,11 @@ class State(TypedDict):
 
 
 class LLMEvaluateNode:
-    def __init__(self, save_dir, evaluate_code):
+    def __init__(self, save_dir: DirectoryPath, evaluate_code: str):
         self.save_dir = save_dir
         self.evaluate_code = evaluate_code
 
-    def train(self, state: State):
+    def train(self, state: State) -> subprocess.CompletedProcess:
         exec_code = state[evaluate_code]
 
         with open(self.save_dir + f"{evaluate_code}.py", "w") as file:

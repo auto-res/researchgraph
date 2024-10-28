@@ -4,6 +4,7 @@ import glob
 
 from typing import Any
 from typing_extensions import TypedDict
+from pydantic import DirectoryPath
 from langgraph.graph import StateGraph
 
 
@@ -14,7 +15,7 @@ class State(TypedDict):
 
 
 class GithubNode:
-    def __init__(self, save_dir, search_variable, output_variable):
+    def __init__(self, save_dir: DirectoryPath, search_variable: str, output_variable):
         self.save_dir = save_dir
         self.search_variable = search_variable
         self.output_variable = output_variable
@@ -22,7 +23,7 @@ class GithubNode:
         print(f"input: {self.search_variable}")
         print(f"output: {self.output_variable}")
 
-    def get_folder_structure(self, path="."):
+    def get_folder_structure(self, path=".") -> str | None:
         try:
             # subprocess.runを使用してフォルダ構造を取得
             result = subprocess.run(
@@ -33,7 +34,7 @@ class GithubNode:
             print(f"Error occurred: {e}")
             return None
 
-    def git_clone(self, url):
+    def git_clone(self, url: str) -> subprocess.CompletedProcess:
         if not os.path.exists(self.save_dir):
             os.makedirs(self.save_dir)
         os.chdir(self.save_dir)
@@ -41,7 +42,7 @@ class GithubNode:
         ls = subprocess.run(command, shell=True, text=True)
         return ls
 
-    def get_py_files(self, url):
+    def get_py_files(self, url: str):
         folder_structure = self.get_folder_structure(url.split("/")[-1])
         py_filelist = glob.glob(url.split("/")[-1] + "/**/*.py", recursive=True)
         py_text = []
