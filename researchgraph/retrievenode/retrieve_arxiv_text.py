@@ -11,6 +11,8 @@ from langgraph.graph import StateGraph
 from langchain_core.runnables import RunnableConfig
 from langchain_community.document_loaders import PyPDFLoader
 
+logger = logging.getLogger("researchgraph")
+
 
 class State(TypedDict):
     arxiv_url: str
@@ -22,13 +24,16 @@ class RetrievearXivTextNode:
         self.input_variable = input_variable
         self.output_variable = output_variable
         self.save_dir = save_dir
+        print("RetrievearXivTextNode initialized")
+        print(f"input: {self.input_variable}")
+        print(f"output: {self.output_variable}")
 
     def __call__(self, state: State, config: RunnableConfig) -> Any:
         arxiv_url = state[self.input_variable]
         arxiv_id = re.sub(r"^https://arxiv\.org/abs/", "", arxiv_url)
 
         pdf_path = os.path.join(self.save_dir, f"{arxiv_id}.pdf")
-        text_path = os.path.join(save_dir, f"{arxiv_id}.txt")
+        text_path = os.path.join(self.save_dir, f"{arxiv_id}.txt")
 
         if os.path.exists(text_path):
             with open(text_path, "r", encoding="utf-8") as text_file:
@@ -50,6 +55,9 @@ class RetrievearXivTextNode:
             full_text = "".join(page.page_content.replace("\n", "") for page in pages)
             with open(text_path, "w", encoding="utf-8") as text_file:
                 text_file.write(full_text)
+
+        logger.info("---RetrievearXivTextNode---")
+        logger.info(f"Full paper text: {full_text[:100]}")
         return {
             self.output_variable: full_text,
         }

@@ -1,6 +1,5 @@
 FROM ubuntu:22.04
 
-
 # 必要なパッケージのインストール
 RUN apt-get update && apt-get install -y \
     git \
