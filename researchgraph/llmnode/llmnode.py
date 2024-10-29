@@ -1,4 +1,5 @@
 # %%
+import logging
 from typing import Any
 from typing_extensions import TypedDict
 
@@ -6,6 +7,14 @@ from langgraph.graph import StateGraph
 
 from llmlinks.link import LLMLink
 from llmlinks.llm_client import LLMClient
+
+from .llm_node_setting_template import (
+    translater1_setting,
+    translater2_setting,
+    translater3_setting,
+)
+
+logger = logging.getLogger("researchgraph")
 
 
 class State(TypedDict):
@@ -26,59 +35,45 @@ class LLMNode:
         else:
             raise ValueError("setting_data must be a dictionary.")
 
-        self.input = self.setting.get("input")
-        self.output = self.setting.get("output")
+        self.input_variable = self.setting.get("input")
+        self.output_variable = self.setting.get("output")
         self.prompt_template = self.setting.get("prompt")
         self.llm = LLMClient(llm_name)
         print("LLMNode initialized")
-        print(f"input: {self.input}")
-        print(f"output: {self.output}")
+        print(f"input: {self.input_variable}")
+        print(f"output: {self.output_variable}")
 
     def __call__(self, state: State) -> Any:
-        if isinstance(self.input[0], list):
+        if isinstance(self.input_variable[0], list):
             num_loop = len(self.input)
             for i in range(num_loop):
                 prompt = self.prompt_template[i]
                 func = LLMLink(
                     self.llm,
                     prompt,
-                    self.input[i],
-                    self.output[i],
+                    self.input_variable[i],
+                    self.output_variable[i],
                 )
 
-                kwargs = {key: state[key] for key in self.input[i]}
+                kwargs = {key: state[key] for key in self.input_variable[i]}
                 response = func(**kwargs)
-                for key in self.output[i]:
-                    if response[key]:
-                        state[key] = response[key][0]
-                    else:
-                        print(f"Warning: No data returned for [{response[key]}]")
+            return {key: response[key] for key in self.output_variable[i]}
 
         else:
             func = LLMLink(
                 self.llm,
                 self.prompt_template,
-                self.input,
-                self.output,
+                self.input_variable,
+                self.output_variable,
             )
-
-            kwargs = {key: state[key] for key in self.input}
-            print(kwargs)
+            kwargs = {key: state[key] for key in self.input_variable}
             response = func(**kwargs)
-            print(response)
-            for key in self.output:
-                state[key] = response[key][0]
-
-        return state
+            logger.info("---LLMNode---")
+            logger.info(f"LLMNode response:\n{response}")
+            return {**response}
 
 
 if __name__ == "__main__":
-    from llm_node_setting_template import (
-        translater1_setting,
-        translater2_setting,
-        translater3_setting,
-    )
-
     llm_name = "gpt-4o-2024-08-06"
     # llm_name = 'o1-preview-2024-09-12'
     # llm_name = 'o1-mini-2024-09-12'
@@ -107,4 +102,6 @@ if __name__ == "__main__":
     }
 
     print(memory)
-    graph.invoke(memory, debug=True)
+    result = graph.invoke(memory, debug=True)
+    print(result["new_method_text"])
+    print(result["new_method_code"])
