@@ -18,11 +18,7 @@ class State(BaseModel):
 
 
 class GithubNode:
-<<<<<<< HEAD
-    def __init__(self, save_dir: DirectoryPath, search_variable: str, output_variable: list[str]):
-=======
-    def __init__(self, save_dir, input_variable, output_variable):
->>>>>>> origin/develop
+    def __init__(self, save_dir: DirectoryPath, input_variable: str, output_variable: list[str]):
         self.save_dir = save_dir
         self.input_variable = input_variable
         self.output_variable = output_variable
@@ -30,15 +26,12 @@ class GithubNode:
         print(f"input: {self.input_variable}")
         print(f"output: {self.output_variable}")
 
-<<<<<<< HEAD
-    def get_folder_structure(self, path=".") -> str | None:
-=======
     def _format_url(self, state: State) -> str:
         pattern = r"(https://github\.com/[^/]+/[^/?#]+)"
         url = re.search(pattern, state[self.input_variable]).group(1)
         return url
 
-    def _get_repository(self, url: str, repo_name: str) -> Any:
+    def _get_repository(self, url: str, repo_name: str) -> subprocess.CompletedProcess | None:
         repo_path = os.path.join(self.save_dir, repo_name)
         if os.path.exists(repo_path):
             print(f"Repository '{repo_name}' already exists")
@@ -60,7 +53,6 @@ class GithubNode:
                 return None
 
     def _get_all_file_path(self, search_dir: str) -> str:
->>>>>>> origin/develop
         try:
             result = subprocess.run(
                 ["ls", "-R", search_dir], capture_output=True, text=True, check=True
@@ -74,24 +66,9 @@ class GithubNode:
             print(f"Error occurred: {e}")
             return None
 
-<<<<<<< HEAD
-    def git_clone(self, url: str) -> subprocess.CompletedProcess:
-        if not os.path.exists(self.save_dir):
-            os.makedirs(self.save_dir)
-        os.chdir(self.save_dir)
-        command = f"git clone {url}"
-        ls = subprocess.run(command, shell=True, text=True)
-        return ls
-
-    def get_py_files(self, url: str) -> tuple[str, str]:
-        folder_structure = self.get_folder_structure(url.split("/")[-1])
-        py_filelist = glob.glob(url.split("/")[-1] + "/**/*.py", recursive=True)
-        py_text = []
-=======
     def _get_python_script_text(self, search_dir: str) -> str:
         py_filelist = glob.glob(search_dir + "/**/*.py", recursive=True)
         python_script_text = ""
->>>>>>> origin/develop
         for i in py_filelist:
             with open(i) as f:
                 file_read = f.read()
@@ -101,7 +78,7 @@ class GithubNode:
             :10000
         ]  # TODO: The problem of Python code becoming too long. GPT-4o context window is 128,000.
 
-    def __call__(self, state: State) -> Any:
+    def __call__(self, state: State) -> dict[str, Any]:
         github_url = self._format_url(state)
         repository_name = github_url.split("/")[-1]
         target_dir = os.path.join(self.save_dir, repository_name)
