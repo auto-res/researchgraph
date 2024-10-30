@@ -1,12 +1,12 @@
 # %%
-from typing import Any, TypedDict
-from pydantic import DirectoryPath
+from typing import Any
+from pydantic import BaseModel, DirectoryPath, ValidationError
 from langgraph.graph import StateGraph
 
 import subprocess
 
 
-class State(TypedDict):
+class State(BaseModel):
     method_1_code_experiment: str
 
 
@@ -16,7 +16,8 @@ class LLMEvaluateNode:
         self.evaluate_code = evaluate_code
 
     def train(self, state: State) -> subprocess.CompletedProcess:
-        exec_code = state[evaluate_code]
+        exec_code = state[self.evaluate_code]
+
 
         with open(self.save_dir + f"{evaluate_code}.py", "w") as file:
             file.write(exec_code)
@@ -42,8 +43,13 @@ class LLMEvaluateNode:
         return result
 
     def __call__(self, state: State) -> Any:
+        try:
+            state = State(**state)
+        except ValidationError as e:
+            print(f"Validatin error: {e}")
+            return None
+        
         self.train(state)
-
         return state
 
 

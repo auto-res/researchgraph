@@ -3,19 +3,18 @@ import subprocess
 import glob
 
 from typing import Any
-from typing_extensions import TypedDict
-from pydantic import DirectoryPath
+from pydantic import BaseModel, DirectoryPath, HttpUrl
 from langgraph.graph import StateGraph
 
 
-class State(TypedDict):
-    github_url: str
+class State(BaseModel):
+    github_url: HttpUrl
     folder_structure: str
     github_file: str
 
 
 class GithubNode:
-    def __init__(self, save_dir: DirectoryPath, search_variable: str, output_variable):
+    def __init__(self, save_dir: DirectoryPath, search_variable: str, output_variable: list[str]):
         self.save_dir = save_dir
         self.search_variable = search_variable
         self.output_variable = output_variable
@@ -42,7 +41,7 @@ class GithubNode:
         ls = subprocess.run(command, shell=True, text=True)
         return ls
 
-    def get_py_files(self, url: str):
+    def get_py_files(self, url: str) -> tuple[str, str]:
         folder_structure = self.get_folder_structure(url.split("/")[-1])
         py_filelist = glob.glob(url.split("/")[-1] + "/**/*.py", recursive=True)
         py_text = []

@@ -6,12 +6,12 @@ import requests
 from langchain_community.document_loaders import PyPDFLoader
 from semanticscholar import SemanticScholar
 
-from typing import Any
-from typing_extensions import TypedDict
+from typing import Any, Annotated
+from pydantic import BaseModel, DirectoryPath, Field
 from langgraph.graph import StateGraph
 
 
-class State(TypedDict):
+class State(BaseModel):
     keywords: str
     collection_of_papers: Any
 
@@ -19,10 +19,10 @@ class State(TypedDict):
 class SemanticScholarNode:
     def __init__(
         self,
-        save_dir,
-        search_variable,
-        output_variable,
-        num_retrieve_paper,
+        save_dir: DirectoryPath,
+        search_variable: str,
+        output_variable: str,
+        num_retrieve_paper: Annotated[int, Field(strict=True, ge=1)],
     ):
         self.save_dir = save_dir
         self.search_variable = search_variable
@@ -84,7 +84,7 @@ class SemanticScholarNode:
 
         return content
 
-    def __call__(self, state: State) -> Any:
+    def __call__(self, state: State) -> dict[str, Any]:
         """Retriever
 
         Args:

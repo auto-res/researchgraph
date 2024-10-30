@@ -6,9 +6,10 @@ from langgraph.graph import StateGraph
 
 from llmlinks.link import LLMLink
 from llmlinks.llm_client import LLMClient
+from pydantic import BaseModel, Field
 
 
-class State(TypedDict):
+class State(BaseModel):
     source: str
     language: str
     translation1: str
@@ -20,7 +21,7 @@ class State(TypedDict):
 
 
 class LLMNode:
-    def __init__(self, llm_name, setting):
+    def __init__(self, llm_name: str, setting: dict):
         if isinstance(setting, dict):
             self.setting = setting
         else:

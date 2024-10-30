@@ -7,12 +7,12 @@ import re
 import pyalex
 from langchain_community.document_loaders import PyPDFLoader
 
-from typing import Any
-from typing_extensions import TypedDict
+from typing import Any, Annotated
+from pydantic import BaseModel, DirectoryPath, Field
 from langgraph.graph import StateGraph
 
 
-class State(TypedDict):
+class State(BaseModel):
     keywords: str
     collection_of_papers: Any
 
@@ -20,11 +20,11 @@ class State(TypedDict):
 class OpenAlexNode:
     def __init__(
         self,
-        save_dir,
-        search_variable,
-        output_variable,
-        num_keywords,
-        num_retrieve_paper,
+        save_dir: DirectoryPath,
+        search_variable: str,
+        output_variable: str,
+        num_keywords: Annotated[int, Field(strict=True, ge=1)],
+        num_retrieve_paper: Annotated[int, Field(strict=True, ge=1)],
     ):
         self.save_dir = save_dir
         self.search_variable = search_variable
@@ -35,7 +35,7 @@ class OpenAlexNode:
         print(f"input: {search_variable}")
         print(f"output: {output_variable}")
 
-    def download_from_arxiv_id(self, arxiv_id):
+    def download_from_arxiv_id(self, arxiv_id: str) -> None:
         """Download PDF file from arXiv
 
         Args:
@@ -53,7 +53,7 @@ class OpenAlexNode:
         else:
             print(f"Failed to download {arxiv_id}.pdf")
 
-    def download_from_arxiv_ids(self, arxiv_ids):
+    def download_from_arxiv_ids(self, arxiv_ids: list[str]) -> None:
         """Download PDF files from arXiv
 
         Args:
@@ -70,7 +70,7 @@ class OpenAlexNode:
         for arxiv_id in arxiv_ids:
             self.download_from_arxiv_id(arxiv_id)
 
-    def convert_pdf_to_text(self, pdf_path):
+    def convert_pdf_to_text(self, pdf_path: str) -> str:
         """Convert PDF file to text
 
         Args:
@@ -107,7 +107,7 @@ class OpenAlexNode:
             )
             all_search_results.append(results)
 
-        def _get_arxiv_id_from_url(url):
+        def _get_arxiv_id_from_url(url: str) -> str | None:
             match = re.search(r"\d{4}\.\d{5}", url)
             if match:
                 return match.group()
