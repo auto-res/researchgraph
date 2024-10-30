@@ -1,170 +1,56 @@
 codeextractor1_setting = {
-    "input": ["folder_structure_1", "github_file_1"],
+    "input": ["method_1_text", "folder_structure_1", "github_file_1"],
     "output": ["method_1_code"],
-    "prompt": """
-    <RULE>
-    The system and the assistant exchange messages.
-    All messages MUST be formatted in XML format. 
-    XML element ::= <tag attribute='value'>content</tag>
-    Tags determine the meaning and function of the content. 
-    The content must not contradict the definition of the tag.
-    </RULE>
-    <TAG name='RULE'>
-    This tag defines rules. The defined content is absolute.
-    Attributes:
-        - role (optional) : A role that should follow the rules. Roles are 'system' or 'assistant'.
-    Notes:    
-        - The assistant must not use this tag.
-    </TAG>
-    <TAG name='TAG'>
-    This tag defines a tag. The defined content is absolute.
-    Attributes:
-        - name : A tag name.
-    Notes:    
-        - The assistant must not use this tag.
-    </TAG>
-    <TAG name='SYSTEM'>
-    This tag represents a system message.
-    Notes:
-        - The assistant MUST NOT use this tag.
-    </TAG>
-    <TAG name='EOS'>
-    Indicates the end of a message.
-    </TAG>
-    <TAG name='THINK'>
-    This tag represents a thought process.
-    If you use this tag, take a drop deep breath and work on the problem step-by-step.
-    Must be answered in Japanese.
-    Attributes:
-        - label (optional) : A label summarizing the contents.
-    Notes:
-        - The thought process must be described step by step.
-        - Premises in reasoning must be made as explicit as possible. That is, there should be no leaps of reasoning.
-    </TAG>
-    <TAG name='method_1_code'>
-    This tag represents an executable Python code.
-    </TAG>
-    <TAG name='folder_structure'>
-    This tag represents the folder structure of the work folder.
-    This tag does not contain any descriptive text or other information about the folder structure.
-    Notes:
-        - The assistant must not use this tag.
-    </TAG>
-    <TAG name='github_file'>
-    This tag represents code in a Python file.
-    This tag does not contain any descriptive text or other information about the code in the Python file.
-    Notes.
-        - Assistants should not use this tag.
-    </TAG>
-    <TAG name='OBJECTIVE'>
-    This tag represents the purpose.
-    The purpose is described in text in this tag, and ASSISTANT must check the contents before working with it.
-    Notes.
-        - Assistants must not use this tag.
-    </TAG>
-    <RULE role='assistant'>
-    The assistant's role is to extract the Python functions of the proposed method from the paper's github.
-    First, it infers the most important files in the folder from the contents of folder_structure and then extracts the most important classes in the folder from github_file.
-    The assistant uses the  method_1_code tag to answer which class it thinks is the most important in the folder. Also use the THINK tag with folder_structure and the contents of github_file to answer why you think it is important.
-    NOTES.
-        - Assistants must use the THINK tag before using the  method_1_code tag.
-        - The most important features vary from viewpoint to viewpoint. Assistants must find the most distinctive part of the github_file.
-        - A feature is a part of a general function that is ingeniously proposed and implemented.
-        - The functions to be extracted must all be extracted as they are without deleting or modifying the functions in the classes in the github_file.
-        - After this, we will work on decomposing the extracted methods, so keeping this in mind, the most characteristic classes must be found and answered as they are.
-    </RULE>
-    <folder_structure>
-    {folder_structure_1}
-    </folder_structure>
-    <github_file>
-    {github_file_1}
-    </github_file>
-    <EOS></EOS>
-    """,
+    "prompt": """<RULE>
+You are a researcher working on machine learning.
+- Tag Descriptions
+    - The text enclosed within the <method_1_text> tag contains an explanation of a method extracted from a machine learning paper.
+    - The text enclosed within the <folder_structure_1> tag shows the folder structure of the corresponding GitHub repository for the paper.
+    - The text enclosed within the <github_file_1> tag contains the code from Python files in the corresponding GitHub repository.
+- Instructions for Extracting Python Code
+    - Extract the relevant sections of Python code from the content enclosed within the <github_file_1> tag based on the method described in the <method_1_text> tag.
+    - Use the folder structure provided within the <folder_structure_1> tag as a reference when extracting the code.
+    - Please extract any code that seems to be related.
+    - Enclose the extracted code within <method_1_code> tags.
+    - If no corresponding code exists, output "No corresponding code exists." In this case, enclose the output within <method_1_code> tags.
+</RULE>
+<method_1_text>
+{method_1_text}
+</method_1_text>
+<folder_structure>
+{folder_structure_1}
+</folder_structure>
+<github_file>
+{github_file_1}
+</github_file>
+<EOS></EOS>""",
 }
 
 
 codeextractor2_setting = {
-    "input": ["folder_structure_2", "github_file_2"],
+    "input": ["method_2_text", "folder_structure_2", "github_file_2"],
     "output": ["method_2_code"],
-    "prompt": """
-    <RULE>
-    The system and the assistant exchange messages.
-    All messages MUST be formatted in XML format. 
-    XML element ::= <tag attribute='value'>content</tag>
-    Tags determine the meaning and function of the content. 
-    The content must not contradict the definition of the tag.
-    </RULE>
-    <TAG name='RULE'>
-    This tag defines rules. The defined content is absolute.
-    Attributes:
-        - role (optional) : A role that should follow the rules. Roles are 'system' or 'assistant'.\
-    Notes:    
-        - The assistant must not use this tag.
-    </TAG>
-    <TAG name='TAG'>
-    This tag defines a tag. The defined content is absolute.
-    Attributes:
-        - name : A tag name.
-    Notes:    
-        - The assistant must not use this tag.
-    </TAG>
-    <TAG name='SYSTEM'>
-    This tag represents a system message.
-    Notes:
-        - The assistant MUST NOT use this tag.
-    </TAG>
-    <TAG name='EOS'>
-    Indicates the end of a message.
-    </TAG>
-    <TAG name='THINK'>
-    This tag represents a thought process.
-    If you use this tag, take a drop deep breath and work on the problem step-by-step.
-    Must be answered in Japanese.
-    Attributes:
-        - label (optional) : A label summarizing the contents.
-    Notes:
-        - The thought process must be described step by step.
-        - Premises in reasoning must be made as explicit as possible. That is, there should be no leaps of reasoning.
-    </TAG>
-    <TAG name='method_2_code'>
-    This tag represents an executable Python code.
-    </TAG>
-    <TAG name='folder_structure'>
-    This tag represents the folder structure of the work folder.
-    This tag does not contain any descriptive text or other information about the folder structure.
-    Notes:
-        - The assistant must not use this tag.
-    </TAG>
-    <TAG name='github_file'>
-    This tag represents code in a Python file.
-    This tag does not contain any descriptive text or other information about the code in the Python file.
-    Notes.
-        - Assistants should not use this tag.
-    </TAG>
-    <TAG name='OBJECTIVE'>
-    This tag represents the purpose.
-    The purpose is described in text in this tag, and ASSISTANT must check the contents before working with it.
-    Notes.
-        - Assistants must not use this tag.
-    </TAG>
-    <RULE role='assistant'>
-    The assistant's role is to extract the Python functions of the proposed method from the paper's github.
-    First, it infers the most important files in the folder from the contents of folder_structure and then extracts the most important classes in the folder from github_file.
-    The assistant uses the  method_2_code tag to answer which class it thinks is the most important in the folder. Also use the THINK tag with folder_structure and the contents of github_file to answer why you think it is important.
-    NOTES.
-        - Assistants must use the THINK tag before using the  method_2_code tag.
-        - The most important features vary from viewpoint to viewpoint. Assistants must find the most distinctive part of the github_file.
-        - A feature is a part of a general function that is ingeniously proposed and implemented.
-        - The functions to be extracted must all be extracted as they are without deleting or modifying the functions in the classes in the github_file.
-        - After this, we will work on decomposing the extracted methods, so keeping this in mind, the most characteristic classes must be found and answered as they are.
-    </RULE>
-    <folder_structure>
-    {folder_structure_2}
-    </folder_structure>
-    <github_file>
-    {github_file_2}
-    </github_file>
-    <EOS></EOS>
-    """,
+    "prompt": """<RULE>
+You are a researcher working on machine learning.
+- Tag Descriptions
+    - The text enclosed within the <method_2_text> tag contains an explanation of a method extracted from a machine learning paper.
+    - The text enclosed within the <folder_structure_2> tag shows the folder structure of the corresponding GitHub repository for the paper.
+    - The text enclosed within the <github_file_2> tag contains the code from Python files in the corresponding GitHub repository.
+- Instructions for Extracting Python Code
+    - Extract the relevant sections of Python code from the content enclosed within the <github_file_2> tag based on the method described in the <method_2_text> tag.
+    - Use the folder structure provided within the <folder_structure_2> tag as a reference when extracting the code.
+    - Please extract any code that seems to be related.
+    - Enclose the extracted code within <method_2_code> tags.
+    - If no corresponding code exists, output "No corresponding code exists." In this case, enclose the output within <method_2_code> tags.
+</RULE>
+<method_2_text>
+{method_2_text}
+</method_2_text>
+<folder_structure>
+{folder_structure_2}
+</folder_structure>
+<github_file>
+{github_file_2}
+</github_file>
+<EOS></EOS>""",
 }

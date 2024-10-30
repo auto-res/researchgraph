@@ -13,7 +13,7 @@ from langgraph.graph import StateGraph
 
 class State(BaseModel):
     keywords: str
-    collection_of_papers: Any
+    collection_of_papers: dict
 
 
 class SemanticScholarNode:
