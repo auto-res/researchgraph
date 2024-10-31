@@ -168,7 +168,7 @@ if __name__ == "__main__":
     parser.add_argument("--train_batch_size", type=int, default=256)
     parser.add_argument("--eval_batch_size", type=int, default=10000)
     parser.add_argument("--learning_rate", type=float, default=3e-4)
-    parser.add_argument("--num_timesteps", type=int, default=100)
+    parser.add_argument("--num_timesteps", type=int, default=200)
     parser.add_argument("--num_train_steps", type=int, default=10000)
     parser.add_argument("--beta_schedule", type=str, default="linear", choices=["linear", "quadratic"])
     parser.add_argument("--embedding_dim", type=int, default=128)
