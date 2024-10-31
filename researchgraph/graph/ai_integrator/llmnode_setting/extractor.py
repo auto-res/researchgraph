@@ -1,24 +1,25 @@
 extractor1_setting = {
-    "input": ["selected_paper_1"],
-    "output": ["github_url_1", "method_1_text"],
-    "prompt": """
-    <rule>
-    
-    </rule>
-    <selected_paper_1>
-    {selected_paper_1}
-    </selected_paper_1>
-""",
+    "input": ["paper_text_1"],
+    "output": ["method_1_text"],
+    "prompt": """<rule>
+You are a researcher working on machine learning.
+The following <paper_text_1> tags enclose the full text data of the paper.
+Please extract the specific method(s) claimed in the paper and output them between the <method_1_text> tags.
+</rule>
+<paper_text_1>
+{paper_text_1}
+</paper_text_1>""",
 }
 extractor2_setting = {
-    "input": ["selected_paper_2"],
-    "output": ["github_url_2", "method_2_text"],
-    "prompt": """
-    <rule>
-    
-    </rule>
-    <selected_paper_2>
-    {selected_paper_2}
-    </selected_paper_2>
-""",
+    "input": ["paper_text_2"],
+    "output": ["method_2_text"],
+    "prompt": """<rule>
+You are a researcher working on machine learning.
+The following <paper_text_2> tags enclose the full text data of the paper.
+Please extract the specific method(s) claimed in the paper and output them between the <method_2_text> tags.
+</rule>
+<paper_text_2>
+{paper_text_2}
+</paper_text_2>
+<EOS></EOS>""",
 }
