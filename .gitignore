@@ -168,3 +168,4 @@ data/*
 logs/*
 researchgraph.egg-info/*
 .gitmessage.txt
+.aider*

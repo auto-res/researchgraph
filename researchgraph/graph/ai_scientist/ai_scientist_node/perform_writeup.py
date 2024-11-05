@@ -1,134 +1,13 @@
 import os
 import os.path as osp
-import shutil
-import subprocess
-from typing import Optional, Tuple
-from ai_scientist.generate_ideas import search_for_papers
-from ai_scientist.llm import get_response_from_llm, extract_json_between_markers
-import re
 import json
-
-from typing import Dict, Any
-
+from typing import Any, Optional
 from aider.coders import Coder
 from aider.models import Model
 from aider.io import InputOutput
-
-
-# GENERATE LATEX
-def generate_latex(coder, folder_name, pdf_file, timeout=30, num_error_corrections=5):
-    folder = osp.abspath(folder_name)
-    cwd = osp.join(folder, "latex")  # Fixed potential issue with path
-    writeup_file = osp.join(cwd, "template.tex")
-
-    # Check all references are valid and in the references.bib file
-    with open(writeup_file, "r") as f:
-        tex_text = f.read()
-    cites = re.findall(r"\\cite[a-z]*{([^}]*)}", tex_text)
-    references_bib = re.search(
-        r"\\begin{filecontents}{references.bib}(.*?)\\end{filecontents}",
-        tex_text,
-        re.DOTALL,
-    )
-    if references_bib is None:
-        print("No references.bib found in template.tex")
-        return
-    bib_text = references_bib.group(1)
-    cites = [cite.strip() for item in cites for cite in item.split(",")]
-    for cite in cites:
-        if cite not in bib_text:
-            print(f"Reference {cite} not found in references.")
-            prompt = f"""Reference {cite} not found in references.bib. Is this included under a different name?
-If so, please modify the citation in template.tex to match the name in references.bib at the top. Otherwise, remove the cite."""
-            coder.run(prompt)
-
-    # Check all included figures are actually in the directory.
-    with open(writeup_file, "r") as f:
-        tex_text = f.read()
-    referenced_figs = re.findall(r"\\includegraphics.*?{(.*?)}", tex_text)
-    all_figs = [f for f in os.listdir(folder) if f.endswith(".png")]
-    for figure in referenced_figs:
-        if figure not in all_figs:
-            print(f"Figure {figure} not found in directory.")
-            prompt = f"""The image {figure} not found in the directory. The images in the directory are: {all_figs}.
-Please ensure that the figure is in the directory and that the filename is correct. Check the notes to see what each figure contains."""
-            coder.run(prompt)
-
-    # Remove duplicate figures.
-    with open(writeup_file, "r") as f:
-        tex_text = f.read()
-    referenced_figs = re.findall(r"\\includegraphics.*?{(.*?)}", tex_text)
-    duplicates = {x for x in referenced_figs if referenced_figs.count(x) > 1}
-    if duplicates:
-        for dup in duplicates:
-            print(f"Duplicate figure found: {dup}.")
-            prompt = f"""Duplicate figures found: {dup}. Ensure any figure is only included once.
-If duplicated, identify the best location for the figure and remove any other."""
-            coder.run(prompt)
-
-    # Remove duplicate section headers.
-    with open(writeup_file, "r") as f:
-        tex_text = f.read()
-    sections = re.findall(r"\\section{([^}]*)}", tex_text)
-    duplicates = {x for x in sections if sections.count(x) > 1}
-    if duplicates:
-        for dup in duplicates:
-            print(f"Duplicate section header found: {dup}")
-            prompt = f"""Duplicate section header found: {dup}. Ensure any section header is declared once.
-If duplicated, identify the best location for the section header and remove any other."""
-            coder.run(prompt)
-
-    # Iteratively fix any LaTeX bugs
-    for i in range(num_error_corrections):
-        # Filter trivial bugs in chktex
-        check_output = os.popen(f"chktex {writeup_file} -q -n2 -n24 -n13 -n1").read()
-        if check_output:
-            prompt = f"""Please fix the following LaTeX errors in `template.tex` guided by the output of `chktek`:
-{check_output}.
-
-Make the minimal fix required and do not remove or change any packages.
-Pay attention to any accidental uses of HTML syntax, e.g. </end instead of \\end.
-"""
-            coder.run(prompt)
-        else:
-            break
-    compile_latex(cwd, pdf_file, timeout=timeout)
-
-
-def compile_latex(cwd, pdf_file, timeout=30):
-    print("GENERATING LATEX")
-
-    commands = [
-        ["pdflatex", "-interaction=nonstopmode", "template.tex"],
-        ["bibtex", "template"],
-        ["pdflatex", "-interaction=nonstopmode", "template.tex"],
-        ["pdflatex", "-interaction=nonstopmode", "template.tex"],
-    ]
-
-    for command in commands:
-        try:
-            result = subprocess.run(
-                command,
-                cwd=cwd,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-                timeout=timeout,
-            )
-            print("Standard Output:\n", result.stdout)
-            print("Standard Error:\n", result.stderr)
-        except subprocess.TimeoutExpired:
-            print(f"Latex timed out after {timeout} seconds")
-        except subprocess.CalledProcessError as e:
-            print(f"Error running command {' '.join(command)}: {e}")
-
-    print("FINISHED GENERATING LATEX")
-
-    # Attempt to move the PDF to the desired location
-    try:
-        shutil.move(osp.join(cwd, "template.pdf"), pdf_file)
-    except FileNotFoundError:
-        print("Failed to rename PDF.")
+from researchgraph.writingnode.texnode import TextNode
+from researchgraph.graph.ai_scientist.ai_scientist_node.generate_ideas import search_for_papers
+from researchgraph.graph.ai_scientist.ai_scientist_node.llm import get_response_from_llm, extract_json_between_markers
 
 
 per_section_tips = {
@@ -297,124 +176,26 @@ Do not select papers that are already in the `references.bib` file at the top of
 This JSON will be automatically parsed, so ensure the format is precise."""
 
 
-def get_citation_aider_prompt(
-    client, model, draft, current_round, total_rounds
-) -> Tuple[Optional[str], bool]:
-    msg_history = []
-    try:
-        text, msg_history = get_response_from_llm(
-            citation_first_prompt.format(
-                draft=draft, current_round=current_round, total_rounds=total_rounds
-            ),
-            client=client,
-            model=model,
-            system_message=citation_system_msg.format(total_rounds=total_rounds),
-            msg_history=msg_history,
-        )
-        if "No more citations needed" in text:
-            print("No more citations needed.")
-            return None, True
-
-        ## PARSE OUTPUT
-        json_output = extract_json_between_markers(text)
-        assert json_output is not None, "Failed to extract JSON from LLM output"
-        query = json_output["Query"]
-        papers = search_for_papers(query)
-    except Exception as e:
-        print(f"Error: {e}")
-        return None, False
-
-    if papers is None:
-        print("No papers found.")
-        return None, False
-
-    paper_strings = []
-    for i, paper in enumerate(papers):
-        paper_strings.append(
-            """{i}: {title}. {authors}. {venue}, {year}.\nAbstract: {abstract}""".format(
-                i=i,
-                title=paper["title"],
-                authors=paper["authors"],
-                venue=paper["venue"],
-                year=paper["year"],
-                abstract=paper["abstract"],
-            )
-        )
-    papers_str = "\n\n".join(paper_strings)
-
-    try:
-        text, msg_history = get_response_from_llm(
-            citation_second_prompt.format(
-                papers=papers_str,
-                current_round=current_round,
-                total_rounds=total_rounds,
-            ),
-            client=client,
-            model=model,
-            system_message=citation_system_msg.format(total_rounds=total_rounds),
-            msg_history=msg_history,
-        )
-        if "Do not add any" in text:
-            print("Do not add any.")
-            return None, False
-        ## PARSE OUTPUT
-        json_output = extract_json_between_markers(text)
-        assert json_output is not None, "Failed to extract JSON from LLM output"
-        desc = json_output["Description"]
-        selected_papers = json_output["Selected"]
-        selected_papers = str(selected_papers)
-
-        # convert to list
-        if selected_papers != "[]":
-            selected_papers = list(map(int, selected_papers.strip("[]").split(",")))
-            assert all(
-                [0 <= i < len(papers) for i in selected_papers]
-            ), "Invalid paper index"
-            bibtexs = [papers[i]["citationStyles"]["bibtex"] for i in selected_papers]
-            bibtex_string = "\n".join(bibtexs)
-        else:
-            return None, False
-
-    except Exception as e:
-        print(f"Error: {e}")
-        return None, False
-
-    # Add citation to draft
-    aider_format = '''The following citations have just been added to the end of the `references.bib` file definition at the top of the file:
-"""
-{bibtex}
-"""
-You do not need to add them yourself.
-ABSOLUTELY DO NOT ADD IT AGAIN!!!
-
-Make the proposed change to the draft incorporating these new cites:
-{description}
-
-Use your judgment for whether these should be cited anywhere else.
-Make sure that any citation precisely matches the name in `references.bib`. Change its name to the correct name in the bibtex if needed.
-Ensure the citation is well-integrated into the text.'''
-
-    aider_prompt = (
-        aider_format.format(bibtex=bibtex_string, description=desc)
-        + """\n You must use \cite or \citet to reference papers, do not manually type out author names."""
-    )
-    return aider_prompt, False
-
 
 class WriteupComponent:
     def __init__(
-        self, writeup_file: str, exp_file: str, notes: str, model: str, io: InputOutput
+        self, 
+        writeup_file: str, 
+        exp_file: str, 
+        notes: str, 
+        model: str, 
+        io: InputOutput
     ):
-        fnames = [exp_file, writeup_file, notes]
         if model == "deepseek-coder-v2-0724":
             main_model = Model("deepseek/deepseek-coder")
         elif model == "llama3.1-405b":
             main_model = Model("openrouter/meta-llama/llama-3.1-405b-instruct")
         else:
             main_model = Model(model)
+
         self.coder = Coder.create(
             main_model=main_model,
-            fnames=fnames,
+            fnames=[exp_file, writeup_file, notes],
             io=io,
             stream=False,
             use_git=False,
@@ -424,25 +205,27 @@ class WriteupComponent:
     # PERFORM WRITEUP
     def __call__(
         self,
-        idea: Dict[str, Any],
+        idea: dict[str, Any],
         folder_name: str,
-        memory_: Dict[str, Any],
+        memory_: dict[str, Any],
         cite_client: Any,
         cite_model: str,
         num_cite_rounds=20,
-    ):
+    ) -> dict[str, Any]:
+        
         memory_["writeup"] = False
+
         # CURRENTLY ASSUMES LATEX
         abstract_prompt = f"""We've provided the `latex/template.tex` file to the project. We will be filling it in section by section.
 
-    First, please fill in the "Title" and "Abstract" sections of the writeup.
+        First, please fill in the "Title" and "Abstract" sections of the writeup.
 
-    Some tips are provided below:
-    {per_section_tips["Abstract"]}
+        Some tips are provided below:
+        {per_section_tips["Abstract"]}
 
-    Before every paragraph, please include a brief description of what you plan to write in that paragraph in a comment.
+        Before every paragraph, please include a brief description of what you plan to write in that paragraph in a comment.
 
-    Be sure to first name the file and use *SEARCH/REPLACE* blocks to perform these edits.
+        Be sure to first name the file and use *SEARCH/REPLACE* blocks to perform these edits.
         """
         coder_out = self.coder.run(abstract_prompt)
         coder_out = self.coder.run(
@@ -450,6 +233,8 @@ class WriteupComponent:
             .replace(r"{{", "{")
             .replace(r"}}", "}")
         )
+
+        # Fill each section iteratively
         for section in [
             "Introduction",
             "Background",
@@ -459,18 +244,18 @@ class WriteupComponent:
             "Conclusion",
         ]:
             section_prompt = f"""Please fill in the {section} of the writeup. Some tips are provided below:
-    {per_section_tips[section]}
+            {per_section_tips[section]}
 
-    Be sure to use \cite or \citet where relevant, referring to the works provided in the file.
-    Do not cite anything that is not already in `references.bib`. Do not add any new entries to this.
+            Be sure to use \cite or \citet where relevant, referring to the works provided in the file.
+            Do not cite anything that is not already in `references.bib`. Do not add any new entries to this.
 
-    Keep the experimental results (figures and tables) only in the Results section, and make sure that any captions are filled in.
-    In this pass, do not reference anything in later sections of the paper.
+            Keep the experimental results (figures and tables) only in the Results section, and make sure that any captions are filled in.
+            In this pass, do not reference anything in later sections of the paper.
 
-    Before every paragraph, please include a brief description of what you plan to write in that paragraph in a comment.
+            Before every paragraph, please include a brief description of what you plan to write in that paragraph in a comment.
 
-    Be sure to first name the file and use *SEARCH/REPLACE* blocks to perform these edits.
-    """
+            Be sure to first name the file and use *SEARCH/REPLACE* blocks to perform these edits.
+            """
             coder_out = self.coder.run(section_prompt)
             coder_out = self.coder.run(
                 refinement_prompt.format(section=section)
@@ -478,49 +263,33 @@ class WriteupComponent:
                 .replace(r"}}", "}")
             )
 
-        # SKETCH THE RELATED WORK
-        section_prompt = f"""Please fill in the Related Work of the writeup. Some tips are provided below:
+        # Related Work Section
+        related_work_prompt = f"""Please fill in the Related Work of the writeup. Some tips are provided below:
 
-    {per_section_tips["Related Work"]}
+        {per_section_tips["Related Work"]}
 
-    For this section, very briefly sketch out the structure of the section, and clearly indicate what papers you intend to include.
-    Do this all in LaTeX comments using %.
-    The related work should be concise, only plan to discuss the most relevant work.
-    Do not modify `references.bib` to add any new citations, this will be filled in at a later stage.
+        For this section, very briefly sketch out the structure of the section, and clearly indicate what papers you intend to include.
+        Do this all in LaTeX comments using %.
+        The related work should be concise, only plan to discuss the most relevant work.
+        Do not modify `references.bib` to add any new citations, this will be filled in at a later stage.
 
-    Be sure to first name the file and use *SEARCH/REPLACE* blocks to perform these edits.
+        Be sure to first name the file and use *SEARCH/REPLACE* blocks to perform these edits.
         """
-        coder_out = self.coder.run(section_prompt)
-
-        # Fill paper with cites.
-        for _ in range(num_cite_rounds):
-            with open(osp.join(folder_name, "latex", "template.tex"), "r") as f:
-                draft = f.read()
-            prompt, done = get_citation_aider_prompt(
-                cite_client, cite_model, draft, _, num_cite_rounds
-            )
-            if done:
-                break
-            if prompt is not None:
-                # extract bibtex string
-                bibtex_string = prompt.split('"""')[1]
-                # insert this into draft before the "\end{filecontents}" line
-                search_str = r"\end{filecontents}"
-                draft = draft.replace(search_str, f"{bibtex_string}{search_str}")
-                with open(osp.join(folder_name, "latex", "template.tex"), "w") as f:
-                    f.write(draft)
-                coder_out = self.coder.run(prompt)
-
+        coder_out = self.coder.run(related_work_prompt)
         coder_out = self.coder.run(
             refinement_prompt.format(section="Related Work")
             .replace(r"{{", "{")
             .replace(r"}}", "}")
         )
 
+        # Fill paper with citations
+        self.add_citations(folder_name, cite_client, cite_model, num_cite_rounds)
+
+        coder_out_dict = {}
         ## SECOND REFINEMENT LOOP
         self.coder.run(
             """Great job! Now that there is a complete draft of the entire paper, let's refine each section again.
-    First, re-think the Title if necessary. Keep this concise and descriptive of the paper's concept, but try by creative with it."""
+        First, re-think the Title if necessary. Keep this concise and descriptive of the paper's concept, but try by creative with it."""
         )
         for section in [
             "Abstract",
@@ -539,21 +308,133 @@ class WriteupComponent:
                 .replace(r"{{", "{")
                 .replace(r"}}", "}")
             )
+            coder_out_dict[section] = coder_out
 
-        generate_latex(self.coder, folder_name, f"{folder_name}/{idea['Name']}.pdf")
+        memory_["writeup_content"] = coder_out_dict
         memory_["is_writeup_successful"] = True
-        return memory_, coder_out
+        return memory_
 
+    def add_citations(self, folder_name: str, cite_client: Any, cite_model: str, num_cite_rounds: int):
+        for _ in range(num_cite_rounds):
+                with open(osp.join(folder_name, "latex", "template.tex"), "r") as f:
+                    draft = f.read()
+                prompt, done = self.get_citation_aider_prompt(
+                    cite_client, cite_model, draft, _, num_cite_rounds
+                )
+                if done:
+                    break
+                if prompt is not None:
+                    # extract bibtex string
+                    bibtex_string = prompt.split('"""')[1]
+                    # insert this into draft before the "\end{filecontents}" line
+                    search_str = r"\end{filecontents}"
+                    draft = draft.replace(search_str, f"{bibtex_string}{search_str}")
+                    with open(osp.join(folder_name, "latex", "template.tex"), "w") as f:
+                        f.write(draft)
+                    self.coder_out = self.coder.run(prompt)
 
-def perform_improvement(review, coder):
-    improvement_prompt = '''The following review has been created for your research paper:
-"""
-{review}
-"""
+    def get_citation_aider_prompt(
+        client, model, draft, current_round, total_rounds
+    ) -> tuple[Optional[str], bool]:
+        msg_history = []
+        try:
+            text, msg_history = get_response_from_llm(
+                citation_first_prompt.format(
+                    draft=draft, current_round=current_round, total_rounds=total_rounds
+                ),
+                client=client,
+                model=model,
+                system_message=citation_system_msg.format(total_rounds=total_rounds),
+                msg_history=msg_history,
+            )
+            if "No more citations needed" in text:
+                print("No more citations needed.")
+                return None, True
 
-Improve the text using the review.'''.format(review=json.dumps(review))
-    coder_out = coder.run(improvement_prompt)
-    return coder_out
+            ## PARSE OUTPUT
+            json_output = extract_json_between_markers(text)
+            assert json_output is not None, "Failed to extract JSON from LLM output"
+            query = json_output["Query"]
+            papers = search_for_papers(query)
+        except Exception as e:
+            print(f"Error: {e}")
+            return None, False
+
+        if papers is None:
+            print("No papers found.")
+            return None, False
+
+        paper_strings = []
+        for i, paper in enumerate(papers):
+            paper_strings.append(
+                """{i}: {title}. {authors}. {venue}, {year}.\nAbstract: {abstract}""".format(
+                    i=i,
+                    title=paper["title"],
+                    authors=paper["authors"],
+                    venue=paper["venue"],
+                    year=paper["year"],
+                    abstract=paper["abstract"],
+                )
+            )
+        papers_str = "\n\n".join(paper_strings)
+
+        try:
+            text, msg_history = get_response_from_llm(
+                citation_second_prompt.format(
+                    papers=papers_str,
+                    current_round=current_round,
+                    total_rounds=total_rounds,
+                ),
+                client=client,
+                model=model,
+                system_message=citation_system_msg.format(total_rounds=total_rounds),
+                msg_history=msg_history,
+            )
+            if "Do not add any" in text:
+                print("Do not add any.")
+                return None, False
+            ## PARSE OUTPUT
+            json_output = extract_json_between_markers(text)
+            assert json_output is not None, "Failed to extract JSON from LLM output"
+            desc = json_output["Description"]
+            selected_papers = json_output["Selected"]
+            selected_papers = str(selected_papers)
+
+            # convert to list
+            if selected_papers != "[]":
+                selected_papers = list(map(int, selected_papers.strip("[]").split(",")))
+                assert all(
+                    [0 <= i < len(papers) for i in selected_papers]
+                ), "Invalid paper index"
+                bibtexs = [papers[i]["citationStyles"]["bibtex"] for i in selected_papers]
+                bibtex_string = "\n".join(bibtexs)
+            else:
+                return None, False
+
+        except Exception as e:
+            print(f"Error: {e}")
+            return None, False
+
+        # Add citation to draft
+        aider_format = '''The following citations have just been added to the end of the `references.bib` file definition at the top of the file:
+    """
+    {bibtex}
+    """
+    You do not need to add them yourself.
+    ABSOLUTELY DO NOT ADD IT AGAIN!!!
+
+    Make the proposed change to the draft incorporating these new cites:
+    {description}
+
+    Use your judgment for whether these should be cited anywhere else.
+    Make sure that any citation precisely matches the name in `references.bib`. Change its name to the correct name in the bibtex if needed.
+    Ensure the citation is well-integrated into the text.'''
+
+        aider_prompt = (
+            aider_format.format(bibtex=bibtex_string, description=desc)
+            + """\n You must use \cite or \citet to reference papers, do not manually type out author names."""
+        )
+        return aider_prompt, False
 
 
 class DraftImprovementComponent:
@@ -576,20 +457,25 @@ class DraftImprovementComponent:
             edit_format="diff",
         )
 
-    def __call__(
-        self,
-        review: str,
-        folder_name: str,
-        idea: Dict[str, Any],
-        memory_: Dict[str, Any],
-    ):
-        perform_improvement(review, self.coder)
-        generate_latex(
-            self.coder, folder_name, f"{folder_name}/{idea['Name']}_improved.pdf"
-        )
+    def perform_improvement(self, review: str, memory_: dict[str, Any]) -> dict[str, Any]:
+        improvement_prompt = '''The following review has been created for your research paper:
+        """
+        {review}
+        """
+
+        Improve the text using the review.'''.format(review=json.dumps(review))
+        coder_out = self.coder.run(improvement_prompt)
+        memory_["improved_writeup_content"] = coder_out
         memory_["is_improvement_successful"] = True
         return memory_
 
+    def __call__(
+        self,
+        review: str,
+        memory_: dict[str, Any],
+    ):
+        return self.perform_improvement(review, memory_)
+    
 
 # if __name__ == "__main__":
 #     from aider.coders import Coder
