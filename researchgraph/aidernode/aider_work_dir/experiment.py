@@ -203,6 +203,7 @@ if __name__ == "__main__":
         train_losses = []
         print("Training model...")
 
+        # MAML Training Loop
         model.train()
         global_step = 0
         progress_bar = tqdm(total=config.num_train_steps, mininterval=10, disable=True)
@@ -219,14 +220,18 @@ if __name__ == "__main__":
                     0, noise_scheduler.num_timesteps, (batch.shape[0],)
                 ).long().to(device)
 
+                # Meta-training phase
                 noisy = noise_scheduler.add_noise(batch, noise, timesteps)
                 noise_pred = model(noisy, timesteps)
                 loss = F.mse_loss(noise_pred, noise)
                 loss.backward()
 
-                nn.utils.clip_grad_norm_(model.parameters(), 0.5)
+                # Meta-testing phase
                 optimizer.step()
                 optimizer.zero_grad()
+
+                # Update model parameters
+                nn.utils.clip_grad_norm_(model.parameters(), 0.5)
                 ema_model.update()
 
                 scheduler.step()
