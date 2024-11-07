@@ -5,7 +5,7 @@ from typing import Any, Optional
 from aider.coders import Coder
 from aider.models import Model
 from aider.io import InputOutput
-from researchgraph.writingnode.texnode import TextNode
+from dataclasses import dataclass
 from researchgraph.graph.ai_scientist.ai_scientist_node.generate_ideas import search_for_papers
 from researchgraph.graph.ai_scientist.ai_scientist_node.llm import get_response_from_llm, extract_json_between_markers
 
@@ -176,8 +176,100 @@ Do not select papers that are already in the `references.bib` file at the top of
 This JSON will be automatically parsed, so ensure the format is precise."""
 
 
+@dataclass
+class CitationContext:
+    client: Any
+    model: str
+    draft: str
+    current_round: int
+    total_rounds: int
 
-class WriteupComponent:
+
+class ComponentBase:
+    def __init__(self, writeup_file: str, exp_file: str, notes: str, model: str, io: InputOutput):
+        self.main_model = self.select_model(model)
+        self.coder = Coder.create(
+            main_model=self.main_model,
+            fnames=[exp_file, writeup_file, notes],
+            io=io,
+            stream=False,
+            use_git=False,
+            edit_format="diff",
+        )
+
+    def select_model(self, model: str) -> Model:
+        model_mapping = {
+            "deepseek-coder-v2-0724": "deepseek/deepseek-coder",
+            "llama3.1-405b": "openrouter/meta-llama/llama-3.1-405b-instruct"
+        }
+        return Model(model_mapping.get(model, model))
+
+
+class BaseSection:
+    def __init__(self, coder: Coder, section_name: str, section_key: str):
+        self.coder = coder
+        self.section_name = section_name
+        self.section_key = section_key
+
+    def generate_prompt(self, prompt_type: str) -> str:
+        prompt_templates = {
+            "write": f"""Please fill in the {self.section_name} of the writeup. Some tips are provided below:
+            {per_section_tips[self.section_key]}
+
+            Be sure to use \cite or \citet where relevant, referring to the works provided in the file.
+            Do not cite anything that is not already in `references.bib`. Do not add any new entries to this.
+
+            Keep the experimental results (figures and tables) only in the Results section, and make sure that any captions are filled in.
+            In this pass, do not reference anything in later sections of the paper.
+
+            Before every paragraph, please include a brief description of what you plan to write in that paragraph in a comment.
+
+            Be sure to first name the file and use *SEARCH/REPLACE* blocks to perform these edits.
+            """, 
+            "refine": refinement_prompt.format(section=self.section_key), 
+            "second_refine": second_refinement_prompt.format(section=self.section_key, tips=per_section_tips[self.section_key]), 
+        }
+        
+        if prompt_type not in prompt_templates:
+            raise ValueError("Invalid prompt type specified.")
+        
+        prompt = prompt_templates[prompt_type]
+        return prompt.replace(r"{{", "{").replace(r"}}", "}")
+
+    def write(self):
+        prompt = self.generate_prompt("write")
+        self.coder.run(prompt)
+
+    def refine(self):
+        prompt = self.generate_prompt("refine")
+        self.coder.run(prompt)
+
+    def second_refine(self) -> Any:
+        prompt = self.generate_prompt("second_refine")
+        return self.coder.run(prompt)
+        
+
+class RelatedWorkSection(BaseSection):
+    def __init__(self, coder: Coder):
+        super().__init__(coder, "Related Work", "Related Work")
+
+    def generate_prompt(self, prompt_type) -> str:
+        if prompt_type == "write":
+            return f"""Please fill in the Related Work of the writeup. Some tips are provided below:
+
+            {per_section_tips["Related Work"]}
+
+            For this section, very briefly sketch out the structure of the section, and clearly indicate what papers you intend to include.
+            Do this all in LaTeX comments using %.
+            The related work should be concise, only plan to discuss the most relevant work.
+            Do not modify `references.bib` to add any new citations, this will be filled in at a later stage.
+
+            Be sure to first name the file and use *SEARCH/REPLACE* blocks to perform these edits.
+            """
+        return super().generate_prompt(prompt_type)
+
+
+class WriteupComponent(ComponentBase):
     def __init__(
         self, 
         writeup_file: str, 
@@ -186,21 +278,35 @@ class WriteupComponent:
         model: str, 
         io: InputOutput
     ):
-        if model == "deepseek-coder-v2-0724":
-            main_model = Model("deepseek/deepseek-coder")
-        elif model == "llama3.1-405b":
-            main_model = Model("openrouter/meta-llama/llama-3.1-405b-instruct")
-        else:
-            main_model = Model(model)
+        super().__init__(writeup_file, exp_file, notes, model, io)
 
-        self.coder = Coder.create(
-            main_model=main_model,
-            fnames=[exp_file, writeup_file, notes],
-            io=io,
-            stream=False,
-            use_git=False,
-            edit_format="diff",
-        )
+        self.sections = {
+            "Abstract": BaseSection(self.coder, "Title and Abstract", "Abstract"),
+            "Introduction": BaseSection(self.coder, "Introduction", "Introduction"),
+            "Background": BaseSection(self.coder, "Background", "Background"),
+            "Method": BaseSection(self.coder, "Method", "Method"),
+            "Experimental Setup": BaseSection(self.coder, "Experimental Setup", "Experimental Setup"),
+            "Results": BaseSection(self.coder, "Results", "Results"),
+            "Conclusion": BaseSection(self.coder, "Conclusion", "Conclusion"),
+            "Related Work": RelatedWorkSection(self.coder),
+        }
+
+    def perform_writeup(self):
+        for section_name, section in self.sections.items():
+            try:
+                section.write()
+            except Exception as e:
+                print(f"Error in section '{section_name}': {e}")
+
+    def perform_refinement(self):
+        for section in self.sections.values():
+            section.refine()
+
+    def perform_second_refinement(self) -> dict[str, Any]:
+        results = {}
+        for section_name, section in self.sections.items():
+            results[section_name] = section.second_refine()
+        return results
 
     # PERFORM WRITEUP
     def __call__(
@@ -215,136 +321,56 @@ class WriteupComponent:
         
         memory_["writeup"] = False
 
-        # CURRENTLY ASSUMES LATEX
-        abstract_prompt = f"""We've provided the `latex/template.tex` file to the project. We will be filling it in section by section.
+        self.perform_writeup()
+        self.perform_refinement()
+        second_refinement_results = self.perform_second_refinement()
 
-        First, please fill in the "Title" and "Abstract" sections of the writeup.
+        memory_["writeup_content"] = second_refinement_results
+        memory_["is_writeup_successful"] = True
 
-        Some tips are provided below:
-        {per_section_tips["Abstract"]}
-
-        Before every paragraph, please include a brief description of what you plan to write in that paragraph in a comment.
-
-        Be sure to first name the file and use *SEARCH/REPLACE* blocks to perform these edits.
-        """
-        coder_out = self.coder.run(abstract_prompt)
-        coder_out = self.coder.run(
-            refinement_prompt.format(section="Abstract")
-            .replace(r"{{", "{")
-            .replace(r"}}", "}")
-        )
-
-        # Fill each section iteratively
-        for section in [
-            "Introduction",
-            "Background",
-            "Method",
-            "Experimental Setup",
-            "Results",
-            "Conclusion",
-        ]:
-            section_prompt = f"""Please fill in the {section} of the writeup. Some tips are provided below:
-            {per_section_tips[section]}
-
-            Be sure to use \cite or \citet where relevant, referring to the works provided in the file.
-            Do not cite anything that is not already in `references.bib`. Do not add any new entries to this.
-
-            Keep the experimental results (figures and tables) only in the Results section, and make sure that any captions are filled in.
-            In this pass, do not reference anything in later sections of the paper.
-
-            Before every paragraph, please include a brief description of what you plan to write in that paragraph in a comment.
-
-            Be sure to first name the file and use *SEARCH/REPLACE* blocks to perform these edits.
-            """
-            coder_out = self.coder.run(section_prompt)
-            coder_out = self.coder.run(
-                refinement_prompt.format(section=section)
-                .replace(r"{{", "{")
-                .replace(r"}}", "}")
-            )
-
-        # Related Work Section
-        related_work_prompt = f"""Please fill in the Related Work of the writeup. Some tips are provided below:
-
-        {per_section_tips["Related Work"]}
-
-        For this section, very briefly sketch out the structure of the section, and clearly indicate what papers you intend to include.
-        Do this all in LaTeX comments using %.
-        The related work should be concise, only plan to discuss the most relevant work.
-        Do not modify `references.bib` to add any new citations, this will be filled in at a later stage.
-
-        Be sure to first name the file and use *SEARCH/REPLACE* blocks to perform these edits.
-        """
-        coder_out = self.coder.run(related_work_prompt)
-        coder_out = self.coder.run(
-            refinement_prompt.format(section="Related Work")
-            .replace(r"{{", "{")
-            .replace(r"}}", "}")
-        )
-
-        # Fill paper with citations
         self.add_citations(folder_name, cite_client, cite_model, num_cite_rounds)
 
-        coder_out_dict = {}
-        ## SECOND REFINEMENT LOOP
-        self.coder.run(
-            """Great job! Now that there is a complete draft of the entire paper, let's refine each section again.
-        First, re-think the Title if necessary. Keep this concise and descriptive of the paper's concept, but try by creative with it."""
-        )
-        for section in [
-            "Abstract",
-            "Related Work",
-            "Introduction",
-            "Background",
-            "Method",
-            "Experimental Setup",
-            "Results",
-            "Conclusion",
-        ]:
-            coder_out = self.coder.run(
-                second_refinement_prompt.format(
-                    section=section, tips=per_section_tips[section]
-                )
-                .replace(r"{{", "{")
-                .replace(r"}}", "}")
-            )
-            coder_out_dict[section] = coder_out
-
-        memory_["writeup_content"] = coder_out_dict
-        memory_["is_writeup_successful"] = True
         return memory_
 
     def add_citations(self, folder_name: str, cite_client: Any, cite_model: str, num_cite_rounds: int):
-        for _ in range(num_cite_rounds):
-                with open(osp.join(folder_name, "latex", "template.tex"), "r") as f:
-                    draft = f.read()
-                prompt, done = self.get_citation_aider_prompt(
-                    cite_client, cite_model, draft, _, num_cite_rounds
-                )
-                if done:
-                    break
-                if prompt is not None:
-                    # extract bibtex string
-                    bibtex_string = prompt.split('"""')[1]
-                    # insert this into draft before the "\end{filecontents}" line
-                    search_str = r"\end{filecontents}"
-                    draft = draft.replace(search_str, f"{bibtex_string}{search_str}")
-                    with open(osp.join(folder_name, "latex", "template.tex"), "w") as f:
-                        f.write(draft)
-                    self.coder_out = self.coder.run(prompt)
+        for round_num in range(num_cite_rounds):
+            file_path = osp.join(folder_name, "latex", "template.tex")
+            with open(file_path, "r") as f:
+                draft = f.read()
 
-    def get_citation_aider_prompt(
-        client, model, draft, current_round, total_rounds
-    ) -> tuple[Optional[str], bool]:
+            context = CitationContext(
+                client=cite_client,
+                model=cite_model,
+                draft=draft,
+                current_round=round_num,
+                total_rounds=num_cite_rounds
+            )
+            prompt, done = self.get_citation_aider_prompt(context)
+            if done:
+                break
+            
+            if prompt is not None:
+                # extract bibtex string
+                bibtex_string = prompt.split('"""')[1]
+                # insert this into draft before the "\end{filecontents}" line
+                search_str = r"\end{filecontents}"
+                draft = draft.replace(search_str, f"{bibtex_string}{search_str}")
+
+                with open(file_path, "w") as f:
+                    f.write(draft)
+
+                self.coder_out = self.coder.run(prompt)
+
+    def get_citation_aider_prompt(self, context: CitationContext) -> tuple[Optional[str], bool]:
         msg_history = []
         try:
             text, msg_history = get_response_from_llm(
                 citation_first_prompt.format(
-                    draft=draft, current_round=current_round, total_rounds=total_rounds
+                    draft=context.draft, current_round=context.current_round, total_rounds=context.total_rounds
                 ),
-                client=client,
-                model=model,
-                system_message=citation_system_msg.format(total_rounds=total_rounds),
+                client=context.client,
+                model=context.model,
+                system_message=citation_system_msg.format(total_rounds=context.total_rounds),
                 msg_history=msg_history,
             )
             if "No more citations needed" in text:
@@ -382,12 +408,12 @@ class WriteupComponent:
             text, msg_history = get_response_from_llm(
                 citation_second_prompt.format(
                     papers=papers_str,
-                    current_round=current_round,
-                    total_rounds=total_rounds,
+                    current_round=context.current_round,
+                    total_rounds=context.total_rounds,
                 ),
-                client=client,
-                model=model,
-                system_message=citation_system_msg.format(total_rounds=total_rounds),
+                client=context.client,
+                model=context.model,
+                system_message=citation_system_msg.format(total_rounds=context.total_rounds),
                 msg_history=msg_history,
             )
             if "Do not add any" in text:
@@ -437,25 +463,16 @@ class WriteupComponent:
         return aider_prompt, False
 
 
-class DraftImprovementComponent:
+class DraftImprovementComponent(ComponentBase):
     def __init__(
-        self, writeup_file: str, exp_file: str, notes: str, model: str, io: InputOutput
+        self, 
+        writeup_file: str, 
+        exp_file: str, 
+        notes: str, 
+        model: str, 
+        io: InputOutput
     ):
-        fnames = [exp_file, writeup_file, notes]
-        if model == "deepseek-coder-v2-0724":
-            main_model = Model("deepseek/deepseek-coder")
-        elif model == "llama3.1-405b":
-            main_model = Model("openrouter/meta-llama/llama-3.1-405b-instruct")
-        else:
-            main_model = Model(model)
-        self.coder = Coder.create(
-            main_model=main_model,
-            fnames=fnames,
-            io=io,
-            stream=False,
-            use_git=False,
-            edit_format="diff",
-        )
+        super().__init__(writeup_file, exp_file, notes, model, io)    
 
     def perform_improvement(self, review: str, memory_: dict[str, Any]) -> dict[str, Any]:
         improvement_prompt = '''The following review has been created for your research paper:
@@ -473,9 +490,8 @@ class DraftImprovementComponent:
         self,
         review: str,
         memory_: dict[str, Any],
-    ):
+    ) -> dict[str, Any]:
         return self.perform_improvement(review, memory_)
-    
 
 # if __name__ == "__main__":
 #     from aider.coders import Coder

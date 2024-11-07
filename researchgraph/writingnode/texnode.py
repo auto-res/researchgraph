@@ -77,11 +77,11 @@ class LatexUtils:
             check_output = os.popen(f"chktex {writeup_file} -q -n2 -n24 -n13 -n1").read()
             if check_output:
                 prompt = f"""Please fix the following LaTeX errors in `template.tex` guided by the output of `chktek`:
-        {check_output}.
+                {check_output}.
 
-        Make the minimal fix required and do not remove or change any packages.
-        Pay attention to any accidental uses of HTML syntax, e.g. </end instead of \\end.
-        """
+                Make the minimal fix required and do not remove or change any packages.
+                Pay attention to any accidental uses of HTML syntax, e.g. </end instead of \\end.
+                """
                 self.coder.run(prompt)
             else:
                 break
@@ -121,7 +121,7 @@ class LatexUtils:
             print("Failed to rename PDF.")
 
 
-class TextNode:
+class LatexNode:
     def __init__(self, coder_out: dict[str, Any]):
         self.coder_out = coder_out
 
@@ -181,10 +181,11 @@ if __name__ == "__main__":
     }
 
     graph_builder = StateGraph(State)
-    text_node = TextNode(coder_out)
-    text_node.setup_latex_utils(coder)
+    tex_node = LatexNode(coder_out)
+    tex_node.setup_latex_utils(coder)
+    tex_node.generate_latex(folder_name, pdf_file)
 
-    graph_builder.add_node("textnode", text_node)
+    graph_builder.add_node("textnode", tex_node)
     graph_builder.set_entry_point("textnode")
     graph_builder.set_finish_point("textnode")
     graph = graph_builder.compile()

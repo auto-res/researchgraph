@@ -7,7 +7,7 @@ import openai
 from researchgraph.graph.ai_scientist.ai_scientist_node.perform_experiments import ExperimentComponent
 from researchgraph.graph.ai_scientist.ai_scientist_node.perform_writeup import WriteupComponent, DraftImprovementComponent
 from researchgraph.graph.ai_scientist.ai_scientist_node.perform_review import ReviewComponent, load_paper
-from researchgraph.writingnode.texnode import TextNode
+from researchgraph.writingnode.texnode import LatexNode
 
 from aider.io import InputOutput
 
@@ -196,9 +196,9 @@ class IdeaExecutionComponent:
         print("*Generating LaTeX PDF*")
         try:
             coder_out = memory_["writeup_content"]
-            text_node = TextNode(coder_out)
-            text_node.setup_latex_utils()
-            text_node.generate_latex(
+            tex_node = LatexNode(coder_out)
+            tex_node.setup_latex_utils()
+            tex_node.generate_latex(
                 folder_name=folder_name,
                 pdf_file=os.path.join(folder_name, f"{idea['Name']}.pdf")
             )
