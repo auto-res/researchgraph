@@ -51,17 +51,15 @@ class ArxivNode:
         """
 
         url = f"https://arxiv.org/pdf/{arxiv_id}.pdf"
-        try:
-            response = requests.get(url, stream=True, timeout=10)
-            response.raise_for_status()
-        except requests.exceptions.RequestException as e:
-            print(f"Failed to download {arxiv_id}.pdf: {e}")
-            return
+        response = requests.get(url, stream=True)
 
-        with open(os.path.join(self.save_dir, f"{arxiv_id}.pdf"), 'wb') as file:
-            shutil.copyfileobj(response.raw, file)
-        print(f"Downloaded {arxiv_id}.pdf to {self.save_dir}")
- 
+        if response.status_code == 200:
+            with open(os.path.join(self.save_dir, f"{arxiv_id}.pdf"), 'wb') as file:
+                shutil.copyfileobj(response.raw, file)
+            print(f"Downloaded {arxiv_id}.pdf to {self.save_dir}")
+        else:
+            print(f"Failed to download {arxiv_id}.pdf")
+
     def download_from_arxiv_ids(self, arxiv_ids: list[str]):
         """Download PDF files from arXiv
 
@@ -79,7 +77,7 @@ class ArxivNode:
         for arxiv_id in arxiv_ids:
             self.download_from_arxiv_id(arxiv_id)
 
-    def convert_pdf_to_text(self, pdf_path: str, max_pages: int = 20):
+    def convert_pdf_to_text(self, pdf_path: str):
         """Convert PDF file to text
 
         Args:
@@ -92,7 +90,7 @@ class ArxivNode:
         loader = PyPDFLoader(pdf_path)
         pages = loader.load_and_split()
         content = ""
-        for page in pages[:max_pages]:
+        for page in pages[:20]:
             content += page.page_content
 
         return content
@@ -107,6 +105,7 @@ class ArxivNode:
             State: Updated state with downloaded papers
         """
         keywords_list = json.loads(state[self.search_variable])
+        # keywords_list = keywords_list[: self.num_keywords]
         all_search_results = []
 
         client = arxiv.Client(
@@ -126,6 +125,7 @@ class ArxivNode:
 
         print(f"all_search_results {len(all_search_results)}")
 
+        # Validate each result using Pydantic
         validated_results = []
         for result in all_search_results:
             try:

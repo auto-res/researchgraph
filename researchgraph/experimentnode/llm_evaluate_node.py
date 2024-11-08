@@ -15,7 +15,7 @@ class LLMEvaluateNode:
         self.evaluate_code = evaluate_code
 
     def train(self, state: State) -> subprocess.CompletedProcess:
-        exec_code = state[self.evaluate_code]
+        exec_code = state[evaluate_code]
 
 
         with open(self.save_dir + f"{evaluate_code}.py", "w") as file:
@@ -43,7 +43,7 @@ class LLMEvaluateNode:
 
     def __call__(self, state: State) -> Any:
         self.train(state)
-        
+
         return state
 
 

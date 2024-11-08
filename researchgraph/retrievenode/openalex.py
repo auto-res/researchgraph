@@ -23,9 +23,24 @@ class OpenAlexResponse(BaseModel):
     public_date: datetime
 
 
-class PDFDownloader:
-    def __init__(self, save_dir: str):
+class OpenAlexNode:
+    @validate_arguments
+    def __init__(
+        self,
+        save_dir: str,
+        search_variable: str,
+        output_variable: str,
+        num_keywords: int,
+        num_retrieve_paper: int,
+    ):
         self.save_dir = save_dir
+        self.search_variable = search_variable
+        self.output_variable = output_variable
+        self.num_keywords = num_keywords
+        self.num_retrieve_paper = num_retrieve_paper
+        print("OpenAlexRetriever initialized")
+        print(f"input: {search_variable}")
+        print(f"output: {output_variable}")
 
     def download_from_arxiv_id(self, arxiv_id: str) -> None:
         """Download PDF file from arXiv
@@ -62,10 +77,7 @@ class PDFDownloader:
         for arxiv_id in arxiv_ids:
             self.download_from_arxiv_id(arxiv_id)
 
-
-class TextExtractor:
-    @staticmethod
-    def convert_pdf_to_text(pdf_path: str, max_pages: int = 20) -> str:
+    def convert_pdf_to_text(self, pdf_path):
         """Convert PDF file to text
 
         Args:
@@ -77,30 +89,12 @@ class TextExtractor:
 
         loader = PyPDFLoader(pdf_path)
         pages = loader.load_and_split()
-        content = "".join(page.page_content for page in pages[:max_pages])
+        content = ""
+        for page in pages[:20]:
+            content += page.page_content
+
         return content
 
-
-class OpenAlexNode:
-    @validate_arguments
-    def __init__(
-        self,
-        save_dir: str,
-        search_variable: str,
-        output_variable: str,
-        num_keywords: int,
-        num_retrieve_paper: int,
-    ):
-        self.save_dir = save_dir
-        self.search_variable = search_variable
-        self.output_variable = output_variable
-        self.num_keywords = num_keywords
-        self.num_retrieve_paper = num_retrieve_paper
-        self.pdf_downloader = PDFDownloader(save_dir)
-        self.text_extractor = TextExtractor()
-        print("OpenAlexRetriever initialized")
-        print(f"input: {search_variable}")
-        print(f"output: {output_variable}")
 
     def __call__(self, state: State) -> Any:
         """Retriever
@@ -119,9 +113,9 @@ class OpenAlexNode:
             results = works.search(search_term).get(
                 page=1, per_page=self.num_retrieve_paper
             )
-            validated_results = []
 
             # Validate each result using Pydantic
+            validated_results = []
             for item in results:
                 try:
                     validated_result = OpenAlexResponse(
@@ -157,12 +151,12 @@ class OpenAlexNode:
                     continue
 
                 arxiv_ids.append(arxiv_id)
-            self.pdf_downloader.download_from_arxiv_ids(arxiv_ids[: self.num_retrieve_paper])
+            self.download_from_arxiv_ids(arxiv_ids[: self.num_retrieve_paper])
 
         return {
             self.output_variable: {
                 f"paper_{idx + 1}": {
-                    "full_text": self.text_extractor.convert_pdf_to_text(
+                    "full_text": self.convert_pdf_to_text(
                         os.path.join(self.save_dir, filename)
                     )
                 }

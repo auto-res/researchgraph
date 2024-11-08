@@ -19,14 +19,6 @@ class State(TypedDict):
     paper_text: str
 
 
-class ArxivRequest(BaseModel):
-    arxiv_url: str
-    
-
-class ArxivResponse(BaseModel):
-    paper_text: str
-
-
 class RetrievearXivTextNode:
     def __init__(self, input_variable, output_variable, save_dir):
         self.input_variable = input_variable

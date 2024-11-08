@@ -33,14 +33,11 @@ class RetrieveCSVNode:
         logger.info("---RetrieveCSVNode---")
         logger.info(f"Paper URL: {paper_url}")
         logger.info(f"GitHub URL: {github_url}")
-
-        updated_state = cast(State, {
+        return {
             self.input_variable: state[self.input_variable] + 1,
             self.output_variable[0]: paper_url,
             self.output_variable[1]: github_url,
-        })
-
-        return updated_state
+        }
 
 
 if __name__ == "__main__":
