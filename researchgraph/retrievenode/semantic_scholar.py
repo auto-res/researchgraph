@@ -5,10 +5,9 @@ import shutil
 import requests
 from langchain_community.document_loaders import PyPDFLoader
 from semanticscholar import SemanticScholar
-
-from typing import Any
-from typing_extensions import TypedDict
+from typing import Any, TypedDict
 from langgraph.graph import StateGraph
+from pydantic import BaseModel, ValidationError, validate_arguments
 
 
 class State(TypedDict):
@@ -16,13 +15,21 @@ class State(TypedDict):
     collection_of_papers: dict
 
 
+class SemanticScholarResponse(BaseModel):
+    paper_title: str
+    paper_abstract: str
+    authors: list[str]
+    publication_date: str
+
+
 class SemanticScholarNode:
+    @validate_arguments
     def __init__(
         self,
-        save_dir,
-        search_variable,
-        output_variable,
-        num_retrieve_paper,
+        save_dir: str,
+        search_variable: str,
+        output_variable: str,
+        num_retrieve_paper: int,
     ):
         self.save_dir = save_dir
         self.search_variable = search_variable
@@ -84,7 +91,7 @@ class SemanticScholarNode:
 
         return content
 
-    def __call__(self, state: State) -> Any:
+    def __call__(self, state: State) -> dict[str, Any]:
         """Retriever
 
         Args:
@@ -92,13 +99,27 @@ class SemanticScholarNode:
         """
         keywords_list = json.loads(state[self.search_variable])
         # keywords_list = [keywords_list[: self.num_keywords]]
-
         sch = SemanticScholar()
 
         all_search_results = []
         for search_term in keywords_list:
             results = sch.search_paper(search_term, limit=self.num_retrieve_paper)
-            all_search_results.append(results)
+
+            # Validate each result using Pydantic
+            validated_results = []
+            for item in results.items:
+                try:
+                    validated_result = SemanticScholarResponse(
+                        paper_title=getattr(item, "title", "Unknown Title"),
+                        paper_abstract=getattr(item, "abstract", "No abstract available."),
+                        authors=getattr(item, "authors", []),
+                        publication_date=getattr(item, "publicationDate", "Unknown date")
+                    )
+                    validated_results.append(validated_result.dict())
+                except ValidationError as e:
+                    print(f"Validation error for item {item}: {e}")
+
+            all_search_results.append(validated_results)
 
         DOI_ids = [
             item["externalIds"]
