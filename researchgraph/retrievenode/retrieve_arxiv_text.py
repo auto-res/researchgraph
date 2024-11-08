@@ -5,17 +5,25 @@ import requests
 import logging
 from requests.exceptions import RequestException
 
-from typing import Any
-from typing_extensions import TypedDict
+from typing import Any, TypedDict
 from langgraph.graph import StateGraph
 from langchain_core.runnables import RunnableConfig
 from langchain_community.document_loaders import PyPDFLoader
+from pydantic import BaseModel
 
 logger = logging.getLogger("researchgraph")
 
 
 class State(TypedDict):
     arxiv_url: str
+    paper_text: str
+
+
+class ArxivRequest(BaseModel):
+    arxiv_url: str
+    
+
+class ArxivResponse(BaseModel):
     paper_text: str
 
 
@@ -28,7 +36,7 @@ class RetrievearXivTextNode:
         print(f"input: {self.input_variable}")
         print(f"output: {self.output_variable}")
 
-    def __call__(self, state: State, config: RunnableConfig) -> Any:
+    def __call__(self, state: State, config: RunnableConfig) -> dict[str, Any]:
         arxiv_url = state[self.input_variable]
         arxiv_id = re.sub(r"^https://arxiv\.org/abs/", "", arxiv_url)
 

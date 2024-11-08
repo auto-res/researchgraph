@@ -7,7 +7,6 @@ from langgraph.graph import StateGraph
 
 from llmlinks.link import LLMLink
 from llmlinks.llm_client import LLMClient
-from pydantic import BaseModel, Field
 
 from .llm_node_setting_template import (
     translater1_setting,
@@ -18,7 +17,7 @@ from .llm_node_setting_template import (
 logger = logging.getLogger("researchgraph")
 
 
-class State(BaseModel):
+class State(TypedDict):
     source: str
     language: str
     translation1: str

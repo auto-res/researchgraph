@@ -6,34 +6,26 @@ import requests
 import re
 import pyalex
 from langchain_community.document_loaders import PyPDFLoader
-
-from typing import Any, Annotated
-from pydantic import BaseModel, DirectoryPath, Field
+from datetime import datetime
+from typing import Any, TypedDict
+from pydantic import BaseModel, ValidationError, validate_arguments
 from langgraph.graph import StateGraph
 
 
-class State(BaseModel):
-    keywords: str
+class State(TypedDict):
+    keywords: list[str]
     collection_of_papers: Any
+    
+
+class OpenAlexResponse(BaseModel):
+    paper_abstract: str
+    author: str
+    public_date: datetime
 
 
-class OpenAlexNode:
-    def __init__(
-        self,
-        save_dir: DirectoryPath,
-        search_variable: str,
-        output_variable: str,
-        num_keywords: Annotated[int, Field(strict=True, ge=1)],
-        num_retrieve_paper: Annotated[int, Field(strict=True, ge=1)],
-    ):
+class PDFDownloader:
+    def __init__(self, save_dir: str):
         self.save_dir = save_dir
-        self.search_variable = search_variable
-        self.output_variable = output_variable
-        self.num_keywords = num_keywords
-        self.num_retrieve_paper = num_retrieve_paper
-        print("OpenAlexRetriever initialized")
-        print(f"input: {search_variable}")
-        print(f"output: {output_variable}")
 
     def download_from_arxiv_id(self, arxiv_id: str) -> None:
         """Download PDF file from arXiv
@@ -70,7 +62,10 @@ class OpenAlexNode:
         for arxiv_id in arxiv_ids:
             self.download_from_arxiv_id(arxiv_id)
 
-    def convert_pdf_to_text(self, pdf_path: str) -> str:
+
+class TextExtractor:
+    @staticmethod
+    def convert_pdf_to_text(pdf_path: str, max_pages: int = 20) -> str:
         """Convert PDF file to text
 
         Args:
@@ -82,11 +77,30 @@ class OpenAlexNode:
 
         loader = PyPDFLoader(pdf_path)
         pages = loader.load_and_split()
-        content = ""
-        for page in pages[:20]:
-            content += page.page_content
-
+        content = "".join(page.page_content for page in pages[:max_pages])
         return content
+
+
+class OpenAlexNode:
+    @validate_arguments
+    def __init__(
+        self,
+        save_dir: str,
+        search_variable: str,
+        output_variable: str,
+        num_keywords: int,
+        num_retrieve_paper: int,
+    ):
+        self.save_dir = save_dir
+        self.search_variable = search_variable
+        self.output_variable = output_variable
+        self.num_keywords = num_keywords
+        self.num_retrieve_paper = num_retrieve_paper
+        self.pdf_downloader = PDFDownloader(save_dir)
+        self.text_extractor = TextExtractor()
+        print("OpenAlexRetriever initialized")
+        print(f"input: {search_variable}")
+        print(f"output: {output_variable}")
 
     def __call__(self, state: State) -> Any:
         """Retriever
@@ -105,6 +119,20 @@ class OpenAlexNode:
             results = works.search(search_term).get(
                 page=1, per_page=self.num_retrieve_paper
             )
+            validated_results = []
+
+            # Validate each result using Pydantic
+            for item in results:
+                try:
+                    validated_result = OpenAlexResponse(
+                        paper_abstract=item.get("abstract", ""),
+                        author=item.get("author", "Unknown"),
+                        public_date=datetime.strptime(item.get("publication_date", "1970-01-01"), "%Y-%m-%d"),
+                    )
+                    validated_results.append(validated_result)
+                except ValidationError as e:
+                    print(f"Validation error for item {item}: {e}")
+
             all_search_results.append(results)
 
         def _get_arxiv_id_from_url(url: str) -> str | None:
@@ -129,12 +157,12 @@ class OpenAlexNode:
                     continue
 
                 arxiv_ids.append(arxiv_id)
-            self.download_from_arxiv_ids(arxiv_ids[: self.num_retrieve_paper])
+            self.pdf_downloader.download_from_arxiv_ids(arxiv_ids[: self.num_retrieve_paper])
 
         return {
             self.output_variable: {
                 f"paper_{idx + 1}": {
-                    "full_text": self.convert_pdf_to_text(
+                    "full_text": self.text_extractor.convert_pdf_to_text(
                         os.path.join(self.save_dir, filename)
                     )
                 }

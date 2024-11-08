@@ -4,31 +4,41 @@ import shutil
 import requests
 from langchain_community.document_loaders import PyPDFLoader
 import arxiv
-
+from pydantic import BaseModel, ValidationError, validate_arguments
 from typing import Any
 from typing_extensions import TypedDict
 from langgraph.graph import StateGraph
 
 
 class State(TypedDict):
-    keywords: str
-    collection_of_papers: Any
+    keywords: list[str]
+    collection_of_papers: dict
+
+
+class ArxivResponse(BaseModel):
+    title: str
+    arxiv_id: str
+    authors: list[str]
+    abstract: str
+    published_date: str
 
 
 class ArxivNode:
+    @validate_arguments
     def __init__(
             self, 
-            save_dir, 
-            search_variable, 
-            output_variable, 
-            num_keywords, 
-            num_retrieve_paper
+            save_dir: str, 
+            search_variable: str, 
+            output_variable: str, 
+            num_keywords: int, 
+            num_retrieve_paper: int
         ):
         self.save_dir = save_dir
         self.search_variable = search_variable
         self.output_variable = output_variable
         self.num_keywords = num_keywords
         self.num_retrieve_paper = num_retrieve_paper
+
         print("ArxivNode initialized")
         print(f"input: {search_variable}")
         print(f"output: {output_variable}")
@@ -41,16 +51,18 @@ class ArxivNode:
         """
 
         url = f"https://arxiv.org/pdf/{arxiv_id}.pdf"
-        response = requests.get(url, stream=True)
+        try:
+            response = requests.get(url, stream=True, timeout=10)
+            response.raise_for_status()
+        except requests.exceptions.RequestException as e:
+            print(f"Failed to download {arxiv_id}.pdf: {e}")
+            return
 
-        if response.status_code == 200:
-            with open(os.path.join(self.save_dir, f"{arxiv_id}.pdf"), 'wb') as file:
-                shutil.copyfileobj(response.raw, file)
-            print(f"Downloaded {arxiv_id}.pdf to {self.save_dir}")
-        else:
-            print(f"Failed to download {arxiv_id}.pdf")
-
-    def download_from_arxiv_ids(self, arxiv_ids):
+        with open(os.path.join(self.save_dir, f"{arxiv_id}.pdf"), 'wb') as file:
+            shutil.copyfileobj(response.raw, file)
+        print(f"Downloaded {arxiv_id}.pdf to {self.save_dir}")
+ 
+    def download_from_arxiv_ids(self, arxiv_ids: list[str]):
         """Download PDF files from arXiv
 
         Args:
@@ -67,7 +79,7 @@ class ArxivNode:
         for arxiv_id in arxiv_ids:
             self.download_from_arxiv_id(arxiv_id)
 
-    def convert_pdf_to_text(self, pdf_path):
+    def convert_pdf_to_text(self, pdf_path: str, max_pages: int = 20):
         """Convert PDF file to text
 
         Args:
@@ -80,12 +92,12 @@ class ArxivNode:
         loader = PyPDFLoader(pdf_path)
         pages = loader.load_and_split()
         content = ""
-        for page in pages[:20]:
+        for page in pages[:max_pages]:
             content += page.page_content
 
         return content
 
-    def __call__(self, state: State) -> Any:
+    def __call__(self, state: State) -> State:
         """Retrieve papers from arXiv based on keywords
 
         Args:
@@ -95,7 +107,6 @@ class ArxivNode:
             State: Updated state with downloaded papers
         """
         keywords_list = json.loads(state[self.search_variable])
-        # keywords_list = keywords_list[: self.num_keywords]
         all_search_results = []
 
         client = arxiv.Client(
@@ -112,15 +123,24 @@ class ArxivNode:
             
             results = list(client.results(search))
             all_search_results.extend(results)
+
         print(f"all_search_results {len(all_search_results)}")
 
-        arxiv_ids = []
+        validated_results = []
         for result in all_search_results:
-            print(f"Title: {result.title}")
-            arxiv_id = result.get_short_id()
-            print(f"arXiv ID: {arxiv_id}")
-            arxiv_ids.append(arxiv_id)
+            try:
+                validated_result = ArxivResponse(
+                    title=result.title,
+                    arxiv_id=result.get_short_id(),
+                    authors=[author.name for author in result.authors],
+                    abstract=result.summary,
+                    published_date=str(result.published)
+                )
+                validated_results.append(validated_result)
+            except ValidationError as e:
+                print(f"Validation error for item {result}: {e}")
 
+        arxiv_ids = [result.arxiv_id for result in validated_results]
         self.download_from_arxiv_ids(arxiv_ids)
 
         if self.output_variable not in state:

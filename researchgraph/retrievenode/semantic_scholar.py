@@ -5,24 +5,31 @@ import shutil
 import requests
 from langchain_community.document_loaders import PyPDFLoader
 from semanticscholar import SemanticScholar
-
-from typing import Any, Annotated
-from pydantic import BaseModel, DirectoryPath, Field
+from typing import Any, TypedDict
 from langgraph.graph import StateGraph
+from pydantic import BaseModel, ValidationError, validate_arguments
 
 
-class State(BaseModel):
+class State(TypedDict):
     keywords: str
     collection_of_papers: dict
 
 
+class SemanticScholarResponse(BaseModel):
+    paper_title: str
+    paper_abstract: str
+    authors: list[str]
+    publication_date: str
+
+
 class SemanticScholarNode:
+    @validate_arguments
     def __init__(
         self,
-        save_dir: DirectoryPath,
+        save_dir: str,
         search_variable: str,
         output_variable: str,
-        num_retrieve_paper: Annotated[int, Field(strict=True, ge=1)],
+        num_retrieve_paper: int,
     ):
         self.save_dir = save_dir
         self.search_variable = search_variable
@@ -40,14 +47,16 @@ class SemanticScholarNode:
         """
 
         url = f"https://arxiv.org/pdf/{arxiv_id}.pdf"
-        response = requests.get(url, stream=True)
+        try:
+            response = requests.get(url, stream=True, timeout=10)
+            response.raise_for_status()  # HTTPエラーの自動検知
+        except requests.RequestException as e:
+            print(f"Failed to download {arxiv_id}.pdf: {e}")
+            return
 
-        if response.status_code == 200:
-            with open(os.path.join(self.save_dir, f"{arxiv_id}.pdf"), "wb") as file:
-                shutil.copyfileobj(response.raw, file)
-            print(f"Downloaded {arxiv_id}.pdf to {self.save_dir}")
-        else:
-            print(f"Failed to download {arxiv_id}.pdf")
+        with open(os.path.join(self.save_dir, f"{arxiv_id}.pdf"), "wb") as file:
+            shutil.copyfileobj(response.raw, file)
+        print(f"Downloaded {arxiv_id}.pdf to {self.save_dir}")
 
     def _download_from_arxiv_ids(self, arxiv_ids: list[str]) -> None:
         """Download PDF files from arXiv
@@ -66,7 +75,7 @@ class SemanticScholarNode:
         for arxiv_id in arxiv_ids:
             self._download_from_arxiv_id(arxiv_id)
 
-    def _convert_pdf_to_text(self, pdf_path: str) -> str:
+    def _convert_pdf_to_text(self, pdf_path: str, max_pages: int = 20) -> str:
         """Convert PDF file to text
 
         Args:
@@ -79,7 +88,7 @@ class SemanticScholarNode:
         loader = PyPDFLoader(pdf_path)
         pages = loader.load_and_split()
         content = ""
-        for page in pages[:20]:
+        for page in pages[:max_pages]:
             content += page.page_content
 
         return content
@@ -91,19 +100,32 @@ class SemanticScholarNode:
             state (_type_): _description_
         """
         keywords_list = json.loads(state[self.search_variable])
-        # keywords_list = [keywords_list[: self.num_keywords]]
-
         sch = SemanticScholar()
 
         all_search_results = []
         for search_term in keywords_list:
             results = sch.search_paper(search_term, limit=self.num_retrieve_paper)
-            all_search_results.append(results)
+
+            # Validate each result using Pydantic
+            validated_results = []
+            for item in results.items:
+                try:
+                    validated_result = SemanticScholarResponse(
+                        paper_title=getattr(item, "title", "Unknown Title"),
+                        paper_abstract=getattr(item, "abstract", "No abstract available."),
+                        authors=getattr(item, "authors", []),
+                        publication_date=getattr(item, "publicationDate", "Unknown date")
+                    )
+                    validated_results.append(validated_result.dict())
+                except ValidationError as e:
+                    print(f"Validation error for item {item}: {e}")
+
+            all_search_results.append(validated_results)
 
         DOI_ids = [
             item["externalIds"]
             for results in all_search_results
-            for item in results.items
+            for item in results
         ]
         arxiv_ids = [item["ArXiv"] for item in DOI_ids if "ArXiv" in item]
 

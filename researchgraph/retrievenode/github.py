@@ -10,14 +10,14 @@ from langgraph.graph import StateGraph
 logger = logging.getLogger("researchgraph")
 
 
-class State(BaseModel):
-    github_url: HttpUrl
+class State(TypedDict):
+    github_url: str
     folder_structure: str
     github_file: str
 
 
 class GithubNode:
-    def __init__(self, save_dir: DirectoryPath, input_variable: str, output_variable: list[str]):
+    def __init__(self, save_dir: str, input_variable: str, output_variable: list[str]):
         self.save_dir = save_dir
         self.input_variable = input_variable
         self.output_variable = output_variable

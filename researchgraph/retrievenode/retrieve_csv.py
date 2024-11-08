@@ -1,7 +1,7 @@
 import pandas as pd
 import logging
 
-from typing import Any
+from typing import cast
 from typing_extensions import TypedDict
 from langgraph.graph import StateGraph
 from langchain_core.runnables import RunnableConfig
@@ -16,7 +16,7 @@ class State(TypedDict):
 
 
 class RetrieveCSVNode:
-    def __init__(self, input_variable, output_variable, csv_file_path):
+    def __init__(self, input_variable: str, output_variable: list[str], csv_file_path: str):
         self.input_variable = input_variable
         self.output_variable = output_variable
         self.csv_file_path = csv_file_path
@@ -24,19 +24,23 @@ class RetrieveCSVNode:
         print(f"input: {self.input_variable}")
         print(f"output: {self.output_variable}")
 
-    def __call__(self, state: State, config: RunnableConfig) -> Any:
+    def __call__(self, state: State, config: RunnableConfig) -> State:
         df = pd.read_csv(self.csv_file_path)
         df_row = df.iloc[state[self.input_variable]]
+
         paper_url = df_row["arxiv_url"]
         github_url = df_row["github_url"]
         logger.info("---RetrieveCSVNode---")
         logger.info(f"Paper URL: {paper_url}")
         logger.info(f"GitHub URL: {github_url}")
-        return {
+
+        updated_state = cast(State, {
             self.input_variable: state[self.input_variable] + 1,
             self.output_variable[0]: paper_url,
             self.output_variable[1]: github_url,
-        }
+        })
+
+        return updated_state
 
 
 if __name__ == "__main__":
@@ -59,3 +63,4 @@ if __name__ == "__main__":
     }
 
     graph.invoke(memory, debug=True)
+
