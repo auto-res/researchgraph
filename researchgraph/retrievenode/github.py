@@ -4,8 +4,7 @@ import subprocess
 import glob
 import logging
 
-from typing import Any
-from pydantic import BaseModel, DirectoryPath, HttpUrl
+from typing_extensions import TypedDict
 from langgraph.graph import StateGraph
 
 logger = logging.getLogger("researchgraph")
@@ -31,7 +30,7 @@ class GithubNode:
         url = re.search(pattern, state[self.input_variable]).group(1)
         return url
 
-    def _get_repository(self, url: str, repo_name: str) -> subprocess.CompletedProcess | None:
+    def _get_repository(self, url: str, repo_name: str):
         repo_path = os.path.join(self.save_dir, repo_name)
         if os.path.exists(repo_path):
             print(f"Repository '{repo_name}' already exists")
@@ -78,7 +77,7 @@ class GithubNode:
             :10000
         ]  # TODO: The problem of Python code becoming too long. GPT-4o context window is 128,000.
 
-    def __call__(self, state: State) -> dict[str, Any]:
+    def __call__(self, state: State) -> dict:
         github_url = self._format_url(state)
         repository_name = github_url.split("/")[-1]
         target_dir = os.path.join(self.save_dir, repository_name)
