@@ -127,7 +127,7 @@ class OpenAlexNode:
                 except ValidationError as e:
                     print(f"Validation error for item {item}: {e}")
 
-            all_search_results.append(results)
+            all_search_results.append(validated_results)
 
         def _get_arxiv_id_from_url(url: str) -> str | None:
             match = re.search(r"\d{4}\.\d{5}", url)
