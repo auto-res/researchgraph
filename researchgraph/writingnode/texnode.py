@@ -24,7 +24,7 @@ class LatexUtils:
         references_bib = re.search(r"\\begin{filecontents}{references.bib}(.*?)\\end{filecontents}", tex_text, re.DOTALL)
 
         if references_bib is None:
-            print("No references.bib found in template.tex")
+            print("No references.bib found in template_copy.tex")
             return False
         
         bib_text = references_bib.group(1)
@@ -38,7 +38,7 @@ class LatexUtils:
 
     def _prompt_fix_reference(self, cite: str):
         prompt = f"""Reference {cite} not found in references.bib. Is this included under a different name?
-        If so, please modify the citation in template.tex to match the name in references.bib at the top. Otherwise, remove the cite."""
+        If so, please modify the citation in template_copy.tex to match the name in references.bib at the top. Otherwise, remove the cite."""
         self.coder.run(prompt)
 
     # Check all included figures are actually in the directory.
@@ -78,7 +78,7 @@ class LatexUtils:
         for _ in range(num_error_corrections):
             check_output = os.popen(f"chktex {writeup_file} -q -n2 -n24 -n13 -n1").read()
             if check_output:
-                prompt = f"""Please fix the following LaTeX errors in `template.tex` guided by the output of `chktek`:
+                prompt = f"""Please fix the following LaTeX errors in `template_copy.tex` guided by the output of `chktek`:
                 {check_output}.
 
                 Make the minimal fix required and do not remove or change any packages.
@@ -93,7 +93,7 @@ class LatexUtils:
 
         commands = [
             ["pdflatex", "-interaction=nonstopmode", template_file],
-            ["bibtex", "template"],
+            ["bibtex", "template_copy"], 
             ["pdflatex", "-interaction=nonstopmode", template_file],
             ["pdflatex", "-interaction=nonstopmode", template_file],
         ]
@@ -208,7 +208,7 @@ if __name__ == "__main__":
     tex_node.setup_latex_utils(coder)
 
     template_folder = "/workspaces/researchgraph/researchgraph/graph/ai_scientist/templates/2d_diffusion"
-    figures_folder = "/workspaces/researchgraph/researchgraph/graph/ai_scientist/"
+    figures_folder = "/workspaces/researchgraph/images"
     pdf_file = "/workspaces/researchgraph/data/test.pdf"
 
     tex_node.generate_latex(template_folder, figures_folder, pdf_file)
