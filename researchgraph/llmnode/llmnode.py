@@ -29,7 +29,7 @@ class State(TypedDict):
 
 
 class LLMNode:
-    def __init__(self, llm_name, setting):
+    def __init__(self, llm_name: str, setting: dict):
         if isinstance(setting, dict):
             self.setting = setting
         else:

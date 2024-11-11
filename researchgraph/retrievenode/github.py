@@ -17,7 +17,7 @@ class State(TypedDict):
 
 
 class GithubNode:
-    def __init__(self, save_dir, input_variable, output_variable):
+    def __init__(self, save_dir: str, input_variable: str, output_variable: list[str]):
         self.save_dir = save_dir
         self.input_variable = input_variable
         self.output_variable = output_variable

@@ -6,25 +6,32 @@ import requests
 import re
 import pyalex
 from langchain_community.document_loaders import PyPDFLoader
-
-from typing import Any
-from typing_extensions import TypedDict
+from datetime import datetime
+from typing import Any, TypedDict
+from pydantic import BaseModel, ValidationError, validate_arguments
 from langgraph.graph import StateGraph
 
 
 class State(TypedDict):
-    keywords: str
+    keywords: list[str]
     collection_of_papers: Any
+    
+
+class OpenAlexResponse(BaseModel):
+    paper_abstract: str
+    author: str
+    public_date: datetime
 
 
 class OpenAlexNode:
+    @validate_arguments
     def __init__(
         self,
-        save_dir,
-        search_variable,
-        output_variable,
-        num_keywords,
-        num_retrieve_paper,
+        save_dir: str,
+        search_variable: str,
+        output_variable: str,
+        num_keywords: int,
+        num_retrieve_paper: int,
     ):
         self.save_dir = save_dir
         self.search_variable = search_variable
@@ -35,7 +42,7 @@ class OpenAlexNode:
         print(f"input: {search_variable}")
         print(f"output: {output_variable}")
 
-    def download_from_arxiv_id(self, arxiv_id):
+    def download_from_arxiv_id(self, arxiv_id: str) -> None:
         """Download PDF file from arXiv
 
         Args:
@@ -53,7 +60,7 @@ class OpenAlexNode:
         else:
             print(f"Failed to download {arxiv_id}.pdf")
 
-    def download_from_arxiv_ids(self, arxiv_ids):
+    def download_from_arxiv_ids(self, arxiv_ids: list[str]) -> None:
         """Download PDF files from arXiv
 
         Args:
@@ -88,6 +95,7 @@ class OpenAlexNode:
 
         return content
 
+
     def __call__(self, state: State) -> Any:
         """Retriever
 
@@ -105,9 +113,23 @@ class OpenAlexNode:
             results = works.search(search_term).get(
                 page=1, per_page=self.num_retrieve_paper
             )
-            all_search_results.append(results)
 
-        def _get_arxiv_id_from_url(url):
+            # Validate each result using Pydantic
+            validated_results = []
+            for item in results:
+                try:
+                    validated_result = OpenAlexResponse(
+                        paper_abstract=item.get("abstract", ""),
+                        author=item.get("author", "Unknown"),
+                        public_date=datetime.strptime(item.get("publication_date", "1970-01-01"), "%Y-%m-%d"),
+                    )
+                    validated_results.append(validated_result)
+                except ValidationError as e:
+                    print(f"Validation error for item {item}: {e}")
+
+            all_search_results.append(validated_results)
+
+        def _get_arxiv_id_from_url(url: str) -> str | None:
             match = re.search(r"\d{4}\.\d{5}", url)
             if match:
                 return match.group()
