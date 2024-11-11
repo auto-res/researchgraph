@@ -20,26 +20,7 @@ from researchgraph.graph.ai_integrator.llmnode_setting.creator import creator_se
 
 from researchgraph.graph.ai_integrator.config import state
 
-<<<<<<< HEAD
-# ログディレクトリの定義と作成
-log_dir = "/workspaces/researchgraph/logs/"
-if not os.path.exists(log_dir):
-    os.makedirs(log_dir)
-
-# ログファイルの設定
-log_filename = datetime.now().strftime("app_%Y-%m-%d_%H-%M-%S.log")
-file_handler = logging.FileHandler(os.path.join(log_dir, log_filename))
-formatter = logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s")
-file_handler.setFormatter(formatter)
-
-# ロガーの設定
 logger = logging.getLogger("researchgraph")
-logger.setLevel(logging.INFO)
-if not logger.hasHandlers():
-    logger.addHandler(file_handler)
-=======
-logger = logging.getLogger("researchgraph")
->>>>>>> origin/develop
 
 
 class State(TypedDict):

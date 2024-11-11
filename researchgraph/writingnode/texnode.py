@@ -3,15 +3,14 @@ import os.path as osp
 import re
 import subprocess
 import shutil
-from typing import Any
-from pydantic import BaseModel
+from typing import Any, TypedDict
 from langgraph.graph import StateGraph
 from aider.coders import Coder
 from aider.models import Model
 from aider.io import InputOutput
 
 
-class State(BaseModel):
+class State(TypedDict):
     generated_content: str = ""
 
 
@@ -43,9 +42,9 @@ class LatexUtils:
         self.coder.run(prompt)
 
     # Check all included figures are actually in the directory.
-    def check_figures(self, folder: str, tex_text: str, pattern: str = r"\\includegraphics.*?{(.*?)}"):
+    def check_figures(self, figure_folder: str, tex_text: str, pattern: str = r"\\includegraphics.*?{(.*?)}"):
         referenced_figs = re.findall(pattern, tex_text)
-        all_figs = [f for f in os.listdir(folder) if f.endswith(".png")]
+        all_figs = [f for f in os.listdir(figure_folder) if f.endswith(".png")]
 
         for fig in referenced_figs:
             if fig not in all_figs:
@@ -53,8 +52,11 @@ class LatexUtils:
                 self._prompt_fix_figure(fig, all_figs)
 
     def _prompt_fix_figure(self, fig: str, all_figs: list):
-        prompt = f"""The image {fig} not found in the directory. The images in the directory are: {all_figs}.
-        Please ensure that the figure is in the directory and that the filename is correct. Check the notes to see what each figure contains."""
+        if not all_figs:
+            prompt = f"""The image {fig} not found in the directory and there are no images present. Please add the required image to the directory, ensuring the filename matches {fig}. Refer to the project documentation or notes for details on what the figure should contain."""
+        else:
+            prompt = f"""The image {fig} not found in the directory. The images in the directory are: {all_figs}.
+            Please ensure that the figure is in the directory and that the filename is correct. Check the notes to see what each figure contains."""
         self.coder.run(prompt)
 
     # Remove duplicate items.
@@ -116,7 +118,7 @@ class LatexUtils:
         print("FINISHED GENERATING LATEX")
 
         try:
-            shutil.move(osp.join(cwd, "template.pdf"), pdf_file)
+            shutil.move(osp.join(cwd, "template_copy.pdf"), pdf_file)
         except FileNotFoundError:
             print("Failed to rename PDF.")
 
@@ -124,21 +126,24 @@ class LatexUtils:
 class LatexNode:
     def __init__(self, coder_out: dict[str, Any]):
         self.coder_out = coder_out
+        self.latex_utils = None
 
     def setup_latex_utils(self, coder: Coder):
         self.latex_utils = LatexUtils(coder)
 
-    def generate_latex(self, folder_name: str, pdf_file: str, timeout: int = 30, num_error_corrections: int = 5):
+    def generate_latex(self, template_folder: str, figures_folder: str, pdf_file: str, timeout: int = 30, num_error_corrections: int = 5):
         if not self.latex_utils:
             raise ValueError("LatexUtils not set up. Please call setup_latex_utils first.")
 
-        folder = osp.abspath(folder_name)
-        cwd = osp.join(folder, "latex")  # Fixed potential issue with path
+        template_folder_path = osp.abspath(template_folder) 
+        cwd = osp.join(template_folder_path, "latex")  # Fixed potential issue with path
         writeup_file = osp.join(cwd, "template.tex")
 
         # Copy template.tex
         writeup_copy_file = osp.join(cwd, "template_copy.tex")
         shutil.copyfile(writeup_file, writeup_copy_file)
+
+        tex_text = ''
 
         if self.coder_out:
             with open(writeup_copy_file, "r") as f:
@@ -152,7 +157,7 @@ class LatexNode:
             f.write(tex_text)
 
         self.latex_utils.check_references(tex_text)
-        self.latex_utils.check_figures(folder, tex_text)
+        self.latex_utils.check_figures(figures_folder, tex_text)
         self.latex_utils.check_duplicates(tex_text, r"\\includegraphics.*?{(.*?)}", "figure")
         self.latex_utils.check_duplicates(tex_text, r"\\section{([^}]*)}", "section header")
         self.latex_utils.fix_latex_errors(writeup_copy_file, num_error_corrections)
@@ -161,7 +166,7 @@ class LatexNode:
     def __call__(self, state: State) -> State:
         try:
             generated_content = "\n".join(self.coder_out.values())
-            state.generated_content = f"Generated Content:\n{generated_content}"
+            state["generated_content"] = f"Generated Content:\n{generated_content}"
             return state
         
         except Exception as e:
@@ -173,21 +178,44 @@ if __name__ == "__main__":
     main_model = Model("gpt-4-turbo")
     io = InputOutput()
 
-    coder = Coder(main_model=main_model, io=io)
+    # Define default files
+    fnames = ["/workspaces/researchgraph/researchgraph/writingnode/test.py"]
+
+    # Create the Coder instance
+    coder = Coder.create(
+        main_model=main_model,
+        fnames=fnames,
+        io=io,
+        stream=False,
+        use_git=False,
+        edit_format="diff",
+    )
+
     coder_out = {
+        "title": "This is the title content.", 
         "abstract": "This is the abstract content.",
         "introduction": "This is the introduction content.",
-        "method": "This is the method content."
+        "related work": "This is the related work content.", 
+        "background": "This is the background content.", 
+        "method": "This is the method content.", 
+        "experimental setup": "This is the experimental setup content.", 
+        "results": "This is the results content.", 
+        "conclusions": "This is the conclusions content.", 
     }
 
     graph_builder = StateGraph(State)
     tex_node = LatexNode(coder_out)
     tex_node.setup_latex_utils(coder)
-    tex_node.generate_latex(folder_name, pdf_file)
 
-    graph_builder.add_node("textnode", tex_node)
-    graph_builder.set_entry_point("textnode")
-    graph_builder.set_finish_point("textnode")
+    template_folder = "/workspaces/researchgraph/researchgraph/graph/ai_scientist/templates/2d_diffusion"
+    figures_folder = "/workspaces/researchgraph/researchgraph/graph/ai_scientist/"
+    pdf_file = "/workspaces/researchgraph/data/test.pdf"
+
+    tex_node.generate_latex(template_folder, figures_folder, pdf_file)
+
+    graph_builder.add_node("texnode", tex_node)
+    graph_builder.set_entry_point("texnode")
+    graph_builder.set_finish_point("texnode")
     graph = graph_builder.compile()
 
     memory = {

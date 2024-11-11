@@ -2,7 +2,6 @@ import os
 import numpy as np
 import json
 from pypdf import PdfReader
-from typing import Any
 import pymupdf
 import pymupdf4llm
 from ai_scientist.llm import (
@@ -142,7 +141,7 @@ class ReviewComponent:
         return_msg_history=False,
         reviewer_system_prompt=reviewer_system_prompt_neg,
         review_instruction_form=neurips_form,
-    ) -> dict[str, Any]:
+    ):
         if num_fs_examples > 0:
             fs_prompt = get_review_fewshot_examples(num_fs_examples)
             base_prompt = review_instruction_form + fs_prompt

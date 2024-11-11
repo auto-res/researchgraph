@@ -8,6 +8,7 @@ from aider.io import InputOutput
 from dataclasses import dataclass
 from researchgraph.graph.ai_scientist.ai_scientist_node.generate_ideas import search_for_papers
 from researchgraph.graph.ai_scientist.ai_scientist_node.llm import get_response_from_llm, extract_json_between_markers
+from researchgraph.writingnode.texnode import LatexNode
 
 
 per_section_tips = {
@@ -197,12 +198,17 @@ class ComponentBase:
             edit_format="diff",
         )
 
-    def select_model(self, model: str) -> Model:
+    def select_model(self, model: str | Model) -> Model:
         model_mapping = {
             "deepseek-coder-v2-0724": "deepseek/deepseek-coder",
             "llama3.1-405b": "openrouter/meta-llama/llama-3.1-405b-instruct"
         }
-        return Model(model_mapping.get(model, model))
+        model_name = model_mapping.get(model, model) if isinstance(model, str) else model.name
+
+        if not isinstance(model_name, Model):
+            return Model(model_name)
+        
+        return model_name
 
 
 class BaseSection:
@@ -275,7 +281,7 @@ class WriteupComponent(ComponentBase):
         writeup_file: str, 
         exp_file: str, 
         notes: str, 
-        model: str, 
+        model: str | Model, 
         io: InputOutput
     ):
         super().__init__(writeup_file, exp_file, notes, model, io)
@@ -329,6 +335,16 @@ class WriteupComponent(ComponentBase):
         memory_["is_writeup_successful"] = True
 
         self.add_citations(folder_name, cite_client, cite_model, num_cite_rounds)
+
+        # Generate PDF after citations have been added
+        tex_node = LatexNode(memory_["writeup_content"])
+        tex_node.setup_latex_utils(self.coder)  # Use the shared Coder instance
+        # // TODO: the path must be changed correctly
+        template_folder = "/workspaces/researchgraph/researchgraph/graph/ai_scientist/templates/2d_diffusion"
+        figures_folder = "/workspaces/researchgraph/researchgraph/graph/ai_scientist/"
+        pdf_file = "/workspaces/researchgraph/data/test.pdf"
+
+        tex_node.generate_latex(template_folder, figures_folder, pdf_file)
 
         return memory_
 
@@ -469,7 +485,7 @@ class DraftImprovementComponent(ComponentBase):
         writeup_file: str, 
         exp_file: str, 
         notes: str, 
-        model: str, 
+        model: str | Model, 
         io: InputOutput
     ):
         super().__init__(writeup_file, exp_file, notes, model, io)    
@@ -491,7 +507,84 @@ class DraftImprovementComponent(ComponentBase):
         review: str,
         memory_: dict[str, Any],
     ) -> dict[str, Any]:
-        return self.perform_improvement(review, memory_)
+    
+        # Generate PDF after the improvement process
+        tex_node = LatexNode(memory_["improved_writeup_content"])
+        tex_node.setup_latex_utils(self.coder)  # Use the shared Coder instance
+        # // TODO: the path must be changed correctly
+        template_folder = "/workspaces/researchgraph/researchgraph/graph/ai_scientist/templates/2d_diffusion"
+        figures_folder = "/workspaces/researchgraph/researchgraph/graph/ai_scientist/"
+        pdf_file = "/workspaces/researchgraph/data/improved_test.pdf"  
+
+        tex_node.generate_latex(template_folder, figures_folder, pdf_file)
+
+        return memory_
+    
+if __name__ == "__main__":
+
+    from unittest.mock import MagicMock    
+
+    # 簡単なテストのための準備
+    writeup_file = "/workspaces/researchgraph/researchgraph/writingnode/sample_writeup.txt"  # テスト用のファイルパス
+    exp_file = "/workspaces/researchgraph/researchgraph/writingnode/sample_exp.txt"  # 実験結果のファイルパス
+    notes = "/workspaces/researchgraph/researchgraph/writingnode/sample_notes.txt"  # ノートのファイルパス
+    model = Model("gpt-4-turbo")
+    io = InputOutput()
+
+    Coder.run = MagicMock(return_value="Mocked output for section generation.")
+
+    # LatexNode.generate_latex = MagicMock()
+
+    # メモリとして利用する辞書を初期化
+    memory_ = {
+        "writeup_content": {},
+        "is_writeup_successful": False,
+        "improved_writeup_content": "",
+        "is_improvement_successful": False
+    }
+
+    # アイデアとして使用するダミーデータ
+    idea = {
+        "title": "A Study on 2D Diffusion",
+        "abstract": "This paper explores the methodology of 2D diffusion...",
+        "keywords": ["diffusion", "machine learning", "simulation"]
+    }
+
+    # テスト用フォルダとクライアント
+    folder_name = "/workspaces/researchgraph/researchgraph/graph/ai_scientist/templates/2d_diffusion"
+    cite_client = None  # ここでは簡略化のためにNoneを使用します
+    cite_model = "gpt-4-turbo"
+
+    # WriteupComponent のインスタンス化と呼び出し
+    writeup_component = WriteupComponent(writeup_file, exp_file, notes, model, io)
+    print("Running WriteupComponent to generate PDF...")
+
+    # 引用ラウンド数を1に減らして実行時間を短縮
+    memory_ = writeup_component(idea, folder_name, memory_, cite_client, cite_model, num_cite_rounds=1)
+
+    if memory_["is_writeup_successful"]:
+        print("Writeup and PDF generation successful.")
+    else:
+        print("Writeup or PDF generation failed.")
+
+    # DraftImprovementComponent のインスタンス化と呼び出し
+    review = "The experimental setup needs more detail. Add more discussion on parameter tuning."
+    improvement_component = DraftImprovementComponent(writeup_file, exp_file, notes, model, io)
+    print("Running DraftImprovementComponent to improve writeup and generate PDF...")
+    
+    memory_ = improvement_component(review, memory_)
+
+    # モック解除したので、LaTeXコンパイルを行う
+    try:
+        memory_ = improvement_component(review, memory_)
+        if memory_["is_improvement_successful"]:
+            print("DraftImprovementComponent test passed. Writeup improvement and PDF generation successful.")
+        else:
+            print("DraftImprovementComponent test failed. Writeup improvement or PDF generation failed.")
+    except Exception as e:
+        print(f"DraftImprovementComponent test raised an error: {e}")
+
+
 
 # if __name__ == "__main__":
 #     from aider.coders import Coder
