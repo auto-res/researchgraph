@@ -203,12 +203,14 @@ class ComponentBase:
             "deepseek-coder-v2-0724": "deepseek/deepseek-coder",
             "llama3.1-405b": "openrouter/meta-llama/llama-3.1-405b-instruct"
         }
-        model_name = model_mapping.get(model, model) if isinstance(model, str) else model.name
 
-        if not isinstance(model_name, Model):
+        if isinstance(model, str):
+            model_name = model_mapping.get(model)
+            if model_name is None:
+                raise ValueError(f"Unknown model identifier: {model}")
             return Model(model_name)
         
-        return model_name
+        return model
 
 
 class BaseSection:
@@ -361,7 +363,7 @@ class WriteupComponent(ComponentBase):
                 current_round=round_num,
                 total_rounds=num_cite_rounds
             )
-            prompt, done = self.get_citation_aider_prompt(context)
+            prompt, done = self.get_citation_aider_prompt(context, msg_history=None)
             if done:
                 break
             
@@ -377,106 +379,125 @@ class WriteupComponent(ComponentBase):
 
                 self.coder_out = self.coder.run(prompt)
 
-    def get_citation_aider_prompt(self, context: CitationContext) -> tuple[Optional[str], bool]:
-        msg_history = []
+    def get_citation_aider_prompt(self, context: CitationContext, msg_history: Optional[list]) -> tuple[Optional[str], bool]:
+        if msg_history is None:
+            msg_history = []
         try:
-            text, msg_history = get_response_from_llm(
-                citation_first_prompt.format(
-                    draft=context.draft, current_round=context.current_round, total_rounds=context.total_rounds
-                ),
-                client=context.client,
-                model=context.model,
-                system_message=citation_system_msg.format(total_rounds=context.total_rounds),
-                msg_history=msg_history,
-            )
+            # Initial LLM request to determine if more citations are needed
+            text, msg_history = self._get_initial_llm_response(context, msg_history)
+
             if "No more citations needed" in text:
                 print("No more citations needed.")
                 return None, True
 
-            ## PARSE OUTPUT
-            json_output = extract_json_between_markers(text)
-            assert json_output is not None, "Failed to extract JSON from LLM output"
+            ## Parse the output and extract JSON
+            json_output = self._extract_json_output(text)
             query = json_output["Query"]
             papers = search_for_papers(query)
         except Exception as e:
-            print(f"Error: {e}")
+            print(f"Error during initial citation retrieval: {e}")
             return None, False
 
         if papers is None:
             print("No papers found.")
             return None, False
 
-        paper_strings = []
-        for i, paper in enumerate(papers):
-            paper_strings.append(
-                """{i}: {title}. {authors}. {venue}, {year}.\nAbstract: {abstract}""".format(
-                    i=i,
-                    title=paper["title"],
-                    authors=paper["authors"],
-                    venue=paper["venue"],
-                    year=paper["year"],
-                    abstract=paper["abstract"],
-                )
-            )
-        papers_str = "\n\n".join(paper_strings)
+        # Format the found papers into a string
+        papers_str = self._format_papers(papers)
 
         try:
-            text, msg_history = get_response_from_llm(
-                citation_second_prompt.format(
-                    papers=papers_str,
-                    current_round=context.current_round,
-                    total_rounds=context.total_rounds,
-                ),
-                client=context.client,
-                model=context.model,
-                system_message=citation_system_msg.format(total_rounds=context.total_rounds),
-                msg_history=msg_history,
-            )
+            # Second LLM request to determine which papers to cite
+            text, msg_history = self._get_second_llm_response(context, papers_str, msg_history)
+
             if "Do not add any" in text:
                 print("Do not add any.")
                 return None, False
-            ## PARSE OUTPUT
-            json_output = extract_json_between_markers(text)
-            assert json_output is not None, "Failed to extract JSON from LLM output"
+            
+            # Parse the output and extract JSON
+            json_output = self._extract_json_output(text)
             desc = json_output["Description"]
             selected_papers = json_output["Selected"]
             selected_papers = str(selected_papers)
 
-            # convert to list
-            if selected_papers != "[]":
-                selected_papers = list(map(int, selected_papers.strip("[]").split(",")))
-                assert all(
-                    [0 <= i < len(papers) for i in selected_papers]
-                ), "Invalid paper index"
+            # Convert selected papers to a list of indices
+            if selected_papers:
+                selected_papers = self._convert_selected_papers(selected_papers, papers)
                 bibtexs = [papers[i]["citationStyles"]["bibtex"] for i in selected_papers]
                 bibtex_string = "\n".join(bibtexs)
             else:
                 return None, False
 
         except Exception as e:
-            print(f"Error: {e}")
+            print(f"Error during paper selection: {e}")
             return None, False
 
         # Add citation to draft
-        aider_format = '''The following citations have just been added to the end of the `references.bib` file definition at the top of the file:
-    """
-    {bibtex}
-    """
-    You do not need to add them yourself.
-    ABSOLUTELY DO NOT ADD IT AGAIN!!!
+        aider_prompt = self._construct_aider_prompt(bibtex_string, desc)
 
-    Make the proposed change to the draft incorporating these new cites:
-    {description}
-
-    Use your judgment for whether these should be cited anywhere else.
-    Make sure that any citation precisely matches the name in `references.bib`. Change its name to the correct name in the bibtex if needed.
-    Ensure the citation is well-integrated into the text.'''
-
-        aider_prompt = (
-            aider_format.format(bibtex=bibtex_string, description=desc)
-            + """\n You must use \cite or \citet to reference papers, do not manually type out author names."""
-        )
         return aider_prompt, False
+
+    def _get_initial_llm_response(self, context: CitationContext, msg_history: list) -> tuple[str, list]:
+        return get_response_from_llm(
+            citation_first_prompt.format(
+                draft=context.draft, current_round=context.current_round, total_rounds=context.total_rounds
+            ),
+            client=context.client,
+            model=context.model,
+            system_message=citation_system_msg.format(total_rounds=context.total_rounds),
+            msg_history=msg_history,
+        )
+
+    def _extract_json_output(self, text: str) -> dict:
+        json_output = extract_json_between_markers(text)
+        if json_output is None:
+            raise ValueError("Failed to extract JSON from LLM output")
+        return json_output
+
+    def _format_papers(self, papers: list) -> str:
+        paper_strings = [
+            f"{i}: {paper['title']}. {paper['authors']}. {paper['venue']}, {paper['year']}. Abstract: {paper['abstract']}"
+            for i, paper in enumerate(papers)
+        ]
+        return "\n\n".join(paper_strings)
+    
+    def _get_second_llm_response(self, context: CitationContext, papers_str: str, msg_history: list) -> tuple[str, list]:
+        return get_response_from_llm(
+            citation_second_prompt.format(
+                papers=papers_str,
+                current_round=context.current_round,
+                total_rounds=context.total_rounds,
+            ),
+            client=context.client,
+            model=context.model,
+            system_message=citation_system_msg.format(total_rounds=context.total_rounds),
+            msg_history=msg_history,
+        )
+
+    def _convert_selected_papers(self, selected_papers: str, papers: list) -> list:
+        selected_papers = list(map(int, selected_papers.strip("[]").split(",")))
+        if not all(0 <= i < len(papers) for i in selected_papers):
+            raise IndexError("Invalid paper index")
+        return selected_papers
+
+    def _construct_aider_prompt(self, bibtex_string: str, description: str) -> str:
+        aider_format = '''The following citations have just been added to the end of the `references.bib` file definition at the top of the file:
+        """
+        {bibtex}
+        """
+        You do not need to add them yourself.
+        ABSOLUTELY DO NOT ADD IT AGAIN!!!
+
+        Make the proposed change to the draft incorporating these new cites:
+        {description}
+
+        Use your judgment for whether these should be cited anywhere else.
+        Make sure that any citation precisely matches the name in `references.bib`. Change its name to the correct name in the bibtex if needed.
+        Ensure the citation is well-integrated into the text.'''
+
+        return (
+            aider_format.format(bibtex=bibtex_string, description=description)
+            + "\n You must use \\cite or \\citet to reference papers, do not manually type out author names."
+        )
 
 
 class DraftImprovementComponent(ComponentBase):
@@ -531,9 +552,8 @@ if __name__ == "__main__":
     model = Model("gpt-4-turbo")
     io = InputOutput()
 
+    # モック化: Coder の run メソッド
     Coder.run = MagicMock(return_value="Mocked output for section generation.")
-
-    # LatexNode.generate_latex = MagicMock()
 
     # メモリとして利用する辞書を初期化
     memory_ = {
@@ -583,6 +603,7 @@ if __name__ == "__main__":
             print("DraftImprovementComponent test failed. Writeup improvement or PDF generation failed.")
     except Exception as e:
         print(f"DraftImprovementComponent test raised an error: {e}")
+
 
 
 
