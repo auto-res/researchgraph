@@ -3,7 +3,7 @@ import os.path as osp
 import re
 import subprocess
 import shutil
-from typing import Any, TypedDict
+from typing import TypedDict
 from langgraph.graph import StateGraph
 from aider.coders import Coder
 from aider.models import Model
@@ -11,12 +11,23 @@ from aider.io import InputOutput
 
 
 class State(TypedDict):
-    generated_content: str = ""
+    writeup_file_path: str
+    pdf_file_path: str
 
 
 class LatexUtils:
-    def __init__(self, coder: Coder):
-        self.coder = coder
+    def __init__(self, model: str):
+        # Define default files
+        fnames = []
+        # Create the Coder instance
+        self.coder = Coder.create(      # TODO: インスタンス引数
+            main_model=Model(model),
+            fnames=fnames,
+            io=InputOutput(),
+            stream=False,
+            use_git=False,
+            edit_format="diff",
+        )
 
     # Check all references are valid and in the references.bib file
     def check_references(self, tex_text: str) -> bool:
@@ -42,9 +53,9 @@ class LatexUtils:
         self.coder.run(prompt)
 
     # Check all included figures are actually in the directory.
-    def check_figures(self, figure_folder: str, tex_text: str, pattern: str = r"\\includegraphics.*?{(.*?)}"):
+    def check_figures(self, figure_dir: str, tex_text: str, pattern: str = r"\\includegraphics.*?{(.*?)}"):
         referenced_figs = re.findall(pattern, tex_text)
-        all_figs = [f for f in os.listdir(figure_folder) if f.endswith(".png")]
+        all_figs = [f for f in os.listdir(figure_dir) if f.endswith(".png")]
 
         for fig in referenced_figs:
             if fig not in all_figs:
@@ -88,12 +99,12 @@ class LatexUtils:
             else:
                 break
 
-    def compile_latex(self, cwd: str, pdf_file: str, template_file: str = "template_copy.tex", timeout: int = 30):
+    def compile_latex(self, cwd: str, pdf_file_path: str, template_file: str, timeout: int = 30):
         print("GENERATING LATEX")
 
         commands = [
             ["pdflatex", "-interaction=nonstopmode", template_file],
-            ["bibtex", "template_copy"], 
+            ["bibtex", osp.splitext(template_file)[0]], 
             ["pdflatex", "-interaction=nonstopmode", template_file],
             ["pdflatex", "-interaction=nonstopmode", template_file],
         ]
@@ -117,110 +128,136 @@ class LatexUtils:
 
         print("FINISHED GENERATING LATEX")
 
+        pdf_filename = f"{osp.splitext(osp.basename(template_file))[0]}.pdf"
         try:
-            shutil.move(osp.join(cwd, "template_copy.pdf"), pdf_file)
+            shutil.move(osp.join(cwd, pdf_filename), pdf_file_path)
         except FileNotFoundError:
             print("Failed to rename PDF.")
 
 
 class LatexNode:
-    def __init__(self, coder_out: dict[str, Any]):
-        self.coder_out = coder_out
-        self.latex_utils = None
+    def __init__(self, input_variable, output_variable, model: str, template_dir: str, figures_dir: str, timeout: int = 30, num_error_corrections: int = 5):
+        self.input_variable = input_variable
+        self.output_variable = output_variable
+        self.latex_utils = LatexUtils(model)
+        self.template_dir = template_dir
+        self.figures_dir = figures_dir
+        self.timeout = timeout
+        self.num_error_corrections = num_error_corrections
 
-    def setup_latex_utils(self, coder: Coder):
-        self.latex_utils = LatexUtils(coder)
+    def __call__(self, state: State) -> dict:
+        try:
+            # Generate LaTeX content
+            template_dir = osp.abspath(self.template_dir)
+            cwd = osp.join(template_dir, "latex")
+            template_file = osp.join(cwd, "template.tex")
 
-    def generate_latex(self, template_folder: str, figures_folder: str, pdf_file: str, timeout: int = 30, num_error_corrections: int = 5):
-        if not self.latex_utils:
-            raise ValueError("LatexUtils not set up. Please call setup_latex_utils first.")
+            # Copy template.tex
+            template_copy_file = osp.join(cwd, "template_copy.tex")
+            shutil.copyfile(template_file, template_copy_file)
 
-        template_folder_path = osp.abspath(template_folder) 
-        cwd = osp.join(template_folder_path, "latex")  # Fixed potential issue with path
-        writeup_file = osp.join(cwd, "template.tex")
+            tex_text = ''
 
-        # Copy template.tex
-        writeup_copy_file = osp.join(cwd, "template_copy.tex")
-        shutil.copyfile(writeup_file, writeup_copy_file)
+            # Read content from input_variable path
+            writeup_file_path = state.get(self.input_variable)
+            if not writeup_file_path:
+                raise ValueError(f"Input file path for variable '{self.input_variable}' not found in state.")
+            
+            with open(writeup_file_path, "r") as f:
+                file_content = f.read()
 
-        tex_text = ''
+            # Split file content into sections based on headings (e.g., "# abstract", "# introduction")
+            sections = self._split_into_sections(file_content)
 
-        if self.coder_out:
-            with open(writeup_copy_file, "r") as f:
+            # Read the LaTeX template content
+            with open(template_copy_file, "r") as f:
                 tex_text = f.read()
 
-            for section, content in self.coder_out.items():
+            # Replace placeholders in the LaTeX template with corresponding section content
+            for section, content in sections.items():
                 placeholder = f"{section.upper()} HERE"
                 tex_text = tex_text.replace(placeholder, content)
 
-        with open(writeup_copy_file, "w") as f:
-            f.write(tex_text)
+            with open(template_copy_file, "w") as f:
+                f.write(tex_text)
 
-        self.latex_utils.check_references(tex_text)
-        self.latex_utils.check_figures(figures_folder, tex_text)
-        self.latex_utils.check_duplicates(tex_text, r"\\includegraphics.*?{(.*?)}", "figure")
-        self.latex_utils.check_duplicates(tex_text, r"\\section{([^}]*)}", "section header")
-        self.latex_utils.fix_latex_errors(writeup_copy_file, num_error_corrections)
-        self.latex_utils.compile_latex(cwd, pdf_file, timeout=timeout)
+            # Run LaTeX utilities
+            self.latex_utils.check_references(tex_text)
+            self.latex_utils.check_figures(self.figures_dir, tex_text)
+            self.latex_utils.check_duplicates(tex_text, r"\\includegraphics.*?{(.*?)}", "figure")
+            self.latex_utils.check_duplicates(tex_text, r"\\section{([^}]*)}", "section header")
+            self.latex_utils.fix_latex_errors(template_copy_file, self.num_error_corrections)
 
-    def __call__(self, state: State) -> State:
-        try:
-            generated_content = "\n".join(self.coder_out.values())
-            state["generated_content"] = f"Generated Content:\n{generated_content}"
-            return state
-        
+            # Compile LaTeX to PDF
+            pdf_file_path = state.get(self.output_variable)
+            if not pdf_file_path:
+                raise ValueError(f"Output file path for variable '{self.output_variable}' not found in state.")
+            
+            self.latex_utils.compile_latex(cwd, pdf_file_path, template_copy_file, timeout=self.timeout)
+
+            # Update state with output PDF path
+            return {
+                self.output_variable: pdf_file_path
+            }
+
         except Exception as e:
-            print(f"Error occured: {e}")
-            return None    
+            print(f"Error occurred: {e}")
+            return None
+        
+    def _split_into_sections(self, text: str) -> dict:
+        # Split the text into sections based on headings (e.g., "# abstract", "# introduction")
+        sections = {}
+        current_section = None
+        buffer = []
+
+        for line in text.splitlines():
+            match = re.match(r"#\s*(\w+)", line)    # TODO: プレーンテキストに対するセクションの判定条件
+            if match:
+                if current_section and buffer:
+                    sections[current_section] = "\n".join(buffer).strip()
+                    buffer = []
+                current_section = match.group(1).lower()
+            elif current_section:
+                buffer.append(line)
+
+        if current_section and buffer:
+            sections[current_section] = "\n".join(buffer).strip()
+
+        return sections
+
 
 if __name__ == "__main__":
 
-    main_model = Model("gpt-4-turbo")
-    io = InputOutput()
+    # Define input and output variables
+    input_variable = "writeup_file_path" 
+    output_variable = "pdf_file_path"
+    model = "gpt-4o"
+    template_dir = "/workspaces/researchgraph/researchgraph/graph/ai_scientist/templates/2d_diffusion"
+    figures_dir = "/workspaces/researchgraph/images"
 
-    # Define default files
-    fnames = ["/workspaces/researchgraph/researchgraph/writingnode/test.py"]
-
-    # Create the Coder instance
-    coder = Coder.create(
-        main_model=main_model,
-        fnames=fnames,
-        io=io,
-        stream=False,
-        use_git=False,
-        edit_format="diff",
+    # Initialize LatexNode
+    latex_node = LatexNode(
+        input_variable=input_variable,
+        output_variable=output_variable,
+        model = model, 
+        template_dir=template_dir,
+        figures_dir=figures_dir,
+        timeout=30,
+        num_error_corrections=5
     )
 
-    coder_out = {
-        "title": "This is the title content.", 
-        "abstract": "This is the abstract content.",
-        "introduction": "This is the introduction content.",
-        "related work": "This is the related work content.", 
-        "background": "This is the background content.", 
-        "method": "This is the method content.", 
-        "experimental setup": "This is the experimental setup content.", 
-        "results": "This is the results content.", 
-        "conclusions": "This is the conclusions content.", 
-    }
-
+    # Create the StateGraph and add node
     graph_builder = StateGraph(State)
-    tex_node = LatexNode(coder_out)
-    tex_node.setup_latex_utils(coder)
-
-    template_folder = "/workspaces/researchgraph/researchgraph/graph/ai_scientist/templates/2d_diffusion"
-    figures_folder = "/workspaces/researchgraph/images"
-    pdf_file = "/workspaces/researchgraph/data/test.pdf"
-
-    tex_node.generate_latex(template_folder, figures_folder, pdf_file)
-
-    graph_builder.add_node("texnode", tex_node)
-    graph_builder.set_entry_point("texnode")
-    graph_builder.set_finish_point("texnode")
+    graph_builder.add_node("latexnode", latex_node)
+    graph_builder.set_entry_point("latexnode")
+    graph_builder.set_finish_point("latexnode")
     graph = graph_builder.compile()
 
+    # Define initial state
     memory = {
-        "generated_content": ""
+        "writeup_file_path" : "~/write_file.txt",
+        "pdf_file_path": "~/data/sample.pdf"
     }
 
-    # graph.invoke(memory, debug=True)
+    # Execute the graph
     graph.invoke(memory)

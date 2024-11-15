@@ -8,7 +8,8 @@ from aider.io import InputOutput
 from dataclasses import dataclass
 from researchgraph.graph.ai_scientist.ai_scientist_node.generate_ideas import search_for_papers
 from researchgraph.graph.ai_scientist.ai_scientist_node.llm import get_response_from_llm, extract_json_between_markers
-from researchgraph.writingnode.texnode import LatexNode
+from langgraph.graph import StateGraph
+from typing import TypedDict
 
 
 per_section_tips = {
@@ -177,6 +178,10 @@ Do not select papers that are already in the `references.bib` file at the top of
 This JSON will be automatically parsed, so ensure the format is precise."""
 
 
+class State(TypedDict):
+    inputput_Variable: str
+    output_variable: str
+
 @dataclass
 class CitationContext:
     client: Any
@@ -186,198 +191,38 @@ class CitationContext:
     total_rounds: int
 
 
-class ComponentBase:
-    def __init__(self, writeup_file: str, exp_file: str, notes: str, model: str, io: InputOutput):
-        self.main_model = self.select_model(model)
-        self.coder = Coder.create(
-            main_model=self.main_model,
-            fnames=[exp_file, writeup_file, notes],
-            io=io,
-            stream=False,
-            use_git=False,
-            edit_format="diff",
-        )
-
-    def select_model(self, model: str | Model) -> Model:
-        model_mapping = {
-            "deepseek-coder-v2-0724": "deepseek/deepseek-coder",
-            "llama3.1-405b": "openrouter/meta-llama/llama-3.1-405b-instruct"
-        }
-
-        if isinstance(model, str):
-            model_name = model_mapping.get(model)
-            if model_name is None:
-                raise ValueError(f"Unknown model identifier: {model}")
-            return Model(model_name)
-        
-        return model
-
-
-class BaseSection:
-    def __init__(self, coder: Coder, section_name: str, section_key: str):
-        self.coder = coder
-        self.section_name = section_name
-        self.section_key = section_key
-
-    def generate_prompt(self, prompt_type: str) -> str:
-        prompt_templates = {
-            "write": f"""Please fill in the {self.section_name} of the writeup. Some tips are provided below:
-            {per_section_tips[self.section_key]}
-
-            Be sure to use \cite or \citet where relevant, referring to the works provided in the file.
-            Do not cite anything that is not already in `references.bib`. Do not add any new entries to this.
-
-            Keep the experimental results (figures and tables) only in the Results section, and make sure that any captions are filled in.
-            In this pass, do not reference anything in later sections of the paper.
-
-            Before every paragraph, please include a brief description of what you plan to write in that paragraph in a comment.
-
-            Be sure to first name the file and use *SEARCH/REPLACE* blocks to perform these edits.
-            """, 
-            "refine": refinement_prompt.format(section=self.section_key), 
-            "second_refine": second_refinement_prompt.format(section=self.section_key, tips=per_section_tips[self.section_key]), 
-        }
-        
-        if prompt_type not in prompt_templates:
-            raise ValueError("Invalid prompt type specified.")
-        
-        prompt = prompt_templates[prompt_type]
-        return prompt.replace(r"{{", "{").replace(r"}}", "}")
-
-    def write(self):
-        prompt = self.generate_prompt("write")
-        self.coder.run(prompt)
-
-    def refine(self):
-        prompt = self.generate_prompt("refine")
-        self.coder.run(prompt)
-
-    def second_refine(self) -> Any:
-        prompt = self.generate_prompt("second_refine")
-        return self.coder.run(prompt)
-        
-
-class RelatedWorkSection(BaseSection):
+class CitationManager:
     def __init__(self, coder: Coder):
-        super().__init__(coder, "Related Work", "Related Work")
+        self.coder = coder
 
-    def generate_prompt(self, prompt_type) -> str:
-        if prompt_type == "write":
-            return f"""Please fill in the Related Work of the writeup. Some tips are provided below:
+    def add_citations(self, sections: dict, template_dir: str, cite_client: Any, cite_model: str, num_cite_rounds: int):
+            for round_num in range(num_cite_rounds):
+                template_file = osp.join(template_dir, "latex", "template.tex")
+                with open(template_file, "r") as f:
+                    draft = f.read()
 
-            {per_section_tips["Related Work"]}
+                context = CitationContext(
+                    client=cite_client,
+                    model=cite_model,
+                    draft=draft,
+                    current_round=round_num,
+                    total_rounds=num_cite_rounds
+                )
+                prompt, done = self.get_citation_aider_prompt(context, msg_history=None)
+                if done:
+                    break
+                
+                if prompt is not None:
+                    # extract bibtex string
+                    bibtex_string = prompt.split('"""')[1]
+                    # insert this into draft before the "\end{filecontents}" line
+                    search_str = r"\end{filecontents}"
+                    draft = draft.replace(search_str, f"{bibtex_string}{search_str}")
 
-            For this section, very briefly sketch out the structure of the section, and clearly indicate what papers you intend to include.
-            Do this all in LaTeX comments using %.
-            The related work should be concise, only plan to discuss the most relevant work.
-            Do not modify `references.bib` to add any new citations, this will be filled in at a later stage.
+                    with open(template_file, "w") as f:
+                        f.write(draft)
 
-            Be sure to first name the file and use *SEARCH/REPLACE* blocks to perform these edits.
-            """
-        return super().generate_prompt(prompt_type)
-
-
-class WriteupComponent(ComponentBase):
-    def __init__(
-        self, 
-        writeup_file: str, 
-        exp_file: str, 
-        notes: str, 
-        model: str | Model, 
-        io: InputOutput
-    ):
-        super().__init__(writeup_file, exp_file, notes, model, io)
-
-        self.sections = {
-            "Abstract": BaseSection(self.coder, "Title and Abstract", "Abstract"),
-            "Introduction": BaseSection(self.coder, "Introduction", "Introduction"),
-            "Background": BaseSection(self.coder, "Background", "Background"),
-            "Method": BaseSection(self.coder, "Method", "Method"),
-            "Experimental Setup": BaseSection(self.coder, "Experimental Setup", "Experimental Setup"),
-            "Results": BaseSection(self.coder, "Results", "Results"),
-            "Conclusion": BaseSection(self.coder, "Conclusion", "Conclusion"),
-            "Related Work": RelatedWorkSection(self.coder),
-        }
-
-    def perform_writeup(self):
-        for section_name, section in self.sections.items():
-            try:
-                section.write()
-            except Exception as e:
-                print(f"Error in section '{section_name}': {e}")
-
-    def perform_refinement(self):
-        for section in self.sections.values():
-            section.refine()
-
-    def perform_second_refinement(self) -> dict[str, Any]:
-        results = {}
-        for section_name, section in self.sections.items():
-            results[section_name] = section.second_refine()
-        return results
-
-    # PERFORM WRITEUP
-    def __call__(
-        self,
-        idea: dict[str, Any],
-        folder_name: str,
-        memory_: dict[str, Any],
-        cite_client: Any,
-        cite_model: str,
-        num_cite_rounds=20,
-    ) -> dict[str, Any]:
-        
-        memory_["writeup"] = False
-
-        self.perform_writeup()
-        self.perform_refinement()
-        second_refinement_results = self.perform_second_refinement()
-
-        memory_["writeup_content"] = second_refinement_results
-        memory_["is_writeup_successful"] = True
-
-        self.add_citations(folder_name, cite_client, cite_model, num_cite_rounds)
-
-        # Generate PDF after citations have been added
-        tex_node = LatexNode(memory_["writeup_content"])
-        tex_node.setup_latex_utils(self.coder)  # Use the shared Coder instance
-        # // TODO: the path must be changed correctly
-        template_folder = "/workspaces/researchgraph/researchgraph/graph/ai_scientist/templates/2d_diffusion"
-        figures_folder = "/workspaces/researchgraph/researchgraph/graph/ai_scientist/"
-        pdf_file = "/workspaces/researchgraph/data/test.pdf"
-
-        tex_node.generate_latex(template_folder, figures_folder, pdf_file)
-
-        return memory_
-
-    def add_citations(self, folder_name: str, cite_client: Any, cite_model: str, num_cite_rounds: int):
-        for round_num in range(num_cite_rounds):
-            file_path = osp.join(folder_name, "latex", "template.tex")
-            with open(file_path, "r") as f:
-                draft = f.read()
-
-            context = CitationContext(
-                client=cite_client,
-                model=cite_model,
-                draft=draft,
-                current_round=round_num,
-                total_rounds=num_cite_rounds
-            )
-            prompt, done = self.get_citation_aider_prompt(context, msg_history=None)
-            if done:
-                break
-            
-            if prompt is not None:
-                # extract bibtex string
-                bibtex_string = prompt.split('"""')[1]
-                # insert this into draft before the "\end{filecontents}" line
-                search_str = r"\end{filecontents}"
-                draft = draft.replace(search_str, f"{bibtex_string}{search_str}")
-
-                with open(file_path, "w") as f:
-                    f.write(draft)
-
-                self.coder_out = self.coder.run(prompt)
+                self.coder.run(prompt)      # TODO: 執筆内容に引用情報を付与する
 
     def get_citation_aider_prompt(self, context: CitationContext, msg_history: Optional[list]) -> tuple[Optional[str], bool]:
         if msg_history is None:
@@ -500,18 +345,188 @@ class WriteupComponent(ComponentBase):
         )
 
 
-class DraftImprovementComponent(ComponentBase):
+class BaseSection:
+    def __init__(self, coder: Coder, section_name: str):
+        self.coder = coder
+        self.section_name = section_name
+        self.contentn = ""
+
+    def generate_prompt(self, prompt_type: str) -> str:
+        prompt_templates = {
+            "write": f"""Please fill in the {self.section_name} of the writeup. Some tips are provided below:
+            {per_section_tips[self.section_name]}
+
+            Be sure to use \cite or \citet where relevant, referring to the works provided in the file.
+            Do not cite anything that is not already in `references.bib`. Do not add any new entries to this.
+
+            Keep the experimental results (figures and tables) only in the Results section, and make sure that any captions are filled in.
+            In this pass, do not reference anything in later sections of the paper.
+
+            Before every paragraph, please include a brief description of what you plan to write in that paragraph in a comment.
+
+            Be sure to first name the file and use *SEARCH/REPLACE* blocks to perform these edits.
+            """, 
+            "refine": refinement_prompt.format(section=self.section_name), 
+            "second_refine": second_refinement_prompt.format(section=self.section_name, tips=per_section_tips[self.section_name]), 
+        }
+        
+        if prompt_type not in prompt_templates:
+            raise ValueError("Invalid prompt type specified.")
+        
+        prompt = prompt_templates[prompt_type]
+        return prompt.replace(r"{{", "{").replace(r"}}", "}")
+
+    def write(self):
+        prompt = self.generate_prompt("write")
+        self.content = self.coder.run(prompt)
+
+    def refine(self):
+        prompt = self.generate_prompt("refine")
+        self.content = self.coder.run(prompt)
+
+    def second_refine(self) -> Any:
+        prompt = self.generate_prompt("second_refine")
+        self.content = self.coder.run(prompt)
+        
+
+class RelatedWorkSection(BaseSection):
+    def __init__(self, coder: Coder):
+        super().__init__(coder, "Related Work", "Related Work")
+
+    def generate_prompt(self, prompt_type) -> str:
+        if prompt_type == "write":
+            return f"""Please fill in the Related Work of the writeup. Some tips are provided below:
+
+            {per_section_tips["Related Work"]}
+
+            For this section, very briefly sketch out the structure of the section, and clearly indicate what papers you intend to include.
+            Do this all in LaTeX comments using %.
+            The related work should be concise, only plan to discuss the most relevant work.
+            Do not modify `references.bib` to add any new citations, this will be filled in at a later stage.
+
+            Be sure to first name the file and use *SEARCH/REPLACE* blocks to perform these edits.
+            """
+        return super().generate_prompt(prompt_type)
+
+
+class WriteupComponent:
     def __init__(
         self, 
-        writeup_file: str, 
-        exp_file: str, 
-        notes: str, 
-        model: str | Model, 
+        input_variable: list,   # exp_file, writeup_file, notes
+        output_variable: str, 
+        model: str,
+        template_dir: str, 
+        cite_client: str, 
+        num_cite_rounds: int,         
+    ):
+        self.input_variable = input_variable
+        self.output_variable = output_variable
+        self.main_model = self._select_model(model)
+        self.template_dir = template_dir
+        self.cite_client = cite_client 
+        self.num_cite_rounds = num_cite_rounds
+
+        self.coder = Coder.create(
+            main_model=self.main_model,
+            fnames=[self.input_variable],     
+            io=InputOutput(),
+            stream=False,
+            use_git=False,
+            edit_format="diff",
+        )
+        self.sections = {
+            "Title": BaseSection(self.coder, "Title"),
+            "Abstract": BaseSection(self.coder, "Abstract"),
+            "Introduction": BaseSection(self.coder, "Introduction"),
+            "Background": BaseSection(self.coder, "Background"),
+            "Method": BaseSection(self.coder, "Method"),
+            "Experimental Setup": BaseSection(self.coder, "Experimental Setup"),
+            "Results": BaseSection(self.coder, "Results"),
+            "Conclusion": BaseSection(self.coder, "Conclusion"),
+            "Related Work": RelatedWorkSection(self.coder),
+        }
+        self.citation_manager = CitationManager(self.coder)
+
+    # PERFORM WRITEUP
+    def __call__(self, state: State) -> dict:
+        # Writing each section
+        for section in self.sections.values():
+            section.write()
+
+        # Refining the writeup
+        for section in self.sections.values():
+            section.refine()
+
+        # Second refinement
+        for section in self.sections.values():
+            section.second_refine()
+
+        # Add citations to each section after refinement
+        cite_model = self.main_model
+        self.citation_manager.add_citations(self.sections, self.template_dir, self.cite_client, cite_model, self.num_cite_rounds)
+
+        # Save the final write-up content to the output file
+        output_file = state["output_variable"]
+        with open(output_file, "w") as f:
+            for section in self.sections.values():
+                f.write(section.content + "\n")
+
+        return {
+            self.output_variable: output_file
+        }
+
+    def _select_model(self, model: str) -> Model:
+        model_mapping = {
+            "deepseek-coder-v2-0724": "deepseek/deepseek-coder",
+            "llama3.1-405b": "openrouter/meta-llama/llama-3.1-405b-instruct"
+        }
+        model_name = model_mapping.get(model)
+        if model_name is None:
+            return Model(model)
+        return Model(model_name)
+
+
+class DraftImprovementComponent:
+    def __init__(
+        self, 
+        input_variable: list,   # exp_file, writeup_file, notes, review_path
+        output_variable: str, 
+        model: str, 
         io: InputOutput
     ):
-        super().__init__(writeup_file, exp_file, notes, model, io)    
+        self.input_variable = input_variable
+        self.output_variable = output_variable
+        self.coder = Coder.create(
+            main_model=model,
+            fnames=input_variable,
+            io=io,
+            stream=False,
+            use_git=False,
+            edit_format="diff",
+        )
 
-    def perform_improvement(self, review: str, memory_: dict[str, Any]) -> dict[str, Any]:
+    def __call__(self, state: State) -> dict:
+        # Extract review content from state
+        review_path = state.get("review_path")
+        if not review_path:
+            raise ValueError("Review content is required in the state.")
+        
+        with open(review_path, "r") as f:
+                review_content = f.read()
+    
+        # Perform improvement using the review
+        improved_content = self.perform_improvement(review_content)
+
+        # Save the perform_improvement content to the output file
+        output_file = self.output_variable
+        with open(output_file, "w") as f:
+            f.write(improved_content + "\n")
+
+        return {
+            self.output_variable: output_file
+        }
+
+    def perform_improvement(self, review: str) -> str:
         improvement_prompt = '''The following review has been created for your research paper:
         """
         {review}
@@ -519,90 +534,49 @@ class DraftImprovementComponent(ComponentBase):
 
         Improve the text using the review.'''.format(review=json.dumps(review))
         coder_out = self.coder.run(improvement_prompt)
-        memory_["improved_writeup_content"] = coder_out
-        memory_["is_improvement_successful"] = True
-        return memory_
-
-    def __call__(
-        self,
-        review: str,
-        memory_: dict[str, Any],
-    ) -> dict[str, Any]:
+        return coder_out
     
-        # Generate PDF after the improvement process
-        tex_node = LatexNode(memory_["improved_writeup_content"])
-        tex_node.setup_latex_utils(self.coder)  # Use the shared Coder instance
-        # // TODO: the path must be changed correctly
-        template_folder = "/workspaces/researchgraph/researchgraph/graph/ai_scientist/templates/2d_diffusion"
-        figures_folder = "/workspaces/researchgraph/researchgraph/graph/ai_scientist/"
-        pdf_file = "/workspaces/researchgraph/data/improved_test.pdf"  
 
-        tex_node.generate_latex(template_folder, figures_folder, pdf_file)
-
-        return memory_
-    
 if __name__ == "__main__":
 
-    from unittest.mock import MagicMock    
-
-    # 簡単なテストのための準備
-    writeup_file = "/workspaces/researchgraph/researchgraph/writingnode/sample_writeup.txt"  # テスト用のファイルパス
-    exp_file = "/workspaces/researchgraph/researchgraph/writingnode/sample_exp.txt"  # 実験結果のファイルパス
-    notes = "/workspaces/researchgraph/researchgraph/writingnode/sample_notes.txt"  # ノートのファイルパス
+    # Define input and output variables
+    input_variable = "input_writeup_file"
+    output_variable = "output_pdf_file"
     model = Model("gpt-4-turbo")
     io = InputOutput()
+    template_folder = "/workspaces/researchgraph/researchgraph/graph/ai_scientist/templates/2d_diffusion"
+    figures_folder = "/workspaces/researchgraph/images"
+    pdf_file = "/workspaces/researchgraph/data/generated_test.pdf"
 
-    # モック化: Coder の run メソッド
-    Coder.run = MagicMock(return_value="Mocked output for section generation.")
+    # Initialize WriteupComponent as a LangGraph node
+    writeup_component = WriteupComponent(
+        input_variable=input_variable,
+        output_variable=output_variable,
+        model=model,
+        io=io,
+        template_folder=template_folder,
+        figures_folder=figures_folder,
+        pdf_file=pdf_file,
+        timeout=30,
+    )
 
-    # メモリとして利用する辞書を初期化
-    memory_ = {
-        "writeup_content": {},
+    # Create the StateGraph and add node
+    graph_builder = StateGraph(State)
+    graph_builder.add_node("writeup_component", writeup_component)
+    graph_builder.set_entry_point("writeup_component")
+    graph_builder.set_finish_point("writeup_component")
+    graph = graph_builder.compile()
+
+    # Define initial state
+    memory = {
+        "input_writeup_file": "/workspaces/researchgraph/data/input.txt",
+        "output_pdf_file": "/workspaces/researchgraph/data/output.pdf",
         "is_writeup_successful": False,
-        "improved_writeup_content": "",
-        "is_improvement_successful": False
     }
 
-    # アイデアとして使用するダミーデータ
-    idea = {
-        "title": "A Study on 2D Diffusion",
-        "abstract": "This paper explores the methodology of 2D diffusion...",
-        "keywords": ["diffusion", "machine learning", "simulation"]
-    }
+    # Execute the graph
+    graph.invoke(memory)
 
-    # テスト用フォルダとクライアント
-    folder_name = "/workspaces/researchgraph/researchgraph/graph/ai_scientist/templates/2d_diffusion"
-    cite_client = None  # ここでは簡略化のためにNoneを使用します
-    cite_model = "gpt-4-turbo"
-
-    # WriteupComponent のインスタンス化と呼び出し
-    writeup_component = WriteupComponent(writeup_file, exp_file, notes, model, io)
-    print("Running WriteupComponent to generate PDF...")
-
-    # 引用ラウンド数を1に減らして実行時間を短縮
-    memory_ = writeup_component(idea, folder_name, memory_, cite_client, cite_model, num_cite_rounds=1)
-
-    if memory_["is_writeup_successful"]:
-        print("Writeup and PDF generation successful.")
-    else:
-        print("Writeup or PDF generation failed.")
-
-    # DraftImprovementComponent のインスタンス化と呼び出し
-    review = "The experimental setup needs more detail. Add more discussion on parameter tuning."
-    improvement_component = DraftImprovementComponent(writeup_file, exp_file, notes, model, io)
-    print("Running DraftImprovementComponent to improve writeup and generate PDF...")
-    
-    memory_ = improvement_component(review, memory_)
-
-    # モック解除したので、LaTeXコンパイルを行う
-    try:
-        memory_ = improvement_component(review, memory_)
-        if memory_["is_improvement_successful"]:
-            print("DraftImprovementComponent test passed. Writeup improvement and PDF generation successful.")
-        else:
-            print("DraftImprovementComponent test failed. Writeup improvement or PDF generation failed.")
-    except Exception as e:
-        print(f"DraftImprovementComponent test raised an error: {e}")
 
 
 
