@@ -1,4 +1,4 @@
-state = {
+memory = {
     "objective": "I am researching Optimizers for fine-tuning LLM. The aim is to find a better Optimizer.",
     "index": 12,
     "base_method_code": """

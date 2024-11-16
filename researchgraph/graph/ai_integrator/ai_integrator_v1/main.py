@@ -9,16 +9,19 @@ from researchgraph.llmnode import LLMNode
 from researchgraph.retrievenode import RetrieveCSVNode
 from researchgraph.retrievenode import RetrievearXivTextNode
 from researchgraph.retrievenode import GithubNode
+from researchgraph.writingnode import Text2ScriptNode
+from researchgraph.experimentnode import LLMTrainNode, LLMInferenceNode, LLMEvaluateNode
 
-from researchgraph.graph.ai_integrator.llmnode_setting.extractor import (
+from researchgraph.graph.ai_integrator.ai_integrator_v1.llmnode_setting.extractor import (
     extractor_setting,
 )
-from researchgraph.graph.ai_integrator.llmnode_setting.codeextractor import (
+from researchgraph.graph.ai_integrator.ai_integrator_v1.llmnode_setting.codeextractor import (
     codeextractor_setting,
 )
-from researchgraph.graph.ai_integrator.llmnode_setting.creator import creator_setting
+from researchgraph.graph.ai_integrator.ai_integrator_v1.llmnode_setting.creator import (
+    creator_setting,
+)
 
-from researchgraph.graph.ai_integrator.config import state
 
 logger = logging.getLogger("researchgraph")
 
@@ -39,12 +42,37 @@ class State(TypedDict):
     add_method_text: str
     new_method_code: list
     new_method_text: list
+    script_save_path: str
+    model_save_path: str
+    result_save_path: str
+    accuracy: str
 
 
-class AIIntegrator:
-    def __init__(self, llm_name: str, save_dir: str):
+class AIIntegratorv1:
+    def __init__(
+        self,
+        llm_name: str,
+        save_dir: str,
+        new_method_file_name: str,
+        ft_model_name: str,
+        dataset_name: str,
+        model_save_file_name: str,
+        result_save_file_name: str,
+        answer_data_path: str,
+        num_train_data: int,
+        num_inference_data: int,
+    ):
         self.llm_name = llm_name
         self.save_dir = save_dir
+        self.new_method_file_name = new_method_file_name
+        self.ft_model_name = ft_model_name
+        self.dataset_name = dataset_name
+        self.model_save_file_name = model_save_file_name
+        self.result_save_file_name = result_save_file_name
+        self.answer_data_path = answer_data_path
+        self.num_train_data = num_train_data
+        self.num_inference_data = num_inference_data
+
         if not os.path.exists(self.save_dir):
             os.makedirs(self.save_dir)
         self.graph_builder = StateGraph(State)
@@ -83,19 +111,59 @@ class AIIntegrator:
         self.graph_builder.add_node(
             "creator", LLMNode(llm_name=llm_name, setting=creator_setting)
         )
+        self.graph_builder.add_node(
+            "text2script",
+            Text2ScriptNode(
+                input_variable="new_method_code",
+                output_variable="script_save_path",
+                save_file_path=os.path.join(self.save_dir, self.new_method_file_name),
+            ),
+        )
+        self.graph_builder.add_node(
+            "llmtrainer",
+            LLMTrainNode(
+                model_name=self.ft_model_name,
+                dataset_name=self.dataset_name,
+                num_train_data=self.num_train_data,
+                model_save_path=os.path.join(self.save_dir, self.model_save_file_name),
+                input_variable="script_save_path",
+                output_variable="model_save_path",
+            ),
+        )
+        self.graph_builder.add_node(
+            "llminferencer",
+            LLMInferenceNode(
+                input_variable="model_save_path",
+                output_variable="result_save_path",
+                dataset_name=self.dataset_name,
+                num_inference_data=self.num_inference_data,
+                result_save_path=os.path.join(
+                    self.save_dir, self.result_save_file_name
+                ),
+            ),
+        )
+        self.graph_builder.add_node(
+            "llmevaluater",
+            LLMEvaluateNode(
+                input_variable="result_save_path",
+                output_variable="accuracy",
+                answer_data_path=self.answer_data_path,
+            ),
+        )
         # make edges
         self.graph_builder.add_edge("csvretriever", "arxivretriever")
         self.graph_builder.add_edge("csvretriever", "githubretriever")
         self.graph_builder.add_edge("arxivretriever", "extractor")
         self.graph_builder.add_edge(["githubretriever", "extractor"], "codeextractor")
         self.graph_builder.add_edge("codeextractor", "creator")
-
-        # make branches
-        # graph_builder.add_conditional_edges("verifier1", branchcontroller1)
+        self.graph_builder.add_edge("creator", "text2script")
+        self.graph_builder.add_edge("text2script", "llmtrainer")
+        self.graph_builder.add_edge("llmtrainer", "llminferencer")
+        self.graph_builder.add_edge("llminferencer", "llmevaluater")
 
         # set entry and finish points
         self.graph_builder.set_entry_point("csvretriever")
-        self.graph_builder.set_finish_point("creator")
+        self.graph_builder.set_finish_point("llmevaluater")
 
     def __call__(self, state: State) -> dict:
         self.graph = self.graph_builder.compile()
@@ -133,12 +201,23 @@ class AIIntegrator:
 if __name__ == "__main__":
     llm_name = "gpt-4o-2024-08-06"
     save_dir = "/workspaces/researchgraph/data/exec_ai_integrator"
-    research_graph = AIIntegrator(llm_name, save_dir)
+    ft_model_name = "unsloth/Meta-Llama-3.1-8B"
+    dataset_name = "openai/gsm8k"
+    num_train_data = 20
+    num_inference_data = 20
+    research_graph = AIIntegrator(
+        llm_name,
+        save_dir,
+        ft_model_name,
+        dataset_name,
+        num_train_data,
+        num_inference_data,
+    )
 
     # visualize the graph
-    # image_dir = "/workspaces/researchgraph/images/"
-    # research_graph.make_image(image_dir)
+    image_dir = "/workspaces/researchgraph/images/"
+    research_graph.make_image(image_dir)
     # research_graph.make_mermaid()
 
-    result = research_graph(state)
-    research_graph.write_result(result)
+    # result = research_graph(memory)
+    # research_graph.write_result(result)
