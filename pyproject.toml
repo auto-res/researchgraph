@@ -6,7 +6,7 @@ readme = "README.md"
 authors = [
     {name="Toma Tanaka", email="ulti4929@gmail.com"}
 ]
-urls = {"Homepage" = "https://github.com/auto-res/researchgraph/tree/main" }
+urls = {"Homepage" = "https://www.autores.one/japanese" }
 requires-python = ">=3.10"
 dependencies = [
     "aider-chat>=0.62.1",

@@ -1,8 +1,7 @@
 import pandas as pd
 import logging
 
-from typing import cast
-from typing_extensions import TypedDict
+from typing import TypedDict
 from langgraph.graph import StateGraph
 from langchain_core.runnables import RunnableConfig
 
@@ -16,7 +15,9 @@ class State(TypedDict):
 
 
 class RetrieveCSVNode:
-    def __init__(self, input_variable: str, output_variable: list[str], csv_file_path: str):
+    def __init__(
+        self, input_variable: str, output_variable: list[str], csv_file_path: str
+    ):
         self.input_variable = input_variable
         self.output_variable = output_variable
         self.csv_file_path = csv_file_path
@@ -60,4 +61,3 @@ if __name__ == "__main__":
     }
 
     graph.invoke(memory, debug=True)
-

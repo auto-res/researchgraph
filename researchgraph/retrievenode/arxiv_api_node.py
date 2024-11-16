@@ -5,8 +5,7 @@ import requests
 from langchain_community.document_loaders import PyPDFLoader
 import arxiv
 from pydantic import BaseModel, ValidationError, validate_arguments
-from typing import Any
-from typing_extensions import TypedDict
+from typing import TypedDict
 from langgraph.graph import StateGraph
 
 
@@ -26,13 +25,13 @@ class ArxivResponse(BaseModel):
 class ArxivNode:
     @validate_arguments
     def __init__(
-            self, 
-            save_dir: str, 
-            search_variable: str, 
-            output_variable: str, 
-            num_keywords: int, 
-            num_retrieve_paper: int
-        ):
+        self,
+        save_dir: str,
+        search_variable: str,
+        output_variable: str,
+        num_keywords: int,
+        num_retrieve_paper: int,
+    ):
         self.save_dir = save_dir
         self.search_variable = search_variable
         self.output_variable = output_variable
@@ -54,7 +53,7 @@ class ArxivNode:
         response = requests.get(url, stream=True)
 
         if response.status_code == 200:
-            with open(os.path.join(self.save_dir, f"{arxiv_id}.pdf"), 'wb') as file:
+            with open(os.path.join(self.save_dir, f"{arxiv_id}.pdf"), "wb") as file:
                 shutil.copyfileobj(response.raw, file)
             print(f"Downloaded {arxiv_id}.pdf to {self.save_dir}")
         else:
@@ -69,7 +68,7 @@ class ArxivNode:
         # Create the save directory if it doesn't exist
         if not os.path.exists(self.save_dir):
             os.makedirs(self.save_dir)
-        else :
+        else:
             # Clear the directory if it already exists
             shutil.rmtree(self.save_dir)
             os.makedirs(self.save_dir)
@@ -110,7 +109,7 @@ class ArxivNode:
 
         client = arxiv.Client(
             num_retries=3,  # 再試行の設定
-            page_size=self.num_retrieve_paper  # ページサイズを設定
+            page_size=self.num_retrieve_paper,  # ページサイズを設定
         )
 
         for search_term in keywords_list:
@@ -119,7 +118,7 @@ class ArxivNode:
                 max_results=self.num_retrieve_paper,
                 sort_by=arxiv.SortCriterion.SubmittedDate,
             )
-            
+
             results = list(client.results(search))
             all_search_results.extend(results)
 
@@ -134,7 +133,7 @@ class ArxivNode:
                     arxiv_id=result.get_short_id(),
                     authors=[author.name for author in result.authors],
                     abstract=result.summary,
-                    published_date=str(result.published)
+                    published_date=str(result.published),
                 )
                 validated_results.append(validated_result)
             except ValidationError as e:
@@ -148,7 +147,7 @@ class ArxivNode:
 
         # Process downloaded PDFs
         for idx, filename in enumerate(os.listdir(self.save_dir)):
-            if filename.endswith('.pdf'):
+            if filename.endswith(".pdf"):
                 pdf_path = os.path.join(self.save_dir, filename)
                 paper_content = self.convert_pdf_to_text(pdf_path)
                 paper_key = f"paper_{idx+1}"
@@ -161,9 +160,7 @@ if __name__ == "__main__":
     search_variable = "keywords"
     output_variable = "collection_of_papers"
 
-    memory = {
-        "keywords": '["Grokking", "Separability"]'
-    }
+    memory = {"keywords": '["Grokking", "Separability"]'}
 
     graph_builder = StateGraph(State)
     graph_builder.add_node(
@@ -175,7 +172,7 @@ if __name__ == "__main__":
             num_keywords=2,
             num_retrieve_paper=5,
             # num_retrieve_paper=1,
-        )
+        ),
     )
     graph_builder.set_entry_point("arxivretriever")
     graph_builder.set_finish_point("arxivretriever")
