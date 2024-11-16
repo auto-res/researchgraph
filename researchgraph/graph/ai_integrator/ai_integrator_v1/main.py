@@ -205,7 +205,7 @@ if __name__ == "__main__":
     dataset_name = "openai/gsm8k"
     num_train_data = 20
     num_inference_data = 20
-    research_graph = AIIntegrator(
+    research_graph = AIIntegratorv1(
         llm_name,
         save_dir,
         ft_model_name,
