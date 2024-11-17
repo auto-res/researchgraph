@@ -58,8 +58,8 @@ class AIIntegratorv1:
         model_save_dir_name: str,
         result_save_file_name: str,
         answer_data_path: str,
-        num_train_data: int,
-        num_inference_data: int,
+        num_train_data: int | None = None,
+        num_inference_data: int | None = None,
     ):
         self.llm_name = llm_name
         self.save_dir = save_dir
