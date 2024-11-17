@@ -2,6 +2,8 @@
 
 version:
 	uv run bumpversion patch
+	git add .
+	git commit -m "style: bump version"
 
 build:
 	uv build
