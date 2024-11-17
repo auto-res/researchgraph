@@ -38,5 +38,5 @@ dev-dependencies = [
 ignore = ["E731","F841","F821","E741"]
 
 [tool.setuptools.packages.find]
-where = ["."]
+where = ["src"]
 include = ["researchgraph"]

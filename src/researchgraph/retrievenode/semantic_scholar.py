@@ -111,9 +111,13 @@ class SemanticScholarNode:
                 try:
                     validated_result = SemanticScholarResponse(
                         paper_title=getattr(item, "title", "Unknown Title"),
-                        paper_abstract=getattr(item, "abstract", "No abstract available."),
+                        paper_abstract=getattr(
+                            item, "abstract", "No abstract available."
+                        ),
                         authors=getattr(item, "authors", []),
-                        publication_date=getattr(item, "publicationDate", "Unknown date")
+                        publication_date=getattr(
+                            item, "publicationDate", "Unknown date"
+                        ),
                     )
                     validated_results.append(validated_result.dict())
                 except ValidationError as e:

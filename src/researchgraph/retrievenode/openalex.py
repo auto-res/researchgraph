@@ -15,7 +15,7 @@ from langgraph.graph import StateGraph
 class State(TypedDict):
     keywords: list[str]
     collection_of_papers: Any
-    
+
 
 class OpenAlexResponse(BaseModel):
     paper_abstract: str
@@ -95,7 +95,6 @@ class OpenAlexNode:
 
         return content
 
-
     def __call__(self, state: State) -> Any:
         """Retriever
 
@@ -121,7 +120,9 @@ class OpenAlexNode:
                     validated_result = OpenAlexResponse(
                         paper_abstract=item.get("abstract", ""),
                         author=item.get("author", "Unknown"),
-                        public_date=datetime.strptime(item.get("publication_date", "1970-01-01"), "%Y-%m-%d"),
+                        public_date=datetime.strptime(
+                            item.get("publication_date", "1970-01-01"), "%Y-%m-%d"
+                        ),
                     )
                     validated_results.append(validated_result)
                 except ValidationError as e:

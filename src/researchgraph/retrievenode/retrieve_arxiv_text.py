@@ -9,7 +9,6 @@ from typing import Any, TypedDict
 from langgraph.graph import StateGraph
 from langchain_core.runnables import RunnableConfig
 from langchain_community.document_loaders import PyPDFLoader
-from pydantic import BaseModel
 
 logger = logging.getLogger("researchgraph")
 
