@@ -1,6 +1,6 @@
 [project]
 name = "researchgraph"
-version = "0.0.27"
+version = "0.0.28"
 description = "Add your description here"
 readme = "README.md"
 authors = [
@@ -38,4 +38,4 @@ ignore = ["E731","F841","F821","E741"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
-include = ["researchgraph"]
+include = ["researchgraph*"]
