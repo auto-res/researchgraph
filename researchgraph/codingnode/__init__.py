@@ -1,3 +1,3 @@
-from .coding_aider import AiderNode
+from .aider import AiderNode
 
 __all__ = ["AiderNode"]
