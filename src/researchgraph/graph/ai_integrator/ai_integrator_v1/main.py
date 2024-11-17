@@ -6,7 +6,6 @@ from typing_extensions import TypedDict
 from langgraph.graph import StateGraph
 
 from researchgraph.llmnode import LLMNode
-from researchgraph.retrievenode import RetrieveCSVNode
 from researchgraph.retrievenode import RetrievearXivTextNode
 from researchgraph.retrievenode import GithubNode
 from researchgraph.writingnode import Text2ScriptNode
@@ -56,7 +55,7 @@ class AIIntegratorv1:
         new_method_file_name: str,
         ft_model_name: str,
         dataset_name: str,
-        model_save_file_name: str,
+        model_save_dir_name: str,
         result_save_file_name: str,
         answer_data_path: str,
         num_train_data: int,
@@ -67,7 +66,7 @@ class AIIntegratorv1:
         self.new_method_file_name = new_method_file_name
         self.ft_model_name = ft_model_name
         self.dataset_name = dataset_name
-        self.model_save_file_name = model_save_file_name
+        self.model_save_dir_name = model_save_dir_name
         self.result_save_file_name = result_save_file_name
         self.answer_data_path = answer_data_path
         self.num_train_data = num_train_data
@@ -77,15 +76,6 @@ class AIIntegratorv1:
             os.makedirs(self.save_dir)
         self.graph_builder = StateGraph(State)
 
-        # make nodes
-        self.graph_builder.add_node(
-            "csvretriever",
-            RetrieveCSVNode(
-                input_variable="index",
-                output_variable=["arxiv_url", "github_url"],
-                csv_file_path="/workspaces/researchgraph/data/optimization_algorithm.csv",
-            ),
-        )
         self.graph_builder.add_node(
             "githubretriever",
             GithubNode(
@@ -125,7 +115,7 @@ class AIIntegratorv1:
                 model_name=self.ft_model_name,
                 dataset_name=self.dataset_name,
                 num_train_data=self.num_train_data,
-                model_save_path=os.path.join(self.save_dir, self.model_save_file_name),
+                model_save_path=os.path.join(self.save_dir, self.model_save_dir_name),
                 input_variable="script_save_path",
                 output_variable="model_save_path",
             ),
@@ -151,8 +141,7 @@ class AIIntegratorv1:
             ),
         )
         # make edges
-        self.graph_builder.add_edge("csvretriever", "arxivretriever")
-        self.graph_builder.add_edge("csvretriever", "githubretriever")
+        self.graph_builder.add_edge("arxivretriever", "githubretriever")
         self.graph_builder.add_edge("arxivretriever", "extractor")
         self.graph_builder.add_edge(["githubretriever", "extractor"], "codeextractor")
         self.graph_builder.add_edge("codeextractor", "creator")
@@ -162,7 +151,7 @@ class AIIntegratorv1:
         self.graph_builder.add_edge("llminferencer", "llmevaluater")
 
         # set entry and finish points
-        self.graph_builder.set_entry_point("csvretriever")
+        self.graph_builder.set_entry_point("arxivretriever")
         self.graph_builder.set_finish_point("llmevaluater")
 
     def __call__(self, state: State) -> dict:

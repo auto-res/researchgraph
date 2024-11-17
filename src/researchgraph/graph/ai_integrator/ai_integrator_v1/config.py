@@ -1,6 +1,7 @@
-memory = {
+ai_integratorv1_setting = {
     "objective": "I am researching Optimizers for fine-tuning LLM. The aim is to find a better Optimizer.",
-    "index": 12,
+    "arxiv_url": "https://arxiv.org/abs/1804.00325v3",
+    "github_url": "https://github.com/AtheMathmo/AggMo",
     "base_method_code": """
 from torch.optim import Optimizer
 

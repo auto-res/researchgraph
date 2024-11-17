@@ -6,3 +6,4 @@ package:
 	git commit -m "style: bump version"
 	uv build
 	uvx twine upload dist/*
+	rm -rf dist
