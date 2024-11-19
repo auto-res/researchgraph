@@ -5,26 +5,27 @@ from IPython.display import Image
 from typing_extensions import TypedDict
 from langgraph.graph import StateGraph
 
-from researchgraph.llmnode import LLMNode
-from researchgraph.retrievenode import RetrievearXivTextNode
-from researchgraph.retrievenode import GithubNode
-from researchgraph.writingnode import Text2ScriptNode
-from researchgraph.experimentnode import (
+from src.researchgraph.llmnode import LLMNode
+from src.researchgraph.retrievenode import RetrievearXivTextNode
+from src.researchgraph.retrievenode import GithubNode
+from src.researchgraph.writingnode import Text2ScriptNode
+from src.researchgraph.experimentnode import (
     LLMTrainNode,
     LLMInferenceNode,
     LLMEvaluateNode,
 )
 
-from researchgraph.graph.ai_integrator.ai_integrator_v1.llmnode_setting.extractor import (
+from src.researchgraph.graph.ai_integrator.ai_integrator_v1.llmnode_setting.extractor import (
     extractor_setting,
 )
-from researchgraph.graph.ai_integrator.ai_integrator_v1.llmnode_setting.codeextractor import (
+from src.researchgraph.graph.ai_integrator.ai_integrator_v1.llmnode_setting.codeextractor import (
     codeextractor_setting,
 )
-from researchgraph.graph.ai_integrator.ai_integrator_v1.llmnode_setting.creator import (
+from src.researchgraph.graph.ai_integrator.ai_integrator_v1.llmnode_setting.creator import (
     creator_setting,
 )
 
+from config import ai_integratorv1_setting
 
 logger = logging.getLogger("researchgraph")
 
@@ -144,6 +145,7 @@ class AIIntegratorv1:
                 answer_data_path=self.answer_data_path,
             ),
         )
+
         # make edges
         self.graph_builder.add_edge("arxivretriever", "githubretriever")
         self.graph_builder.add_edge("arxivretriever", "extractor")
@@ -156,12 +158,14 @@ class AIIntegratorv1:
 
         # set entry and finish points
         self.graph_builder.set_entry_point("arxivretriever")
+        # self.graph_builder.set_finish_point("creator")
         self.graph_builder.set_finish_point("llmevaluater")
 
         self.graph = self.graph_builder.compile()
 
-    def __call__(self, state: State, debug: bool = True) -> dict:
-        result = self.graph.invoke(state, debug)
+    # def __call__(self, state: State, debug: bool = True) -> dict:
+    def __call__(self, state: State) -> dict:
+        result = self.graph.invoke(state)
         return result
 
     def write_result(self, response: State):
@@ -194,24 +198,36 @@ class AIIntegratorv1:
 
 if __name__ == "__main__":
     llm_name = "gpt-4o-2024-08-06"
-    save_dir = "/workspaces/researchgraph/data/exec_ai_integrator"
+    save_dir = "/content/drive/MyDrive/AutoRes/ai_integrator/exec-test"
     ft_model_name = "unsloth/Meta-Llama-3.1-8B"
     dataset_name = "openai/gsm8k"
-    num_train_data = 20
-    num_inference_data = 20
+    new_method_file_name = "new_method.py"
+    model_save_dir_name = "train_model"
+    result_save_file_name = "pred_file"
+    answer_data_path = "/content/drive/MyDrive/AutoRes/ai_integrator/gsm8k_answer.csv"
+    # num_train_data = 100
+    # num_inference_data = 100
+
     research_graph = AIIntegratorv1(
-        llm_name,
-        save_dir,
-        ft_model_name,
-        dataset_name,
-        num_train_data,
-        num_inference_data,
+        llm_name=llm_name,
+        save_dir=save_dir,
+        new_method_file_name=new_method_file_name,
+        ft_model_name=ft_model_name,
+        dataset_name=dataset_name,
+        model_save_dir_name=model_save_dir_name,
+        result_save_file_name=result_save_file_name,
+        answer_data_path=answer_data_path,
+        # num_train_data = num_train_data,
+        # num_inference_data = num_inference_data,
     )
 
     # visualize the graph
-    image_dir = "/workspaces/researchgraph/images/"
-    research_graph.make_image(image_dir)
+    # image_dir = "/workspaces/researchgraph/images/"
+    # research_graph.make_image(image_dir)
     # research_graph.make_mermaid()
 
-    # result = research_graph(memory)
+    result = research_graph(
+        state=ai_integratorv1_setting,
+        # debug=True
+    )
     # research_graph.write_result(result)
