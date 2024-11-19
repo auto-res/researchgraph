@@ -1,6 +1,6 @@
 [project]
 name = "researchgraph"
-version = "0.0.35"
+version = "0.0.36"
 description = "Add your description here"
 readme = "README.md"
 authors = [
