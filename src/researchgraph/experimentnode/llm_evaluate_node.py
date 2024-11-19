@@ -19,11 +19,13 @@ class LLMEvaluateNode:
         answer_data_path: str = None,
         dataset_name: str = None,
     ):
-        print("LLMEvaluateNode")
         self.input_variable = input_variable
         self.output_variable = output_variable
         self.answer_data_path = answer_data_path
         self.dataset_name = dataset_name
+        print("LLMEvaluateNode")
+        print(f"input: {input_variable}")
+        print(f"output: {output_variable}")
 
     def _parse_llm_output(self, path: str) -> list:
         df = pd.read_csv(path)
