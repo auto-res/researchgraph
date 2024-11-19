@@ -154,9 +154,10 @@ class AIIntegratorv1:
         self.graph_builder.set_entry_point("arxivretriever")
         self.graph_builder.set_finish_point("llmevaluater")
 
-    def __call__(self, state: State) -> dict:
         self.graph = self.graph_builder.compile()
-        result = self.graph.invoke(state)
+
+    def __call__(self, state: State, debug: bool = True) -> dict:
+        result = self.graph.invoke(state, debug)
         return result
 
     def write_result(self, response: State):
