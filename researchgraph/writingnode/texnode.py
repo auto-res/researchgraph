@@ -16,11 +16,23 @@ class State(TypedDict):
 
 
 class LatexUtils:
-    def __init__(self, model: str):
+    def __init__(self, model: str, template_dir: str, figures_dir: str):
         # Define default files
-        fnames = []
+        self.template_dir = osp.abspath(template_dir)
+        self.figures_dir = figures_dir
+        self.cwd = osp.join(self.template_dir, "latex")
+        self.template_file = osp.join(self.cwd, "template.tex")
+        self.template_copy_file = osp.join(self.cwd, "template_copy.tex")
+
+        # Initialize paths for writeup and output PDF
+        self.writeup_file_path = None
+        self.pdf_file_path = None
+
+        # Add the LaTeX template file to the list of filenames
+        fnames = [self.template_copy_file]
+        
         # Create the Coder instance
-        self.coder = Coder.create(      # TODO: インスタンス引数
+        self.coder = Coder.create(
             main_model=Model(model),
             fnames=fnames,
             io=InputOutput(),
@@ -28,6 +40,15 @@ class LatexUtils:
             use_git=False,
             edit_format="diff",
         )
+
+    def set_paths(self, writeup_file_path: str, pdf_file_path: str):
+        """Set the paths for the writeup file and PDF output."""
+        self.writeup_file_path = writeup_file_path
+        self.pdf_file_path = pdf_file_path
+
+    def prepare_template_copy(self):
+        # Copy template.tex
+        shutil.copyfile(self.template_file, self.template_copy_file)
 
     # Check all references are valid and in the references.bib file
     def check_references(self, tex_text: str) -> bool:
@@ -53,9 +74,9 @@ class LatexUtils:
         self.coder.run(prompt)
 
     # Check all included figures are actually in the directory.
-    def check_figures(self, figure_dir: str, tex_text: str, pattern: str = r"\\includegraphics.*?{(.*?)}"):
+    def check_figures(self, tex_text: str, pattern: str = r"\\includegraphics.*?{(.*?)}"):
         referenced_figs = re.findall(pattern, tex_text)
-        all_figs = [f for f in os.listdir(figure_dir) if f.endswith(".png")]
+        all_figs = [f for f in os.listdir(self.figures_dir) if f.endswith(".png")]
 
         for fig in referenced_figs:
             if fig not in all_figs:
@@ -89,7 +110,7 @@ class LatexUtils:
         for _ in range(num_error_corrections):
             check_output = os.popen(f"chktex {writeup_file} -q -n2 -n24 -n13 -n1").read()
             if check_output:
-                prompt = f"""Please fix the following LaTeX errors in `template_copy.tex` guided by the output of `chktek`:
+                prompt = f"""Please fix the following LaTeX errors in `template_copy.tex` guided by the output of `chktex`:
                 {check_output}.
 
                 Make the minimal fix required and do not remove or change any packages.
@@ -99,21 +120,21 @@ class LatexUtils:
             else:
                 break
 
-    def compile_latex(self, cwd: str, pdf_file_path: str, template_file: str, timeout: int = 30):
+    def compile_latex(self, pdf_file_path: str, timeout: int = 30):
         print("GENERATING LATEX")
 
         commands = [
-            ["pdflatex", "-interaction=nonstopmode", template_file],
-            ["bibtex", osp.splitext(template_file)[0]], 
-            ["pdflatex", "-interaction=nonstopmode", template_file],
-            ["pdflatex", "-interaction=nonstopmode", template_file],
+            ["pdflatex", "-interaction=nonstopmode", self.template_copy_file],
+            ["bibtex", osp.splitext(self.template_copy_file)[0]], 
+            ["pdflatex", "-interaction=nonstopmode", self.template_copy_file],
+            ["pdflatex", "-interaction=nonstopmode", self.template_copy_file],
         ]
 
         for command in commands:
             try:
                 result = subprocess.run(
                     command,
-                    cwd=cwd,
+                    cwd=self.cwd,
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE,
                     text=True,
@@ -121,16 +142,18 @@ class LatexUtils:
                 )
                 print("Standard Output:\n", result.stdout)
                 print("Standard Error:\n", result.stderr)
-            except subprocess.TimeoutExpired:
-                print(f"Latex timed out after {timeout} seconds")
+            except subprocess.TimeoutExpired as e:
+                print(f"Latex command timed out: {e}")
             except subprocess.CalledProcessError as e:
                 print(f"Error running command {' '.join(command)}: {e}")
+            except Exception as e:
+                print(f"An unexpected error occurred: {e}")
 
         print("FINISHED GENERATING LATEX")
 
-        pdf_filename = f"{osp.splitext(osp.basename(template_file))[0]}.pdf"
+        pdf_filename = f"{osp.splitext(osp.basename(self.template_copy_file))[0]}.pdf"
         try:
-            shutil.move(osp.join(cwd, pdf_filename), pdf_file_path)
+            shutil.move(osp.join(self.cwd, pdf_filename), self.pdf_file_path)
         except FileNotFoundError:
             print("Failed to rename PDF.")
 
@@ -139,38 +162,42 @@ class LatexNode:
     def __init__(self, input_variable, output_variable, model: str, template_dir: str, figures_dir: str, timeout: int = 30, num_error_corrections: int = 5):
         self.input_variable = input_variable
         self.output_variable = output_variable
-        self.latex_utils = LatexUtils(model)
-        self.template_dir = template_dir
-        self.figures_dir = figures_dir
+        self.latex_utils = LatexUtils(model, template_dir, figures_dir)
         self.timeout = timeout
         self.num_error_corrections = num_error_corrections
 
     def __call__(self, state: State) -> dict:
         try:
-            # Generate LaTeX content
-            template_dir = osp.abspath(self.template_dir)
-            cwd = osp.join(template_dir, "latex")
-            template_file = osp.join(cwd, "template.tex")
+            # Get paths from state
+            writeup_file_path = osp.expanduser(state.get(self.input_variable))
+            pdf_file_path = osp.expanduser(state.get(self.output_variable))
 
-            # Copy template.tex
-            template_copy_file = osp.join(cwd, "template_copy.tex")
-            shutil.copyfile(template_file, template_copy_file)
+            if not writeup_file_path or not pdf_file_path:
+                raise ValueError("Input or output file path not found in state.")
+
+            # Set paths in LatexUtils instance
+            self.latex_utils.set_paths(writeup_file_path, pdf_file_path)
+
+            # Prepare LaTeX template copy
+            self.latex_utils.prepare_template_copy()
 
             tex_text = ''
-
-            # Read content from input_variable path
-            writeup_file_path = state.get(self.input_variable)
-            if not writeup_file_path:
-                raise ValueError(f"Input file path for variable '{self.input_variable}' not found in state.")
             
-            with open(writeup_file_path, "r") as f:
-                file_content = f.read()
+            try:
+                with open(writeup_file_path, "r") as f:
+                    file_content = f.read()
+            except FileNotFoundError:
+                print(f"Writeup file '{writeup_file_path}' not found.")
+                return None
+            except PermissionError:
+                print(f"Permission denied to read '{writeup_file_path}'.")
+                return None
 
             # Split file content into sections based on headings (e.g., "# abstract", "# introduction")
             sections = self._split_into_sections(file_content)
 
             # Read the LaTeX template content
-            with open(template_copy_file, "r") as f:
+            with open(self.latex_utils.template_copy_file, "r") as f:
                 tex_text = f.read()
 
             # Replace placeholders in the LaTeX template with corresponding section content
@@ -178,22 +205,18 @@ class LatexNode:
                 placeholder = f"{section.upper()} HERE"
                 tex_text = tex_text.replace(placeholder, content)
 
-            with open(template_copy_file, "w") as f:
+            with open(self.latex_utils.template_copy_file, "w") as f:
                 f.write(tex_text)
 
             # Run LaTeX utilities
             self.latex_utils.check_references(tex_text)
-            self.latex_utils.check_figures(self.figures_dir, tex_text)
+            self.latex_utils.check_figures(tex_text)
             self.latex_utils.check_duplicates(tex_text, r"\\includegraphics.*?{(.*?)}", "figure")
             self.latex_utils.check_duplicates(tex_text, r"\\section{([^}]*)}", "section header")
-            self.latex_utils.fix_latex_errors(template_copy_file, self.num_error_corrections)
+            self.latex_utils.fix_latex_errors(self.latex_utils.template_copy_file, self.num_error_corrections)
 
-            # Compile LaTeX to PDF
-            pdf_file_path = state.get(self.output_variable)
-            if not pdf_file_path:
-                raise ValueError(f"Output file path for variable '{self.output_variable}' not found in state.")
-            
-            self.latex_utils.compile_latex(cwd, pdf_file_path, template_copy_file, timeout=self.timeout)
+
+            self.latex_utils.compile_latex(pdf_file_path, timeout=self.timeout)
 
             # Update state with output PDF path
             return {
@@ -211,7 +234,7 @@ class LatexNode:
         buffer = []
 
         for line in text.splitlines():
-            match = re.match(r"#\s*(\w+)", line)    # TODO: プレーンテキストに対するセクションの判定条件
+            match = re.match(r"#\s*([\w\s]+)", line)    # TODO: プレーンテキストに対するセクションの判定条件
             if match:
                 if current_section and buffer:
                     sections[current_section] = "\n".join(buffer).strip()
@@ -255,8 +278,8 @@ if __name__ == "__main__":
 
     # Define initial state
     memory = {
-        "writeup_file_path" : "~/write_file.txt",
-        "pdf_file_path": "~/data/sample.pdf"
+        "writeup_file_path" : "/workspaces/researchgraph/data/writeup_file.txt",
+        "pdf_file_path": "/workspaces/researchgraph/data/sample.pdf"
     }
 
     # Execute the graph

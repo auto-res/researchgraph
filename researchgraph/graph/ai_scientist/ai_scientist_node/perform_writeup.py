@@ -13,6 +13,10 @@ from typing import TypedDict
 
 
 per_section_tips = {
+    "Title": """
+- Create a concise and informative title that clearly conveys the subject and scope of the paper.
+- Make sure it captures the essence of your contribution and attracts the reader's attention.
+""",
     "Abstract": """
 - TL;DR of the paper
 - What are we trying to do and why is it relevant?
@@ -179,8 +183,9 @@ This JSON will be automatically parsed, so ensure the format is precise."""
 
 
 class State(TypedDict):
-    inputput_Variable: str
-    output_variable: str
+    notes_path: str
+    writeup_file_path: str
+    review_path: str | None     # DraftImprovementComponent
 
 @dataclass
 class CitationContext:
@@ -195,7 +200,7 @@ class CitationManager:
     def __init__(self, coder: Coder):
         self.coder = coder
 
-    def add_citations(self, sections: dict, template_dir: str, cite_client: Any, cite_model: str, num_cite_rounds: int):
+    def add_citations(self, sections: dict, template_dir: str, cite_client: Any, cite_model: Model, num_cite_rounds: int):
             for round_num in range(num_cite_rounds):
                 template_file = osp.join(template_dir, "latex", "template.tex")
                 with open(template_file, "r") as f:
@@ -349,7 +354,7 @@ class BaseSection:
     def __init__(self, coder: Coder, section_name: str):
         self.coder = coder
         self.section_name = section_name
-        self.contentn = ""
+        self.content = ""
 
     def generate_prompt(self, prompt_type: str) -> str:
         prompt_templates = {
@@ -391,7 +396,7 @@ class BaseSection:
 
 class RelatedWorkSection(BaseSection):
     def __init__(self, coder: Coder):
-        super().__init__(coder, "Related Work", "Related Work")
+        super().__init__(coder, "Related Work")
 
     def generate_prompt(self, prompt_type) -> str:
         if prompt_type == "write":
@@ -412,67 +417,84 @@ class RelatedWorkSection(BaseSection):
 class WriteupComponent:
     def __init__(
         self, 
-        input_variable: list,   # exp_file, writeup_file, notes
-        output_variable: str, 
+        input_variable: str,   # notes_path
+        output_variable: str,   # writeup_file_path
         model: str,
         template_dir: str, 
-        cite_client: str, 
+        cite_client: Any, 
         num_cite_rounds: int,         
     ):
         self.input_variable = input_variable
         self.output_variable = output_variable
-        self.main_model = self._select_model(model)
+        self.model = model
         self.template_dir = template_dir
         self.cite_client = cite_client 
         self.num_cite_rounds = num_cite_rounds
+        self.sections = None
+        self.citation_manager = None
+
+    # PERFORM WRITEUP
+    def __call__(self, state: State) -> dict:
+        notes_path = state[self.input_variable]
+        writeup_file_path = state[self.output_variable]
+
+        # Check if the notes file exists, raise an error if it doesn't
+        if not os.path.exists(notes_path):
+            raise FileNotFoundError(f"The specified notes file does not exist: {notes_path}")
+        
+        main_model = self._select_model(self.model)
 
         self.coder = Coder.create(
-            main_model=self.main_model,
-            fnames=[self.input_variable],     
+            main_model=main_model,
+            fnames=[notes_path],     
             io=InputOutput(),
             stream=False,
             use_git=False,
             edit_format="diff",
         )
-        self.sections = {
-            "Title": BaseSection(self.coder, "Title"),
-            "Abstract": BaseSection(self.coder, "Abstract"),
-            "Introduction": BaseSection(self.coder, "Introduction"),
-            "Background": BaseSection(self.coder, "Background"),
-            "Method": BaseSection(self.coder, "Method"),
-            "Experimental Setup": BaseSection(self.coder, "Experimental Setup"),
-            "Results": BaseSection(self.coder, "Results"),
-            "Conclusion": BaseSection(self.coder, "Conclusion"),
-            "Related Work": RelatedWorkSection(self.coder),
-        }
-        self.citation_manager = CitationManager(self.coder)
 
-    # PERFORM WRITEUP
-    def __call__(self, state: State) -> dict:
-        # Writing each section
-        for section in self.sections.values():
-            section.write()
+        if self.sections is None:
+            self.sections = {
+                "Title": BaseSection(self.coder, "Title"),
+                "Abstract": BaseSection(self.coder, "Abstract"),
+                "Introduction": BaseSection(self.coder, "Introduction"),
+                "Background": BaseSection(self.coder, "Background"),
+                "Method": BaseSection(self.coder, "Method"),
+                "Experimental Setup": BaseSection(self.coder, "Experimental Setup"),
+                "Results": BaseSection(self.coder, "Results"),
+                "Conclusion": BaseSection(self.coder, "Conclusion"),
+                "Related Work": RelatedWorkSection(self.coder),
+            }
 
-        # Refining the writeup
-        for section in self.sections.values():
-            section.refine()
+        # Write each section directly to the output file
+        with open(writeup_file_path, "w") as f:
+            for section_name, section in self.sections.items():
+                # Step 1: Initial Writing
+                section.write()
+                # Step 2: First Refinement (remove placeholders and improve quality)
+                section.refine()
+                # Step 3: Second Refinement (final touches, clean up any remaining meta information)
+                section.second_refine()
+                
+                # Write the final refined content to the file without any metadata or placeholders
+                f.write(f"# {section_name}\n")
+                f.write(section.content.strip() + "\n")
 
-        # Second refinement
-        for section in self.sections.values():
-            section.second_refine()
+        # CitationManager インスタンスの初期化
+        if self.citation_manager is None:
+            self.citation_manager = CitationManager(self.coder)       
 
         # Add citations to each section after refinement
-        cite_model = self.main_model
+        cite_model = self.model
         self.citation_manager.add_citations(self.sections, self.template_dir, self.cite_client, cite_model, self.num_cite_rounds)
 
-        # Save the final write-up content to the output file
-        output_file = state["output_variable"]
-        with open(output_file, "w") as f:
+        # Save the final write-up content after adding citations
+        with open(writeup_file_path, "a") as f:
             for section in self.sections.values():
                 f.write(section.content + "\n")
 
         return {
-            self.output_variable: output_file
+            self.output_variable: writeup_file_path
         }
 
     def _select_model(self, model: str) -> Model:
@@ -480,17 +502,14 @@ class WriteupComponent:
             "deepseek-coder-v2-0724": "deepseek/deepseek-coder",
             "llama3.1-405b": "openrouter/meta-llama/llama-3.1-405b-instruct"
         }
-        model_name = model_mapping.get(model)
-        if model_name is None:
-            return Model(model)
-        return Model(model_name)
+        return Model(model_mapping.get(model, model))
 
 
 class DraftImprovementComponent:
     def __init__(
         self, 
-        input_variable: list,   # exp_file, writeup_file, notes, review_path
-        output_variable: str, 
+        input_variable: list,   # writeup_file, notes, review_path
+        output_variable: str,   # 
         model: str, 
         io: InputOutput
     ):
@@ -539,25 +558,24 @@ class DraftImprovementComponent:
 
 if __name__ == "__main__":
 
+    import openai
+
     # Define input and output variables
-    input_variable = "input_writeup_file"
-    output_variable = "output_pdf_file"
-    model = Model("gpt-4-turbo")
+    input_variable = "notes_path"
+    output_variable = "writeup_file_path"
+    model = "gpt-3.5-turbo"
     io = InputOutput()
-    template_folder = "/workspaces/researchgraph/researchgraph/graph/ai_scientist/templates/2d_diffusion"
-    figures_folder = "/workspaces/researchgraph/images"
-    pdf_file = "/workspaces/researchgraph/data/generated_test.pdf"
+    template_dir = "/workspaces/researchgraph/researchgraph/graph/ai_scientist/templates/2d_diffusion"
+    cite_client = openai
 
     # Initialize WriteupComponent as a LangGraph node
     writeup_component = WriteupComponent(
         input_variable=input_variable,
         output_variable=output_variable,
         model=model,
-        io=io,
-        template_folder=template_folder,
-        figures_folder=figures_folder,
-        pdf_file=pdf_file,
-        timeout=30,
+        template_dir=template_dir, 
+        cite_client=cite_client, 
+        num_cite_rounds=2, 
     )
 
     # Create the StateGraph and add node
@@ -569,9 +587,8 @@ if __name__ == "__main__":
 
     # Define initial state
     memory = {
-        "input_writeup_file": "/workspaces/researchgraph/data/input.txt",
-        "output_pdf_file": "/workspaces/researchgraph/data/output.pdf",
-        "is_writeup_successful": False,
+        "notes_path": "/workspaces/researchgraph/data/notes.txt", 
+        "writeup_file_path": "/workspaces/researchgraph/data/writeup_file.txt"
     }
 
     # Execute the graph
