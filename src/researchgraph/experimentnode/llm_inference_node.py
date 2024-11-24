@@ -22,13 +22,13 @@ class LLMInferenceNode:
     ):
         self.input_variable = input_variable
         self.output_variable = output_variable
+        print("LLMInferenceNode")
+        print(f"input: {self.input_variable}")
+        print(f"output: {self.output_variable}")
         self.result_save_path = result_save_path
         self.dataset_name = dataset_name
         self.num_inference_data = num_inference_data
         self.dataset = self._set_up_dataset()
-        print("LLMInferenceNode")
-        print(f"input: {input_variable}")
-        print(f"output: {output_variable}")
 
     def _set_up_model(self, model_save_path):
         train_model, train_tokenizer = FastLanguageModel.from_pretrained(

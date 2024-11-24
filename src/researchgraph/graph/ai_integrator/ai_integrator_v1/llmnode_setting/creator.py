@@ -23,6 +23,7 @@ Please check the descriptions of the tags listed in Tag Descriptions and follow 
     - When generating a new method, please also consider the description of the <add_method_code> enclosed in the <add_method_text> tag and the description of the <base_method_code> enclosed in the <base_method_text> tag.
     - Please enclose the new method in the <new_method_text> tag.
     - Please enclose the code of the new method in the <new_method_code> tag.
+    - The output of new_method_code must follow the template enclosed in the <method_template> tag.
 </RULE>
 <objective>
 {objective}
@@ -39,5 +40,8 @@ Please check the descriptions of the tags listed in Tag Descriptions and follow 
 <base_method_code>
 {base_method_code}
 </base_method_code>
+<method_template>
+{method_template}
+</method_template>
 <EOS></EOS>""",
 }

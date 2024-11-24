@@ -1,14 +1,13 @@
 # %%
 import logging
-from typing import Any
-from typing_extensions import TypedDict
+from typing import TypedDict, Any
 
 from langgraph.graph import StateGraph
 
 from llmlinks.link import LLMLink
 from llmlinks.llm_client import LLMClient
 
-from .llm_node_setting_template import (
+from llm_node_setting_template import (
     translater1_setting,
     translater2_setting,
     translater3_setting,
@@ -45,7 +44,7 @@ class LLMNode:
 
     def __call__(self, state: State) -> Any:
         if isinstance(self.input_variable[0], list):
-            num_loop = len(self.input)
+            num_loop = len(self.input_variable)
             for i in range(num_loop):
                 prompt = self.prompt_template[i]
                 func = LLMLink(
@@ -54,10 +53,11 @@ class LLMNode:
                     self.input_variable[i],
                     self.output_variable[i],
                 )
-
                 kwargs = {key: state[key] for key in self.input_variable[i]}
                 response = func(**kwargs)
-            return {key: response[key] for key in self.output_variable[i]}
+                for key in self.output_variable[i]:
+                    state[key] = response[key]
+            return {**state}
 
         else:
             func = LLMLink(
@@ -68,8 +68,6 @@ class LLMNode:
             )
             kwargs = {key: state[key] for key in self.input_variable}
             response = func(**kwargs)
-            logger.info("---LLMNode---")
-            logger.info(f"LLMNode response:\n{response}")
             return {**response}
 
 
@@ -103,5 +101,3 @@ if __name__ == "__main__":
 
     print(memory)
     result = graph.invoke(memory, debug=True)
-    print(result["new_method_text"])
-    print(result["new_method_code"])

@@ -23,6 +23,7 @@ dependencies = [
     "semanticscholar>=0.8.4",
     "tomli-w>=1.0.0",
     "tomli>=2.0.1",
+    "jinja2>=3.1.4",
 ]
 
 [tool.uv]

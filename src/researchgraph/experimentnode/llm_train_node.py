@@ -26,6 +26,9 @@ class LLMTrainNode:
     ):
         self.input_variable = input_variable
         self.output_variable = output_variable
+        print("LLMTrainNode")
+        print(f"input: {self.input_variable}")
+        print(f"output: {self.output_variable}")
         self.model_name = model_name
         self.dataset_name = dataset_name
         self.model_save_path = model_save_path
@@ -33,9 +36,6 @@ class LLMTrainNode:
         self.training_args = self._set_up_training_args()
         self.model, self.tokenizer = self._set_up_model()
         self.dataset = self._set_up_dataset()
-        print("LLMTrainNode")
-        print(f"input: {input_variable}")
-        print(f"output: {output_variable}")
 
     def _set_up_training_args(self):
         training_args_kwargs = {
