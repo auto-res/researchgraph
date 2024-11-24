@@ -5,23 +5,23 @@ from IPython.display import Image
 from typing_extensions import TypedDict
 from langgraph.graph import StateGraph
 
-from src.researchgraph.llmnode import LLMNode
-from src.researchgraph.retrievenode import RetrievearXivTextNode
-from src.researchgraph.retrievenode import GithubNode
-from src.researchgraph.writingnode import Text2ScriptNode
-from src.researchgraph.experimentnode import (
+from researchgraph.llmnode import LLMNode
+from researchgraph.retrievenode import RetrievearXivTextNode
+from researchgraph.retrievenode import GithubNode
+from researchgraph.writingnode import Text2ScriptNode
+from researchgraph.experimentnode import (
     LLMTrainNode,
     LLMInferenceNode,
     LLMEvaluateNode,
 )
 
-from src.researchgraph.graph.ai_integrator.ai_integrator_v1.llmnode_setting.extractor import (
+from researchgraph.graph.ai_integrator.ai_integrator_v1.llmnode_setting.extractor import (
     extractor_setting,
 )
-from src.researchgraph.graph.ai_integrator.ai_integrator_v1.llmnode_setting.codeextractor import (
+from researchgraph.graph.ai_integrator.ai_integrator_v1.llmnode_setting.codeextractor import (
     codeextractor_setting,
 )
-from src.researchgraph.graph.ai_integrator.ai_integrator_v1.llmnode_setting.creator import (
+from researchgraph.graph.ai_integrator.ai_integrator_v1.llmnode_setting.creator import (
     creator_setting,
 )
 
