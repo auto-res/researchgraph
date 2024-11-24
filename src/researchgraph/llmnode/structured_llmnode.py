@@ -3,7 +3,7 @@ from pydantic import BaseModel, create_model
 from jinja2 import Environment
 from langgraph.graph import StateGraph
 
-from llm_client.openai_model import opnai_structured_output
+from src.researchgraph.llmnode.llm_client.openai_model import opnai_structured_output
 
 
 class State(TypedDict):

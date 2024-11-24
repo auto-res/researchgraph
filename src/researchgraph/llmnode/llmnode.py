@@ -7,7 +7,7 @@ from langgraph.graph import StateGraph
 from llmlinks.link import LLMLink
 from llmlinks.llm_client import LLMClient
 
-from llm_node_setting_template import (
+from src.researchgraph.llmnode.llm_node_setting_template import (
     translater1_setting,
     translater2_setting,
     translater3_setting,
