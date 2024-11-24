@@ -24,8 +24,9 @@ from researchgraph.graph.ai_integrator.ai_integrator_v1.llmnode_setting.codeextr
 from researchgraph.graph.ai_integrator.ai_integrator_v1.llmnode_setting.creator import (
     creator_setting,
 )
-
-from config import ai_integratorv1_setting
+from researchgraph.graph.ai_integrator.ai_integrator_v1.config import (
+    ai_integratorv1_setting,
+)
 
 logger = logging.getLogger("researchgraph")
 
