@@ -1,7 +1,6 @@
 import os
 import os.path as osp
-import json
-from typing import Any, Optional
+from typing import Any, Optional, TypedDict
 from aider.coders import Coder
 from aider.models import Model
 from aider.io import InputOutput
@@ -9,9 +8,8 @@ from dataclasses import dataclass
 from researchgraph.graph.ai_scientist.ai_scientist_node.generate_ideas import search_for_papers
 from researchgraph.graph.ai_scientist.ai_scientist_node.llm import get_response_from_llm, extract_json_between_markers
 from langgraph.graph import StateGraph
-from typing import TypedDict
 
-from researchgraph.graph.ai_scientist.ai_scientist_node.prompt.writeup_prompt import (
+from researchgraph.writingnode.writeup_prompt import (
     per_section_tips,
     error_list,
     citation_system_msg,
@@ -25,7 +23,6 @@ from researchgraph.graph.ai_scientist.ai_scientist_node.prompt.writeup_prompt im
 class State(TypedDict):
     notes_path: str
     writeup_file_path: str
-    review_path: str | None     # DraftImprovementComponent
 
 @dataclass
 class CitationContext:
@@ -327,57 +324,6 @@ class WriteupComponent:
         }
         return Model(model_mapping.get(model, model))
 
-
-class DraftImprovementComponent:
-    def __init__(
-        self, 
-        input_variable: list,   # writeup_file, notes, review_path
-        output_variable: str,   # 
-        model: str, 
-        io: InputOutput
-    ):
-        self.input_variable = input_variable
-        self.output_variable = output_variable
-        self.coder = Coder.create(
-            main_model=model,
-            fnames=input_variable,
-            io=io,
-            stream=False,
-            use_git=False,
-            edit_format="diff",
-        )
-
-    def __call__(self, state: State) -> dict:
-        # Extract review content from state
-        review_path = state.get("review_path")
-        if not review_path:
-            raise ValueError("Review content is required in the state.")
-        
-        with open(review_path, "r") as f:
-                review_content = f.read()
-    
-        # Perform improvement using the review
-        improved_content = self.perform_improvement(review_content)
-
-        # Save the perform_improvement content to the output file
-        output_file = self.output_variable
-        with open(output_file, "w") as f:
-            f.write(improved_content + "\n")
-
-        return {
-            self.output_variable: output_file
-        }
-
-    def perform_improvement(self, review: str) -> str:
-        improvement_prompt = '''The following review has been created for your research paper:
-        """
-        {review}
-        """
-
-        Improve the text using the review.'''.format(review=json.dumps(review))
-        coder_out = self.coder.run(improvement_prompt)
-        return coder_out
-    
 
 if __name__ == "__main__":
 

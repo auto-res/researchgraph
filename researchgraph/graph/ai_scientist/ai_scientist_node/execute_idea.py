@@ -5,8 +5,9 @@ import shutil
 import sys
 import openai
 from perform_experiments import ExperimentComponent
-from perform_writeup import WriteupComponent
-from perform_review import ReviewComponent, DraftImprovementComponent, load_paper
+from perform_review import ReviewComponent, load_paper
+from researchgraph.writingnode.writeup import WriteupComponent 
+from researchgraph.writingnode.draft_improvement import DraftImprovementComponent
 
 from aider.io import InputOutput
 
