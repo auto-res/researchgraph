@@ -1,4 +1,4 @@
-from .llmlinksnode import LLMLinksNode
+from .llmlinks_llmnode import LLMLinksNode
 from .structured_llmnode import StructuredLLMNode
 
 __all__ = [

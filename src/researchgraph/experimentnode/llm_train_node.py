@@ -6,7 +6,6 @@ from unsloth import FastLanguageModel
 from datasets import load_dataset
 from trl import SFTTrainer
 from transformers import TrainingArguments
-from unsloth import is_bfloat16_supported
 
 
 class State(TypedDict):
@@ -22,6 +21,7 @@ class LLMTrainNode:
         model_name: str,
         dataset_name: str,
         model_save_path: str,
+        lora: bool = False,
         num_train_data: int | None = None,
     ):
         self.input_variable = input_variable
@@ -32,6 +32,7 @@ class LLMTrainNode:
         self.model_name = model_name
         self.dataset_name = dataset_name
         self.model_save_path = model_save_path
+        self.lora = lora
         self.num_train_data = num_train_data
         self.training_args = self._set_up_training_args()
         self.model, self.tokenizer = self._set_up_model()
@@ -43,8 +44,8 @@ class LLMTrainNode:
             "gradient_accumulation_steps": 4,
             "warmup_steps": 5,
             "learning_rate": 2e-4,
-            "fp16": not is_bfloat16_supported(),
-            "bf16": is_bfloat16_supported(),
+            # "fp16": not is_bfloat16_supported(),
+            # "bf16": is_bfloat16_supported(),
             "logging_steps": 1,
             "weight_decay": 0.01,
             "lr_scheduler_type": "linear",
@@ -66,29 +67,30 @@ class LLMTrainNode:
             model_name=self.model_name,
             max_seq_length=2048,
             dtype=None,
-            load_in_4bit=True,
+            # load_in_4bit=True,
         )
 
-        model = FastLanguageModel.get_peft_model(
-            model,
-            r=16,
-            target_modules=[
-                "q_proj",
-                "k_proj",
-                "v_proj",
-                "o_proj",
-                "gate_proj",
-                "up_proj",
-                "down_proj",
-            ],
-            lora_alpha=16,
-            lora_dropout=0,
-            bias="none",
-            use_gradient_checkpointing="unsloth",
-            random_state=3407,
-            use_rslora=False,
-            loftq_config=None,
-        )
+        if self.lora:
+            model = FastLanguageModel.get_peft_model(
+                model,
+                r=16,
+                target_modules=[
+                    "q_proj",
+                    "k_proj",
+                    "v_proj",
+                    "o_proj",
+                    "gate_proj",
+                    "up_proj",
+                    "down_proj",
+                ],
+                lora_alpha=16,
+                lora_dropout=0,
+                bias="none",
+                use_gradient_checkpointing="unsloth",
+                random_state=3407,
+                use_rslora=False,
+                loftq_config=None,
+            )
         return model, tokenizer
 
     def _set_up_dataset(self):
@@ -144,7 +146,7 @@ if __name__ == "__main__":
     model_name = "unsloth/Meta-Llama-3.1-8B"
     dataset_name = "openai/gsm8k"
     model_save_path = "model"
-    input_variable = ""
+    input_variable = "script_save_path"
     output_variable = "model_save_path"
 
     graph_builder = StateGraph(State)
