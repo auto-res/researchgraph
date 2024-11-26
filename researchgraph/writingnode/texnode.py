@@ -30,7 +30,7 @@ class LatexUtils:
 
         # Add the LaTeX template file to the list of filenames
         fnames = [self.template_copy_file]
-        
+
         # Create the Coder instance
         self.coder = Coder.create(
             main_model=Model(model),
@@ -53,12 +53,16 @@ class LatexUtils:
     # Check all references are valid and in the references.bib file
     def check_references(self, tex_text: str) -> bool:
         cites = re.findall(r"\\cite[a-z]*{([^}]*)}", tex_text)
-        references_bib = re.search(r"\\begin{filecontents}{references.bib}(.*?)\\end{filecontents}", tex_text, re.DOTALL)
+        references_bib = re.search(
+            r"\\begin{filecontents}{references.bib}(.*?)\\end{filecontents}",
+            tex_text,
+            re.DOTALL,
+        )
 
         if references_bib is None:
             print("No references.bib found in template_copy.tex")
             return False
-        
+
         bib_text = references_bib.group(1)
         missing_cites = [cite for cite in cites if cite.strip() not in bib_text]
 
@@ -74,7 +78,9 @@ class LatexUtils:
         self.coder.run(prompt)
 
     # Check all included figures are actually in the directory.
-    def check_figures(self, tex_text: str, pattern: str = r"\\includegraphics.*?{(.*?)}"):
+    def check_figures(
+        self, tex_text: str, pattern: str = r"\\includegraphics.*?{(.*?)}"
+    ):
         referenced_figs = re.findall(pattern, tex_text)
         all_figs = [f for f in os.listdir(self.figures_dir) if f.endswith(".png")]
 
@@ -108,7 +114,9 @@ class LatexUtils:
     # Iteratively fix any LaTeX bugs
     def fix_latex_errors(self, writeup_file: str, num_error_corrections: int = 5):
         for _ in range(num_error_corrections):
-            check_output = os.popen(f"chktex {writeup_file} -q -n2 -n24 -n13 -n1").read()
+            check_output = os.popen(
+                f"chktex {writeup_file} -q -n2 -n24 -n13 -n1"
+            ).read()
             if check_output:
                 prompt = f"""Please fix the following LaTeX errors in `template_copy.tex` guided by the output of `chktex`:
                 {check_output}.
@@ -125,7 +133,7 @@ class LatexUtils:
 
         commands = [
             ["pdflatex", "-interaction=nonstopmode", self.template_copy_file],
-            ["bibtex", osp.splitext(self.template_copy_file)[0]], 
+            ["bibtex", osp.splitext(self.template_copy_file)[0]],
             ["pdflatex", "-interaction=nonstopmode", self.template_copy_file],
             ["pdflatex", "-interaction=nonstopmode", self.template_copy_file],
         ]
@@ -159,7 +167,16 @@ class LatexUtils:
 
 
 class LatexNode:
-    def __init__(self, input_variable, output_variable, model: str, template_dir: str, figures_dir: str, timeout: int = 30, num_error_corrections: int = 5):
+    def __init__(
+        self,
+        input_variable,
+        output_variable,
+        model: str,
+        template_dir: str,
+        figures_dir: str,
+        timeout: int = 30,
+        num_error_corrections: int = 5,
+    ):
         self.input_variable = input_variable
         self.output_variable = output_variable
         self.latex_utils = LatexUtils(model, template_dir, figures_dir)
@@ -181,8 +198,8 @@ class LatexNode:
             # Prepare LaTeX template copy
             self.latex_utils.prepare_template_copy()
 
-            tex_text = ''
-            
+            tex_text = ""
+
             try:
                 with open(writeup_file_path, "r") as f:
                     file_content = f.read()
@@ -211,22 +228,25 @@ class LatexNode:
             # Run LaTeX utilities
             self.latex_utils.check_references(tex_text)
             self.latex_utils.check_figures(tex_text)
-            self.latex_utils.check_duplicates(tex_text, r"\\includegraphics.*?{(.*?)}", "figure")
-            self.latex_utils.check_duplicates(tex_text, r"\\section{([^}]*)}", "section header")
-            self.latex_utils.fix_latex_errors(self.latex_utils.template_copy_file, self.num_error_corrections)
-
+            self.latex_utils.check_duplicates(
+                tex_text, r"\\includegraphics.*?{(.*?)}", "figure"
+            )
+            self.latex_utils.check_duplicates(
+                tex_text, r"\\section{([^}]*)}", "section header"
+            )
+            self.latex_utils.fix_latex_errors(
+                self.latex_utils.template_copy_file, self.num_error_corrections
+            )
 
             self.latex_utils.compile_latex(pdf_file_path, timeout=self.timeout)
 
             # Update state with output PDF path
-            return {
-                self.output_variable: pdf_file_path
-            }
+            return {self.output_variable: pdf_file_path}
 
         except Exception as e:
             print(f"Error occurred: {e}")
             return None
-        
+
     def _split_into_sections(self, text: str) -> dict:
         # Split the text into sections based on headings (e.g., "# abstract", "# introduction")
         sections = {}
@@ -234,7 +254,9 @@ class LatexNode:
         buffer = []
 
         for line in text.splitlines():
-            match = re.match(r"#\s*([\w\s]+)", line)    # TODO: プレーンテキストに対するセクションの判定条件
+            match = re.match(
+                r"#\s*([\w\s]+)", line
+            )  # TODO: プレーンテキストに対するセクションの判定条件
             if match:
                 if current_section and buffer:
                     sections[current_section] = "\n".join(buffer).strip()
@@ -250,9 +272,8 @@ class LatexNode:
 
 
 if __name__ == "__main__":
-
     # Define input and output variables
-    input_variable = "writeup_file_path" 
+    input_variable = "writeup_file_path"
     output_variable = "pdf_file_path"
     model = "gpt-4o"
     template_dir = "/workspaces/researchgraph/researchgraph/graph/ai_scientist/templates/2d_diffusion"
@@ -262,11 +283,11 @@ if __name__ == "__main__":
     latex_node = LatexNode(
         input_variable=input_variable,
         output_variable=output_variable,
-        model = model, 
+        model=model,
         template_dir=template_dir,
         figures_dir=figures_dir,
         timeout=30,
-        num_error_corrections=5
+        num_error_corrections=5,
     )
 
     # Create the StateGraph and add node
@@ -278,8 +299,8 @@ if __name__ == "__main__":
 
     # Define initial state
     memory = {
-        "writeup_file_path" : "/workspaces/researchgraph/data/writeup_file.txt",
-        "pdf_file_path": "/workspaces/researchgraph/data/sample.pdf"
+        "writeup_file_path": "/workspaces/researchgraph/data/writeup_file.txt",
+        "pdf_file_path": "/workspaces/researchgraph/data/sample.pdf",
     }
 
     # Execute the graph

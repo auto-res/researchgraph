@@ -1,12 +1,12 @@
 [project]
 name = "researchgraph"
-version = "0.0.8"
+version = "0.0.46"
 description = "Add your description here"
 readme = "README.md"
 authors = [
     {name="Toma Tanaka", email="ulti4929@gmail.com"}
 ]
-urls = {"Homepage" = "https://github.com/auto-res/researchgraph/tree/main" }
+urls = {"Homepage" = "https://www.autores.one/japanese" }
 requires-python = ">=3.10"
 dependencies = [
     "aider-chat>=0.62.1",
@@ -23,6 +23,7 @@ dependencies = [
     "semanticscholar>=0.8.4",
     "tomli-w>=1.0.0",
     "tomli>=2.0.1",
+    "jinja2>=3.1.4",
 ]
 
 [tool.uv]
@@ -31,12 +32,11 @@ dev-dependencies = [
     "ipykernel>=6.29.5",
     "jupyter>=1.1.1",
     "pre-commit>=3.8.0",
-    "ruff>=0.6.7",
 ]
 
 [tool.ruff]
 ignore = ["E731","F841","F821","E741"]
 
 [tool.setuptools.packages.find]
-where = ["."]
-include = ["researchgraph"]
+where = ["src"]
+include = ["researchgraph*"]

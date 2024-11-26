@@ -1,11 +1,9 @@
 .PHONY: bump_version build publish
 
-version:
-	uv run bumpversion patch
-
-build:
+package:
+	uv run bumpversion patch --allow-dirty
+	git add .
+	git commit -m "style: bump version"
 	uv build
-
-publish:
 	uvx twine upload dist/*
-	rm -rf dist/*
+	rm -rf dist
