@@ -27,7 +27,7 @@ class State(TypedDict):
     translation3_3: str
 
 
-class LLMNode:
+class LLMLinksNode:
     def __init__(self, llm_name: str, setting: dict):
         if isinstance(setting, dict):
             self.setting = setting
