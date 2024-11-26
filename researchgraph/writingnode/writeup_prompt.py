@@ -48,7 +48,7 @@ Please make sure the abstract reads smoothly and is well-motivated. This should 
 - Discusses limitations of the method.
 - Make sure to include all the results from the experiments, and include all relevant figures.
 """,
-    "Conclusion": """
+    "Conclusions": """
 - Brief recap of the entire paper.
 - To keep going with the analogy, you can think of future work as (potential) academic offspring.
 """,

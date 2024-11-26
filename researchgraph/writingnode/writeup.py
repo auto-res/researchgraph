@@ -22,7 +22,8 @@ from researchgraph.writingnode.writeup_prompt import (
 
 class State(TypedDict):
     notes_path: str
-    writeup_file_path: str
+    paper_content: dict
+    pdf_file_path: str      # Required for executing test case
 
 @dataclass
 class CitationContext:
@@ -238,7 +239,7 @@ class WriteupComponent:
     def __init__(
         self, 
         input_variable: str,   # notes_path
-        output_variable: str,   # writeup_file_path
+        output_variable: dict,   # paper_content
         model: str,
         template_dir: str, 
         cite_client: Any, 
@@ -256,16 +257,15 @@ class WriteupComponent:
     # PERFORM WRITEUP
     def __call__(self, state: State) -> dict:
         notes_path = state[self.input_variable]
-        writeup_file_path = state[self.output_variable]
+        paper_content = state[self.output_variable]
 
         # Check if the notes file exists, raise an error if it doesn't
         if not os.path.exists(notes_path):
             raise FileNotFoundError(f"The specified notes file does not exist: {notes_path}")
-        
-        main_model = self._select_model(self.model)
+    
 
         self.coder = Coder.create(
-            main_model=main_model,
+            main_model=Model(self.model),
             fnames=[notes_path],     
             io=InputOutput(),
             stream=False,
@@ -282,23 +282,39 @@ class WriteupComponent:
                 "Method": BaseSection(self.coder, "Method"),
                 "Experimental Setup": BaseSection(self.coder, "Experimental Setup"),
                 "Results": BaseSection(self.coder, "Results"),
-                "Conclusion": BaseSection(self.coder, "Conclusion"),
+                "Conclusions": BaseSection(self.coder, "Conclusions"),
                 "Related Work": RelatedWorkSection(self.coder),
             }
 
-        # Write each section directly to the output file
-        with open(writeup_file_path, "w") as f:
-            for section_name, section in self.sections.items():
-                # Step 1: Initial Writing
-                section.write()
-                # Step 2: First Refinement (remove placeholders and improve quality)
-                section.refine()
-                # Step 3: Second Refinement (final touches, clean up any remaining meta information)
-                section.second_refine()
-                
-                # Write the final refined content to the file without any metadata or placeholders
-                f.write(f"# {section_name}\n")
-                f.write(section.content.strip() + "\n")
+
+        # Write each section and store the content in the dictionary
+        for section_name, section in self.sections.items():
+            # Debug: Print current section name
+            print(f"\n--- Processing Section: {section_name} ---\n")
+            
+            # Step 1: Initial Writing
+            section.write()
+            # Debug: Print content after writing
+            print(f"[After write()] Content for {section_name}:")
+            print(section.content)
+
+            # Step 2: First Refinement (remove placeholders and improve quality)
+            section.refine()
+            # Debug: Print content after first refinement
+            print(f"[After refine()] Content for {section_name}:")
+            print(section.content)
+
+            # Step 3: Second Refinement (final touches, clean up any remaining meta information)
+            section.second_refine()
+            # Debug: Print content after second refinement
+            print(f"[After second_refine()] Content for {section_name}:")
+            print(section.content)
+            
+            # Store the final refined content in the dictionary
+            paper_content[section_name] = section.content.strip()
+            # Debug: Print paper content after storing
+            print(f"[Stored in paper_content] Content for {section_name}:")
+            print(paper_content[section_name])
 
         # CitationManager インスタンスの初期化
         if self.citation_manager is None:
@@ -306,65 +322,83 @@ class WriteupComponent:
 
         # Add citations to each section after refinement
         cite_model = self.model
-        self.citation_manager.add_citations(self.sections, self.template_dir, self.cite_client, cite_model, self.num_cite_rounds)
+        # TODO: 引用部分の実装
+        # self.citation_manager.add_citations(self.sections, self.template_dir, self.cite_client, cite_model, self.num_cite_rounds)
 
-        # Save the final write-up content after adding citations
-        with open(writeup_file_path, "a") as f:
-            for section in self.sections.values():
-                f.write(section.content + "\n")
+        # Update paper content with citations
+        for section_name, section in self.sections.items():
+            paper_content[section_name] = section.content
 
+        # Return the paper content as a dictionary
         return {
-            self.output_variable: writeup_file_path
+            self.output_variable: paper_content
         }
 
+    '''
     def _select_model(self, model: str) -> Model:
         model_mapping = {
             "deepseek-coder-v2-0724": "deepseek/deepseek-coder",
             "llama3.1-405b": "openrouter/meta-llama/llama-3.1-405b-instruct"
         }
         return Model(model_mapping.get(model, model))
+    '''
 
 
 if __name__ == "__main__":
 
     import openai
+    from researchgraph.writingnode.texnode import LatexNode
 
     # Define input and output variables
     input_variable = "notes_path"
-    output_variable = "writeup_file_path"
-    model = "gpt-3.5-turbo"
+    writeup_output_variable = "paper_content"
+    latex_output_variable = "pdf_file_path"
+    model = "gpt-4o"
     io = InputOutput()
     template_dir = "/workspaces/researchgraph/researchgraph/graph/ai_scientist/templates/2d_diffusion"
     cite_client = openai
+    figures_dir = "/workspaces/researchgraph/images"
 
     # Initialize WriteupComponent as a LangGraph node
     writeup_component = WriteupComponent(
         input_variable=input_variable,
-        output_variable=output_variable,
+        output_variable=writeup_output_variable,
         model=model,
         template_dir=template_dir, 
         cite_client=cite_client, 
         num_cite_rounds=2, 
     )
 
-    # Create the StateGraph and add node
+    # Initialize LatexNode as a LangGraph node
+    latex_node = LatexNode(
+        input_variable=writeup_output_variable,
+        output_variable=latex_output_variable,
+        model="gpt-4o", 
+        template_dir=template_dir,
+        figures_dir=figures_dir,
+        timeout=30,
+        num_error_corrections=5
+    )
+
+    # Create the StateGraph and add nodes
     graph_builder = StateGraph(State)
     graph_builder.add_node("writeup_component", writeup_component)
+    graph_builder.add_node("latex_node", latex_node)
+    graph_builder.add_edge("writeup_component", "latex_node")
+
     graph_builder.set_entry_point("writeup_component")
-    graph_builder.set_finish_point("writeup_component")
+    graph_builder.set_finish_point("latex_node")
     graph = graph_builder.compile()
 
     # Define initial state
     memory = {
         "notes_path": "/workspaces/researchgraph/data/notes.txt", 
-        "writeup_file_path": "/workspaces/researchgraph/data/writeup_file.txt"
+        "paper_content": {}, 
+        "pdf_file_path": "/workspaces/researchgraph/data/sample.pdf"
     }
 
     # Execute the graph
     graph.invoke(memory)
-
-
-
 
 
 # if __name__ == "__main__":
