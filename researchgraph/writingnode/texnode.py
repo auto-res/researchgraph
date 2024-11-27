@@ -30,12 +30,16 @@ class LatexUtils:
     # Check all references are valid and in the references.bib file
     def check_references(self, tex_text: str) -> bool:
         cites = re.findall(r"\\cite[a-z]*{([^}]*)}", tex_text)
-        references_bib = re.search(r"\\begin{filecontents}{references.bib}(.*?)\\end{filecontents}", tex_text, re.DOTALL)
+        references_bib = re.search(
+            r"\\begin{filecontents}{references.bib}(.*?)\\end{filecontents}",
+            tex_text,
+            re.DOTALL,
+        )
 
         if references_bib is None:
             print("No references.bib found in template_copy.tex")
             return False
-        
+
         bib_text = references_bib.group(1)
         missing_cites = [cite for cite in cites if cite.strip() not in bib_text]
 
@@ -85,7 +89,9 @@ class LatexUtils:
     # Iteratively fix any LaTeX bugs
     def fix_latex_errors(self, writeup_file: str, num_error_corrections: int = 5):
         for _ in range(num_error_corrections):
-            check_output = os.popen(f"chktex {writeup_file} -q -n2 -n24 -n13 -n1").read()
+            check_output = os.popen(
+                f"chktex {writeup_file} -q -n2 -n24 -n13 -n1"
+            ).read()
             if check_output:
                 prompt = f"""Please fix the following LaTeX errors in `template_copy.tex` guided by the output of `chktex`:
                 {check_output}.
@@ -186,9 +192,7 @@ class LatexNode:
             self.latex_utils.compile_latex(osp.dirname(self.template_file), self.template_copy_file, pdf_file_path, timeout=self.timeout)
 
             # Update state with output PDF path
-            return {
-                self.output_variable: pdf_file_path
-            }
+            return {self.output_variable: pdf_file_path}
 
         except Exception as e:
             print(f"Error occurred: {e}")
@@ -196,7 +200,6 @@ class LatexNode:
         
         
 if __name__ == "__main__":
-
     # Define input and output variables
     input_variable = "paper_content" 
     output_variable = "pdf_file_path"
@@ -208,11 +211,11 @@ if __name__ == "__main__":
     latex_node = LatexNode(
         input_variable=input_variable,
         output_variable=output_variable,
-        model = model, 
+        model=model,
         template_dir=template_dir,
         figures_dir=figures_dir,
         timeout=30,
-        num_error_corrections=5
+        num_error_corrections=5,
     )
 
     # Create the StateGraph and add node
