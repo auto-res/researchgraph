@@ -5,8 +5,6 @@ from aider.coders import Coder
 from aider.models import Model
 from aider.io import InputOutput
 from dataclasses import dataclass
-from researchgraph.graph.ai_scientist.ai_scientist_node.generate_ideas import search_for_papers
-from researchgraph.graph.ai_scientist.ai_scientist_node.llm import get_response_from_llm, extract_json_between_markers
 from langgraph.graph import StateGraph
 
 from researchgraph.writingnode.writeup_prompt import (
@@ -34,9 +32,27 @@ class CitationContext:
     total_rounds: int
 
 
+class PaperSearchService:
+    def search(self, query: str) -> list:
+        from researchgraph.graph.ai_scientist.ai_scientist_node.generate_ideas import search_for_papers
+        return search_for_papers(query)
+
+
+class LLMService:
+    def get_response(self, prompt: str, client: Any, model: str, system_message: str, msg_history: list) -> tuple[str, list]:
+        from researchgraph.graph.ai_scientist.ai_scientist_node.llm import get_response_from_llm
+        return get_response_from_llm(prompt, client=client, model=model, system_message=system_message, msg_history=msg_history)
+
+    def extract_json(self, text: str) -> dict:
+        from researchgraph.graph.ai_scientist.ai_scientist_node.llm import extract_json_between_markers
+        return extract_json_between_markers(text)
+
+
 class CitationManager:
-    def __init__(self, coder: Coder):
+    def __init__(self, coder: Coder, paper_search_service: PaperSearchService, llm_service: LLMService):
         self.coder = coder
+        self.paper_search_service = paper_search_service
+        self.llm_service = llm_service
 
     def add_citations(self, sections: dict, template_dir: str, cite_client: Any, cite_model: Model, num_cite_rounds: int):
             for round_num in range(num_cite_rounds):
@@ -81,7 +97,7 @@ class CitationManager:
             ## Parse the output and extract JSON
             json_output = self._extract_json_output(text)
             query = json_output["Query"]
-            papers = search_for_papers(query)
+            papers = self.paper_search_service.search(query)
         except Exception as e:
             print(f"Error during initial citation retrieval: {e}")
             return None, False
@@ -125,7 +141,7 @@ class CitationManager:
         return aider_prompt, False
 
     def _get_initial_llm_response(self, context: CitationContext, msg_history: list) -> tuple[str, list]:
-        return get_response_from_llm(
+        return self.llm_service.get_response(
             citation_first_prompt.format(
                 draft=context.draft, current_round=context.current_round, total_rounds=context.total_rounds
             ),
@@ -136,7 +152,7 @@ class CitationManager:
         )
 
     def _extract_json_output(self, text: str) -> dict:
-        json_output = extract_json_between_markers(text)
+        json_output = self.llm_service.extract_json(text)
         if json_output is None:
             raise ValueError("Failed to extract JSON from LLM output")
         return json_output
@@ -149,7 +165,7 @@ class CitationManager:
         return "\n\n".join(paper_strings)
     
     def _get_second_llm_response(self, context: CitationContext, papers_str: str, msg_history: list) -> tuple[str, list]:
-        return get_response_from_llm(
+        return self.llm_service.get_response(
             citation_second_prompt.format(
                 papers=papers_str,
                 current_round=context.current_round,
@@ -244,6 +260,8 @@ class WriteupComponent:
         template_dir: str, 
         cite_client: Any, 
         num_cite_rounds: int,         
+        paper_search_service: PaperSearchService, 
+        llm_service: LLMService, 
     ):
         self.input_variable = input_variable
         self.output_variable = output_variable
@@ -251,6 +269,8 @@ class WriteupComponent:
         self.template_dir = template_dir
         self.cite_client = cite_client 
         self.num_cite_rounds = num_cite_rounds
+        self.paper_search_service = paper_search_service
+        self.llm_service = llm_service
         self.sections = None
         self.citation_manager = None
 
@@ -318,7 +338,7 @@ class WriteupComponent:
 
         # CitationManager インスタンスの初期化
         if self.citation_manager is None:
-            self.citation_manager = CitationManager(self.coder)       
+            self.citation_manager = CitationManager(self.coder, self.paper_search_service, self.llm_service)       
 
         # Add citations to each section after refinement
         cite_model = self.model
@@ -358,6 +378,8 @@ if __name__ == "__main__":
     template_dir = "/workspaces/researchgraph/researchgraph/graph/ai_scientist/templates/2d_diffusion"
     cite_client = openai
     figures_dir = "/workspaces/researchgraph/images"
+    paper_search_service = PaperSearchService()
+    llm_service = LLMService()
 
     # Initialize WriteupComponent as a LangGraph node
     writeup_component = WriteupComponent(
@@ -367,6 +389,8 @@ if __name__ == "__main__":
         template_dir=template_dir, 
         cite_client=cite_client, 
         num_cite_rounds=2, 
+        paper_search_service=paper_search_service, 
+        llm_service=llm_service, 
     )
 
     # Initialize LatexNode as a LangGraph node
