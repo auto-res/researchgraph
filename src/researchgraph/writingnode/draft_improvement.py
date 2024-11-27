@@ -49,7 +49,7 @@ class DraftImprovementComponent:
             review_content = f.read()
 
         # Perform improvement using the review
-        improved_content = self.perform_improvement(review_content)
+        improved_content = self._perform_improvement(review_content)
 
         # Save the improved content to the output file
         output_file = state[self.output_variable]
@@ -60,7 +60,7 @@ class DraftImprovementComponent:
             self.output_variable: output_file
         }
 
-    def perform_improvement(self, review: str) -> str:
+    def _perform_improvement(self, review: str) -> str:
         improvement_prompt = '''The following review has been created for your research paper:
         """
         {review}
@@ -80,7 +80,7 @@ if __name__ == "__main__":
     output_variable = "review_path"
     model = "gpt-3.5-turbo"
     io = InputOutput()
-    template_dir = "/workspaces/researchgraph/researchgraph/graph/ai_scientist/templates/2d_diffusion"
+    template_dir = "/workspaces/researchgraph/src/researchgraph/graph/ai_scientist/templates/2d_diffusion"
     cite_client = openai
 
     # Initialize DraftImprovementComponent as a LangGraph node
