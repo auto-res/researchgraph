@@ -175,7 +175,7 @@ Pay attention to how it fits in with the rest of the paper.
 Identify any redundancies (e.g. repeated figures or repeated text), if there are any, decide where in the paper things should be cut.
 Identify where we can save space, and be more concise without weakening the message of the text.
 Fix any remaining errors as before:
-{error_list}"""
+{error_list}""",
 }
 
 related_work_prompt = {

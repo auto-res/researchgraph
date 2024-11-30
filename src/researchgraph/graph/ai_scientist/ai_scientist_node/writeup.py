@@ -12,16 +12,17 @@ from src.researchgraph.writingnode.writeup_prompt import (
     error_list,
     citation_system_msg,
     citation_first_prompt,
-    citation_second_prompt, 
-    prompt_templates, 
-    related_work_prompt, 
+    citation_second_prompt,
+    prompt_templates,
+    related_work_prompt,
 )
 
 
 class State(TypedDict):
     notes_path: str
     paper_content: dict
-    pdf_file_path: str      # Required for executing test case
+    pdf_file_path: str  # Required for executing test case
+
 
 @dataclass
 class CitationContext:
@@ -34,56 +35,92 @@ class CitationContext:
 
 class PaperSearchService:
     def search(self, query: str) -> list:
-        from src.researchgraph.graph.ai_scientist.ai_scientist_node.generate_ideas import search_for_papers
+        from src.researchgraph.graph.ai_scientist.ai_scientist_node.generate_ideas import (
+            search_for_papers,
+        )
+
         return search_for_papers(query)
 
 
 class LLMService:
-    def get_response(self, prompt: str, client: Any, model: str, system_message: str, msg_history: list) -> tuple[str, list]:
-        from src.researchgraph.graph.ai_scientist.ai_scientist_node.llm import get_response_from_llm
-        return get_response_from_llm(prompt, client=client, model=model, system_message=system_message, msg_history=msg_history)
+    def get_response(
+        self,
+        prompt: str,
+        client: Any,
+        model: str,
+        system_message: str,
+        msg_history: list,
+    ) -> tuple[str, list]:
+        from src.researchgraph.graph.ai_scientist.ai_scientist_node.llm import (
+            get_response_from_llm,
+        )
+
+        return get_response_from_llm(
+            prompt,
+            client=client,
+            model=model,
+            system_message=system_message,
+            msg_history=msg_history,
+        )
 
     def extract_json(self, text: str) -> dict:
-        from src.researchgraph.graph.ai_scientist.ai_scientist_node.llm import extract_json_between_markers
+        from src.researchgraph.graph.ai_scientist.ai_scientist_node.llm import (
+            extract_json_between_markers,
+        )
+
         return extract_json_between_markers(text)
 
 
 class CitationManager:
-    def __init__(self, coder: Coder, paper_search_service: PaperSearchService, llm_service: LLMService):
+    def __init__(
+        self,
+        coder: Coder,
+        paper_search_service: PaperSearchService,
+        llm_service: LLMService,
+    ):
         self.coder = coder
         self.paper_search_service = paper_search_service
         self.llm_service = llm_service
 
-    def add_citations(self, sections: dict, template_dir: str, cite_client: Any, cite_model: Model, num_cite_rounds: int):
-            for round_num in range(num_cite_rounds):
-                template_file = osp.join(template_dir, "latex", "template.tex")
-                with open(template_file, "r") as f:
-                    draft = f.read()
+    def add_citations(
+        self,
+        sections: dict,
+        template_dir: str,
+        cite_client: Any,
+        cite_model: Model,
+        num_cite_rounds: int,
+    ):
+        for round_num in range(num_cite_rounds):
+            template_file = osp.join(template_dir, "latex", "template.tex")
+            with open(template_file, "r") as f:
+                draft = f.read()
 
-                context = CitationContext(
-                    client=cite_client,
-                    model=cite_model,
-                    draft=draft,
-                    current_round=round_num,
-                    total_rounds=num_cite_rounds
-                )
-                prompt, done = self.get_citation_aider_prompt(context, msg_history=None)
-                if done:
-                    break
-                
-                if prompt is not None:
-                    # extract bibtex string
-                    bibtex_string = prompt.split('"""')[1]
-                    # insert this into draft before the "\end{filecontents}" line
-                    search_str = r"\end{filecontents}"
-                    draft = draft.replace(search_str, f"{bibtex_string}{search_str}")
+            context = CitationContext(
+                client=cite_client,
+                model=cite_model,
+                draft=draft,
+                current_round=round_num,
+                total_rounds=num_cite_rounds,
+            )
+            prompt, done = self.get_citation_aider_prompt(context, msg_history=None)
+            if done:
+                break
 
-                    with open(template_file, "w") as f:
-                        f.write(draft)
+            if prompt is not None:
+                # extract bibtex string
+                bibtex_string = prompt.split('"""')[1]
+                # insert this into draft before the "\end{filecontents}" line
+                search_str = r"\end{filecontents}"
+                draft = draft.replace(search_str, f"{bibtex_string}{search_str}")
 
-                self.coder.run(prompt)      # TODO: 執筆内容に引用情報を付与する
+                with open(template_file, "w") as f:
+                    f.write(draft)
 
-    def get_citation_aider_prompt(self, context: CitationContext, msg_history: Optional[list]) -> tuple[Optional[str], bool]:
+            self.coder.run(prompt)  # TODO: 執筆内容に引用情報を付与する
+
+    def get_citation_aider_prompt(
+        self, context: CitationContext, msg_history: Optional[list]
+    ) -> tuple[Optional[str], bool]:
         if msg_history is None:
             msg_history = []
         try:
@@ -111,12 +148,14 @@ class CitationManager:
 
         try:
             # Second LLM request to determine which papers to cite
-            text, msg_history = self._get_second_llm_response(context, papers_str, msg_history)
+            text, msg_history = self._get_second_llm_response(
+                context, papers_str, msg_history
+            )
 
             if "Do not add any" in text:
                 print("Do not add any.")
                 return None, False
-            
+
             # Parse the output and extract JSON
             json_output = self._extract_json_output(text)
             desc = json_output["Description"]
@@ -126,7 +165,9 @@ class CitationManager:
             # Convert selected papers to a list of indices
             if selected_papers:
                 selected_papers = self._convert_selected_papers(selected_papers, papers)
-                bibtexs = [papers[i]["citationStyles"]["bibtex"] for i in selected_papers]
+                bibtexs = [
+                    papers[i]["citationStyles"]["bibtex"] for i in selected_papers
+                ]
                 bibtex_string = "\n".join(bibtexs)
             else:
                 return None, False
@@ -140,14 +181,20 @@ class CitationManager:
 
         return aider_prompt, False
 
-    def _get_initial_llm_response(self, context: CitationContext, msg_history: list) -> tuple[str, list]:
+    def _get_initial_llm_response(
+        self, context: CitationContext, msg_history: list
+    ) -> tuple[str, list]:
         return self.llm_service.get_response(
             citation_first_prompt.format(
-                draft=context.draft, current_round=context.current_round, total_rounds=context.total_rounds
+                draft=context.draft,
+                current_round=context.current_round,
+                total_rounds=context.total_rounds,
             ),
             client=context.client,
             model=context.model,
-            system_message=citation_system_msg.format(total_rounds=context.total_rounds),
+            system_message=citation_system_msg.format(
+                total_rounds=context.total_rounds
+            ),
             msg_history=msg_history,
         )
 
@@ -163,8 +210,10 @@ class CitationManager:
             for i, paper in enumerate(papers)
         ]
         return "\n\n".join(paper_strings)
-    
-    def _get_second_llm_response(self, context: CitationContext, papers_str: str, msg_history: list) -> tuple[str, list]:
+
+    def _get_second_llm_response(
+        self, context: CitationContext, papers_str: str, msg_history: list
+    ) -> tuple[str, list]:
         return self.llm_service.get_response(
             citation_second_prompt.format(
                 papers=papers_str,
@@ -173,7 +222,9 @@ class CitationManager:
             ),
             client=context.client,
             model=context.model,
-            system_message=citation_system_msg.format(total_rounds=context.total_rounds),
+            system_message=citation_system_msg.format(
+                total_rounds=context.total_rounds
+            ),
             msg_history=msg_history,
         )
 
@@ -213,15 +264,15 @@ class BaseSection:
     def generate_prompt(self, prompt_type: str) -> str:
         if prompt_type not in prompt_templates:
             raise ValueError("Invalid prompt type specified.")
-        
+
         prompt = prompt_templates[prompt_type]
-        
+
         prompt = prompt.format(
             section_name=self.section_name,
             tips=per_section_tips.get(self.section_name, ""),
-            error_list=error_list
+            error_list=error_list,
         )
-        
+
         return prompt.replace(r"{{", "{").replace(r"}}", "}")
 
     def write(self):
@@ -235,7 +286,7 @@ class BaseSection:
     def second_refine(self) -> Any:
         prompt = self.generate_prompt("second_refine")
         self.content = self.coder.run(prompt)
-        
+
 
 class RelatedWorkSection(BaseSection):
     def __init__(self, coder: Coder):
@@ -253,21 +304,21 @@ class RelatedWorkSection(BaseSection):
 
 class WriteupComponent:
     def __init__(
-        self, 
-        input_variable: str,   # notes_path
-        output_variable: dict,   # paper_content
+        self,
+        input_variable: str,  # notes_path
+        output_variable: dict,  # paper_content
         model: str,
-        template_dir: str, 
-        cite_client: Any, 
-        num_cite_rounds: int,         
-        paper_search_service: PaperSearchService, 
-        llm_service: LLMService, 
+        template_dir: str,
+        cite_client: Any,
+        num_cite_rounds: int,
+        paper_search_service: PaperSearchService,
+        llm_service: LLMService,
     ):
         self.input_variable = input_variable
         self.output_variable = output_variable
         self.model = model
         self.template_dir = template_dir
-        self.cite_client = cite_client 
+        self.cite_client = cite_client
         self.num_cite_rounds = num_cite_rounds
         self.paper_search_service = paper_search_service
         self.llm_service = llm_service
@@ -281,12 +332,13 @@ class WriteupComponent:
 
         # Check if the notes file exists, raise an error if it doesn't
         if not os.path.exists(notes_path):
-            raise FileNotFoundError(f"The specified notes file does not exist: {notes_path}")
-    
+            raise FileNotFoundError(
+                f"The specified notes file does not exist: {notes_path}"
+            )
 
         self.coder = Coder.create(
             main_model=Model(self.model),
-            fnames=[notes_path],     
+            fnames=[notes_path],
             io=InputOutput(),
             stream=False,
             use_git=False,
@@ -306,12 +358,11 @@ class WriteupComponent:
                 "Related Work": RelatedWorkSection(self.coder),
             }
 
-
         # Write each section and store the content in the dictionary
         for section_name, section in self.sections.items():
             # Debug: Print current section name
             print(f"\n--- Processing Section: {section_name} ---\n")
-            
+
             # Step 1: Initial Writing
             section.write()
             # Debug: Print content after writing
@@ -329,7 +380,7 @@ class WriteupComponent:
             # Debug: Print content after second refinement
             print(f"[After second_refine()] Content for {section_name}:")
             print(section.content)
-            
+
             # Store the final refined content in the dictionary
             paper_content[section_name] = section.content.strip()
             # Debug: Print paper content after storing
@@ -338,7 +389,9 @@ class WriteupComponent:
 
         # CitationManager インスタンスの初期化
         if self.citation_manager is None:
-            self.citation_manager = CitationManager(self.coder, self.paper_search_service, self.llm_service)       
+            self.citation_manager = CitationManager(
+                self.coder, self.paper_search_service, self.llm_service
+            )
 
         # Add citations to each section after refinement
         cite_model = self.model
@@ -350,22 +403,19 @@ class WriteupComponent:
             paper_content[section_name] = section.content
 
         # Return the paper content as a dictionary
-        return {
-            self.output_variable: paper_content
-        }
+        return {self.output_variable: paper_content}
 
-    '''
+    """
     def _select_model(self, model: str) -> Model:
         model_mapping = {
             "deepseek-coder-v2-0724": "deepseek/deepseek-coder",
             "llama3.1-405b": "openrouter/meta-llama/llama-3.1-405b-instruct"
         }
         return Model(model_mapping.get(model, model))
-    '''
+    """
 
 
 if __name__ == "__main__":
-
     import openai
     from src.researchgraph.writingnode.texnode import LatexNode
 
@@ -386,22 +436,22 @@ if __name__ == "__main__":
         input_variable=input_variable,
         output_variable=writeup_output_variable,
         model=model,
-        template_dir=template_dir, 
-        cite_client=cite_client, 
-        num_cite_rounds=2, 
-        paper_search_service=paper_search_service, 
-        llm_service=llm_service, 
+        template_dir=template_dir,
+        cite_client=cite_client,
+        num_cite_rounds=2,
+        paper_search_service=paper_search_service,
+        llm_service=llm_service,
     )
 
     # Initialize LatexNode as a LangGraph node
     latex_node = LatexNode(
         input_variable=writeup_output_variable,
         output_variable=latex_output_variable,
-        model="gpt-4o", 
+        model="gpt-4o",
         template_dir=template_dir,
         figures_dir=figures_dir,
         timeout=30,
-        num_error_corrections=5
+        num_error_corrections=5,
     )
 
     # Create the StateGraph and add nodes
@@ -416,9 +466,9 @@ if __name__ == "__main__":
 
     # Define initial state
     memory = {
-        "notes_path": "/workspaces/researchgraph/data/notes.txt", 
-        "paper_content": {}, 
-        "pdf_file_path": "/workspaces/researchgraph/data/sample.pdf"
+        "notes_path": "/workspaces/researchgraph/data/notes.txt",
+        "paper_content": {},
+        "pdf_file_path": "/workspaces/researchgraph/data/sample.pdf",
     }
 
     # Execute the graph
