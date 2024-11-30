@@ -1,9 +1,9 @@
-from .arxiv_api_node import ArxivNode
-from .github import GithubNode
-from .openalex import OpenAlexNode
-from .semantic_scholar import SemanticScholarNode
+from .arxiv_api.arxiv_api_node import ArxivNode
+from .github.github import GithubNode
+from .open_alex.openalex import OpenAlexNode
+from .semantic_scholar.semantic_scholar import SemanticScholarNode
 from .retrieve_csv import RetrieveCSVNode
-from .retrieve_arxiv_text import RetrievearXivTextNode
+from .arxiv_api.retrieve_arxiv_text import RetrievearXivTextNode
 
 __all__ = [
     "ArxivNode",

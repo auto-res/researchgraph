@@ -3137,12 +3137,9 @@ name = "researchgraph"
 version = "0.0.45"
 source = { virtual = "." }
 dependencies = [
-<<<<<<< HEAD
     { name = "aider-chat" },
     { name = "arxiv" },
     { name = "jinja2" },
-=======
->>>>>>> main
     { name = "langchain" },
     { name = "langchain-community" },
     { name = "langgraph" },
