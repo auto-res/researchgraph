@@ -8,4 +8,4 @@ services:
     volumes:
       - ..:/workspaces/researchgraph:cached
     environment:
-      - PYTHONPATH=/workspaces/researchgraph
+      - PYTHONPATH=/workspaces/researchgraph/src

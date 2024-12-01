@@ -4,6 +4,7 @@ from jinja2 import Environment
 from langgraph.graph import StateGraph
 
 from researchgraph.llmnode.llm_client.openai_model import opnai_structured_output
+from researchgraph.llmnode.base.litellm import litellm_output
 
 
 class State(TypedDict):
@@ -57,9 +58,7 @@ class StructuredLLMNode:
         prompt = template.render(data)
 
         if self.llm_name == "gpt-4o-2024-08-06":
-            result_dict = opnai_structured_output(
-                self.llm_name, prompt, self.dynamicmodel
-            )
+            result_dict = litellm_output(self.llm_name, prompt, self.dynamicmodel)
         else:
             print("llm_name not found")
         return {**result_dict}
