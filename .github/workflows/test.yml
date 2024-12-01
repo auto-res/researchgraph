@@ -27,5 +27,8 @@ jobs:
       - name: Verify uv installation
         run: uv --version
 
+      - name: Print PATH
+        run: echo $PATH
+
       - name: Run pytest
-        run: uv run python pytest
+        run: uv run pytest src/researchgraph/tests/test_llmnodes.py
