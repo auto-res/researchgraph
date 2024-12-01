@@ -1,8 +1,10 @@
 name: Test
 on: push
 jobs:
-  hello:
+  print:
     runs-on: ubuntu-latest
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
     steps:
-      - run: echo "Hello, world!"
+      - run: echo "&{OPENAI_API_KEY}"
       - uses: actions/checkout@v2
