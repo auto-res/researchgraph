@@ -1,12 +1,25 @@
 name: Test
 
-on: push
+# on:
+#   pull_request:
+#     types: [opened, reopened, synchronize]
+#     paths: [src/**]
+on:
+  push:
+
 jobs:
-  print:
+  test:
     name: Test of LLMNodes
     runs-on: ubuntu-latest
     env:
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
     steps:
-      - name: Run pytest on LLMNode
-        run: echo "&{OPENAI_API_KEY}"
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+          cache: "pip"
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Run pytest
+        run: python -m pytest
