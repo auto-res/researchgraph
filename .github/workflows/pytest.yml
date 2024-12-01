@@ -1,11 +1,10 @@
 name: ResearchGraph Nodes Test
 
-# on:
-#   pull_request:
-#     types: [opened, reopened, synchronize]
-#     paths: [src/**]
 on:
-  push:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths: 
+      - "src/**"
 
 jobs:
   test:
