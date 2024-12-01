@@ -31,4 +31,4 @@ jobs:
         run: echo $PATH
 
       - name: Run pytest
-        run: uv run pytest src/researchgraph/tests/test_llmnodes.py
+        run: uv run pytest src/researchgraph/test/test_llmnodes.py
