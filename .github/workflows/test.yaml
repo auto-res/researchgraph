@@ -9,5 +9,4 @@ jobs:
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
     steps:
       - name: Run pytest on LLMNode
-      - run: echo "&{OPENAI_API_KEY}"
-      - uses: actions/checkout@v2
+        run: echo "&{OPENAI_API_KEY}"
