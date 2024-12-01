@@ -55,7 +55,12 @@ class LatexUtils:
         self.coder.run(prompt)
 
     # Check all included figures are actually in the directory.
-    def check_figures(self, tex_text: str, figures_dir: str, pattern: str = r"\\includegraphics.*?{(.*?)}"):
+    def check_figures(
+        self,
+        tex_text: str,
+        figures_dir: str,
+        pattern: str = r"\\includegraphics.*?{(.*?)}",
+    ):
         referenced_figs = re.findall(pattern, tex_text)
         all_figs = [f for f in os.listdir(figures_dir) if f.endswith(".png")]
 
@@ -103,12 +108,14 @@ class LatexUtils:
             else:
                 break
 
-    def compile_latex(self, cwd: str, template_copy_file: str, pdf_file_path: str, timeout: int = 30):
+    def compile_latex(
+        self, cwd: str, template_copy_file: str, pdf_file_path: str, timeout: int = 30
+    ):
         print("GENERATING LATEX")
 
         commands = [
             ["pdflatex", "-interaction=nonstopmode", template_copy_file],
-            ["bibtex", osp.splitext(template_copy_file)[0]], 
+            ["bibtex", osp.splitext(template_copy_file)[0]],
             ["pdflatex", "-interaction=nonstopmode", template_copy_file],
             ["pdflatex", "-interaction=nonstopmode", template_copy_file],
         ]
@@ -142,7 +149,16 @@ class LatexUtils:
 
 
 class LatexNode:
-    def __init__(self, input_variable: str, output_variable: str, model: str, template_dir: str, figures_dir: str, timeout: int = 30, num_error_corrections: int = 5):
+    def __init__(
+        self,
+        input_variable: str,
+        output_variable: str,
+        model: str,
+        template_dir: str,
+        figures_dir: str,
+        timeout: int = 30,
+        num_error_corrections: int = 5,
+    ):
         self.input_variable = input_variable
         self.output_variable = output_variable
         self.latex_utils = LatexUtils(model)
@@ -151,8 +167,12 @@ class LatexNode:
         self.figures_dir = figures_dir
 
         # Store template paths locally for easier access
-        self.template_file = osp.join(osp.abspath(template_dir), "latex", "template.tex")
-        self.template_copy_file = osp.join(osp.abspath(template_dir), "latex", "template_copy.tex")
+        self.template_file = osp.join(
+            osp.abspath(template_dir), "latex", "template.tex"
+        )
+        self.template_copy_file = osp.join(
+            osp.abspath(template_dir), "latex", "template_copy.tex"
+        )
 
     def __call__(self, state: State) -> dict:
         try:
@@ -160,15 +180,19 @@ class LatexNode:
             pdf_file_path = osp.expanduser(state.get(self.output_variable))
 
             if not paper_content or not pdf_file_path:
-                raise ValueError("Input paper content or output file path not found in state.")
+                raise ValueError(
+                    "Input paper content or output file path not found in state."
+                )
 
             # Copy template.tex to template_copy.tex
             if not osp.exists(self.template_file):
-                raise FileNotFoundError(f"Template file not found: {self.template_file}")
-            
+                raise FileNotFoundError(
+                    f"Template file not found: {self.template_file}"
+                )
+
             shutil.copyfile(self.template_file, self.template_copy_file)
 
-            tex_text = ''
+            tex_text = ""
 
             # Read the LaTeX template content
             with open(self.template_copy_file, "r") as f:
@@ -185,11 +209,22 @@ class LatexNode:
             # Run LaTeX utilities
             self.latex_utils.check_references(tex_text)
             self.latex_utils.check_figures(tex_text, self.figures_dir)
-            self.latex_utils.check_duplicates(tex_text, r"\\includegraphics.*?{(.*?)}", "figure")
-            self.latex_utils.check_duplicates(tex_text, r"\\section{([^}]*)}", "section header")
-            self.latex_utils.fix_latex_errors(self.template_copy_file, self.num_error_corrections)
+            self.latex_utils.check_duplicates(
+                tex_text, r"\\includegraphics.*?{(.*?)}", "figure"
+            )
+            self.latex_utils.check_duplicates(
+                tex_text, r"\\section{([^}]*)}", "section header"
+            )
+            self.latex_utils.fix_latex_errors(
+                self.template_copy_file, self.num_error_corrections
+            )
 
-            self.latex_utils.compile_latex(osp.dirname(self.template_file), self.template_copy_file, pdf_file_path, timeout=self.timeout)
+            self.latex_utils.compile_latex(
+                osp.dirname(self.template_file),
+                self.template_copy_file,
+                pdf_file_path,
+                timeout=self.timeout,
+            )
 
             # Update state with output PDF path
             return {self.output_variable: pdf_file_path}
@@ -197,11 +232,11 @@ class LatexNode:
         except Exception as e:
             print(f"Error occurred: {e}")
             return None
-        
-        
+
+
 if __name__ == "__main__":
     # Define input and output variables
-    input_variable = "paper_content" 
+    input_variable = "paper_content"
     output_variable = "pdf_file_path"
     model = "gpt-4o"
     template_dir = "/workspaces/researchgraph/src/researchgraph/graph/ai_scientist/templates/2d_diffusion"
@@ -228,17 +263,17 @@ if __name__ == "__main__":
     # Define initial state
     memory = {
         "paper_content": {
-            "title": "This is the title", 
+            "title": "This is the title",
             "abstract": "This is the abstract.",
             "introduction": "This is the introduction.",
-            "related work": "This is the related work", 
-            "background": "This is the background", 
+            "related work": "This is the related work",
+            "background": "This is the background",
             "method": "This is the method section.",
-            "experimental setup": "This is the experimental setup", 
+            "experimental setup": "This is the experimental setup",
             "results": "These are the results.",
-            "conclusions": "This is the conclusion."
+            "conclusions": "This is the conclusion.",
         },
-        "pdf_file_path": "/workspaces/researchgraph/data/sample.pdf"
+        "pdf_file_path": "/workspaces/researchgraph/data/sample.pdf",
     }
 
     # Execute the graph

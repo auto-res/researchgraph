@@ -3,7 +3,7 @@ import os
 import os.path as osp
 import time
 from typing import List, Dict, Union
-from researchgraph.graph.ai_scientist.ai_scientist_node.llm import (
+from researchgraph.graphs.ai_scientist.ai_scientist_node.llm import (
     get_response_from_llm,
     extract_json_between_markers,
 )

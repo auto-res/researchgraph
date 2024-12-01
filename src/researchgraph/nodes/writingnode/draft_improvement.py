@@ -1,5 +1,3 @@
-import os
-import os.path as osp
 import json
 from typing import TypedDict
 from aider.coders import Coder
@@ -36,7 +34,7 @@ class DraftImprovementComponent:
 
         # Initialize the Coder instance
         self.coder = Coder.create(
-            main_model=Model(self.model), 
+            main_model=Model(self.model),
             fnames=self.input_variable,
             io=self.io,
             stream=False,
@@ -56,9 +54,7 @@ class DraftImprovementComponent:
         with open(output_file, "w") as f:
             f.write(improved_content + "\n")
 
-        return {
-            self.output_variable: output_file
-        }
+        return {self.output_variable: output_file}
 
     def _perform_improvement(self, review: str) -> str:
         improvement_prompt = '''The following review has been created for your research paper:
@@ -72,7 +68,6 @@ class DraftImprovementComponent:
 
 
 if __name__ == "__main__":
-
     import openai
 
     # Define input and output variables

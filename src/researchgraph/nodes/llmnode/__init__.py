@@ -1,7 +1,7 @@
-from .llmlinks_llmnode import LLMLinksNode
+from .llmlinks_llmnode import LLMLinksLLMNode
 from .structured_llmnode import StructuredLLMNode
 
 __all__ = [
-    "LLMLinksNode",
+    "LLMLinksLLMNode",
     "StructuredLLMNode",
 ]
