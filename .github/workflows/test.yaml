@@ -1,10 +1,13 @@
 name: Test
+run-name: Run by @${{ github.actor }}
 on: push
 jobs:
   print:
+    name: Test of LLMNodes
     runs-on: ubuntu-latest
     env:
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
     steps:
+      - name: Run pytest on LLMNode
       - run: echo "&{OPENAI_API_KEY}"
       - uses: actions/checkout@v2
