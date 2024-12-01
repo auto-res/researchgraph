@@ -26,5 +26,7 @@ class NodeFactory:
             pass
         elif node_type == "experimentnode":
             pass
+        elif node_type == "codingnode":
+            pass
         else:
             raise ValueError(f"Unknown node type: {node_type}")

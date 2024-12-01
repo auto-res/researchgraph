@@ -29,7 +29,6 @@ dependencies = [
 
 [tool.uv]
 dev-dependencies = [
-    "bump2version>=1.0.1",
     "ipykernel>=6.29.5",
     "jupyter>=1.1.1",
     "pre-commit>=3.8.0",

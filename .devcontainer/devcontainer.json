@@ -11,7 +11,9 @@
 				"charliermarsh.ruff",
 				"github.copilot",
 				"ms-toolsai.jupyter",
-				"njpwerner.autodocstring"
+				"njpwerner.autodocstring",
+                "mhutchie.git-graph",
+                "eamodio.gitlens"
 			]
 		}
 	}
