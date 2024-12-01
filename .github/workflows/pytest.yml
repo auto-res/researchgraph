@@ -1,4 +1,4 @@
-name: Test
+name: ResearchGraph Nodes Test
 
 # on:
 #   pull_request:
@@ -27,8 +27,11 @@ jobs:
       - name: Verify uv installation
         run: uv --version
 
-      - name: Print PATH
-        run: echo $PATH
+      - name: Set PYTHONPATH
+        run: echo "PYTHONPATH=$PYTHONPATH:$GITHUB_WORKSPACE/src" >> $GITHUB_ENV
+
+      - name: Print PYTHONPATH
+        run: echo "PYTHONPATH=$PYTHONPATH"
 
       - name: Run pytest
         run: uv run pytest src/researchgraph/test/test_llmnodes.py
