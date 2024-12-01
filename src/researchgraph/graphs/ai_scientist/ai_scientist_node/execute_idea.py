@@ -6,7 +6,7 @@ import sys
 import openai
 from perform_experiments import ExperimentComponent
 from perform_review import ReviewComponent, load_paper
-from researchgraph.writingnode.writeup import WriteupComponent 
+from researchgraph.writingnode.writeup import WriteupComponent
 from researchgraph.writingnode.draft_improvement import DraftImprovementComponent
 
 from aider.io import InputOutput

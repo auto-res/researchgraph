@@ -15,16 +15,16 @@ from researchgraph.experimentnode import (
     LLMEvaluateNode,
 )
 
-from researchgraph.graph.ai_integrator.ai_integrator_v1.llmnode_setting.extractor import (
+from researchgraph.graphs.ai_integrator.ai_integrator_v1.llmnode_setting.extractor import (
     extractor_setting,
 )
-from researchgraph.graph.ai_integrator.ai_integrator_v1.llmnode_setting.codeextractor import (
+from researchgraph.graphs.ai_integrator.ai_integrator_v1.llmnode_setting.codeextractor import (
     codeextractor_setting,
 )
-from researchgraph.graph.ai_integrator.ai_integrator_v1.llmnode_setting.creator import (
+from researchgraph.graphs.ai_integrator.ai_integrator_v1.llmnode_setting.creator import (
     creator_setting,
 )
-from researchgraph.graph.ai_integrator.ai_integrator_v1.config import (
+from researchgraph.graphs.ai_integrator.ai_integrator_v1.config import (
     ai_integratorv1_setting,
 )
 
