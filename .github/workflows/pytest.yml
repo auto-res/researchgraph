@@ -69,7 +69,9 @@ jobs:
         run: echo "PYTHONPATH=$PYTHONPATH"
 
       - name: Create Directory
-        run: mkdir -p /github/workspace/special_save_dir
+        run: mkdir -p $GITHUB_WORKSPACE/save_dir
+        env:
+          SAVE_DIR: $GITHUB_WORKSPACE/save_dir
 
       - name: Run pytest
         run: uv run pytest test/test_retrievenodes.py
