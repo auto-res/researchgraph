@@ -42,7 +42,8 @@ jobs:
 
       - name: Ensure pip cache folder exists
         run: mkdir -p /home/runner/.cache/pip
-  
+
+
   test-retrievenodes:
     name: Test of RetrieveNodes
     runs-on: ubuntu-latest
@@ -71,6 +72,8 @@ jobs:
         run: mkdir -p /workspaces/researchgraph/data
 
       - name: Run pytest
+        env:
+          SAVE_DIR: "/github/workspace/special_save_dir"
         run: uv run pytest test/test_retrievenodes.py
 
       - name: Ensure pip cache folder exists
