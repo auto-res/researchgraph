@@ -48,7 +48,7 @@ class StructuredLLMNode(Node):
         output_dict = ast.literal_eval(output)
         return output_dict
 
-    def execute(self, state):
+    def execute(self, state) -> dict:
         data = {key: state[key] for key in self.input_variable}
 
         env = Environment()
