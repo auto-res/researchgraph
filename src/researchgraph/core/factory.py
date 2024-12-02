@@ -25,7 +25,7 @@ class NodeFactory:
             pass
         elif node_type == "writingnode":
             if node_name == "latex_node":
-                return LatexNode(**kwargs)  # node_nameは渡したほうがいい？
+                return LatexNode(node_name, **kwargs)
         elif node_type == "experimentnode":
             pass
         elif node_type == "codingnode":
