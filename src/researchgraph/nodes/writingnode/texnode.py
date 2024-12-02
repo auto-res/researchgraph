@@ -8,6 +8,7 @@ from aider.models import Model
 from aider.io import InputOutput
 from researchgraph.core.node import Node
 
+
 class LatexUtils:
     def __init__(self, model: str):
         # Create the Coder instance
@@ -166,7 +167,7 @@ class LatexNode(Node):
             osp.abspath(template_dir), "latex", "template_copy.tex"
         )
 
-    def execute(self, state: State) -> dict:
+    def execute(self, state) -> dict:
         try:
             paper_content = state.get(self.input_variable[0])
             pdf_file_path = osp.expanduser(state.get(self.output_variable[0]))

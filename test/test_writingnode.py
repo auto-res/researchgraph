@@ -4,8 +4,8 @@ from researchgraph.nodes.writingnode.texnode import LatexNode
 
 
 class State(TypedDict):
-    paper_content: dict     # input_variable: ["paper_content"]
-    pdf_file_path: str      # output_variable: ["pdf_file_path"]
+    paper_content: dict  # input_variable: ["paper_content"]
+    pdf_file_path: str  # output_variable: ["pdf_file_path"]
 
 
 def test_latex_node():
@@ -35,7 +35,7 @@ def test_latex_node():
     graph = graph_builder.compile()
 
     # Define initial state
-    memory = {
+    state = {
         "paper_content": {
             "title": "This is the Title",
             "abstract": "This is the Abstract.",
@@ -51,4 +51,4 @@ def test_latex_node():
     }
 
     # Execute the graph
-    graph.invoke(memory, degub=True)
+    assert graph.invoke(state, debug=True)
