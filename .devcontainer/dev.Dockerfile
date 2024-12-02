@@ -5,6 +5,11 @@ RUN apt-get update && apt-get install -y \
     curl \
     vim \
     build-essential \
+    #texlive-base \
+    #texlive-latex-recommended \
+    #texlive-fonts-recommended \
+    #texlive-latex-extra \
+    #texlive-science \
     locales && \
     rm -rf /var/lib/apt/lists/*
 

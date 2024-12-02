@@ -1,6 +1,7 @@
 from researchgraph.core.node import Node
 from researchgraph.nodes.llmnode.structured_llmnode import StructuredLLMNode
 from researchgraph.nodes.llmnode.llmlinks_llmnode import LLMLinksLLMNode
+from researchgraph.nodes.writingnode.texnode import LatexNode
 
 
 class NodeFactory:
@@ -22,8 +23,9 @@ class NodeFactory:
                 raise ValueError(f"Unknown node type: {node_name}")
         elif node_type == "retrievenoe":
             pass
-        elif node_type == "wirtingnode":
-            pass
+        elif node_type == "writingnode":
+            if node_name == "latex_node":
+                return LatexNode(node_name, **kwargs)
         elif node_type == "experimentnode":
             pass
         elif node_type == "codingnode":

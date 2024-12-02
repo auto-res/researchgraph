@@ -6,10 +6,15 @@ on:
     paths: 
       - "src/**"
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
-  test:
+  test-llmnodes:
     name: Test of LLMNodes
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     env:
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
     steps:
@@ -33,7 +38,7 @@ jobs:
         run: echo "PYTHONPATH=$PYTHONPATH"
 
       - name: Run pytest
-        run: uv run pytest src/researchgraph/test/test_llmnodes.py
+        run: uv run pytest test/test_llmnodes.py
 
       - name: Ensure pip cache folder exists
         run: mkdir -p /home/runner/.cache/pip

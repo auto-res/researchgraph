@@ -15,11 +15,15 @@ on:
 
 permissions:
   contents: read
+  
+defaults:
+  run:
+    shell: bash
 
 jobs:
   release-build:
     runs-on: ubuntu-latest
-
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
 
