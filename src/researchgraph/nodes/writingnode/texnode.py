@@ -8,11 +8,12 @@ from langgraph.graph import StateGraph
 from aider.coders import Coder
 from aider.models import Model
 from aider.io import InputOutput
+from researchgraph.core.node import Node
 
 
 class State(TypedDict):
-    paper_content: dict
-    pdf_file_path: str
+    paper_content: dict     # input_variable: ["paper_content"]
+    pdf_file_path: str      # output_variable: ["pdf_file_path"]
 
 
 class LatexUtils:
@@ -148,19 +149,18 @@ class LatexUtils:
             print("Failed to rename PDF.")
 
 
-class LatexNode:
+class LatexNode(Node):
     def __init__(
         self,
-        input_variable: str,
-        output_variable: str,
+        input_variable: list[str],
+        output_variable: list[str],
         model: str,
         template_dir: str,
         figures_dir: str,
         timeout: int = 30,
         num_error_corrections: int = 5,
     ):
-        self.input_variable = input_variable
-        self.output_variable = output_variable
+        super().__init__(input_variable, output_variable)
         self.latex_utils = LatexUtils(model)
         self.timeout = timeout
         self.num_error_corrections = num_error_corrections
@@ -174,10 +174,10 @@ class LatexNode:
             osp.abspath(template_dir), "latex", "template_copy.tex"
         )
 
-    def __call__(self, state: State) -> dict:
+    def execute(self, state: State) -> dict:
         try:
-            paper_content = state.get(self.input_variable)
-            pdf_file_path = osp.expanduser(state.get(self.output_variable))
+            paper_content = state.get(self.input_variable[0])
+            pdf_file_path = osp.expanduser(state.get(self.output_variable[0]))
 
             if not paper_content or not pdf_file_path:
                 raise ValueError(
@@ -227,7 +227,7 @@ class LatexNode:
             )
 
             # Update state with output PDF path
-            return {self.output_variable: pdf_file_path}
+            return {self.output_variable[0]: pdf_file_path}
 
         except Exception as e:
             print(f"Error occurred: {e}")
@@ -236,10 +236,10 @@ class LatexNode:
 
 if __name__ == "__main__":
     # Define input and output variables
-    input_variable = "paper_content"
-    output_variable = "pdf_file_path"
+    input_variable = ["paper_content"]
+    output_variable = ["pdf_file_path"]
     model = "gpt-4o"
-    template_dir = "/workspaces/researchgraph/src/researchgraph/graph/ai_scientist/templates/2d_diffusion"
+    template_dir = "/workspaces/researchgraph/src/researchgraph/graphs/ai_scientist/templates/2d_diffusion"
     figures_dir = "/workspaces/researchgraph/images"
 
     # Initialize LatexNode
@@ -263,8 +263,8 @@ if __name__ == "__main__":
     # Define initial state
     memory = {
         "paper_content": {
-            "title": "This is the title",
-            "abstract": "This is the abstract.",
+            "title": "This is the Title",
+            "abstract": "This is the Abstract.",
             "introduction": "This is the introduction.",
             "related work": "This is the related work",
             "background": "This is the background",
