@@ -23,12 +23,13 @@ class RetrievearXivTextNode(Node):
         arxiv_url = state[self.input_variable[0]]
         arxiv_id = re.sub(r"^https://arxiv\.org/abs/", "", arxiv_url)
 
-        pdf_path = os.path.join(self.save_dir, f"{arxiv_id}.pdf")
         text_path = os.path.join(self.save_dir, f"{arxiv_id}.txt")
+        pdf_path = os.path.join(self.save_dir, f"{arxiv_id}.pdf")
 
         if os.path.exists(text_path):
             with open(text_path, "r", encoding="utf-8") as text_file:
                 full_text = text_file.read()
+            logging.info(f"Loaded text from {text_path}")
 
         else:
             pdf_url = f"https://arxiv.org/pdf/{arxiv_id}.pdf"
