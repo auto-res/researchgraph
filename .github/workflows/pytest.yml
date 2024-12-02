@@ -68,9 +68,10 @@ jobs:
       - name: Print PYTHONPATH
         run: echo "PYTHONPATH=$PYTHONPATH"
 
+      - name: Create Directory
+        run: mkdir -p /github/workspace/special_save_dir
+
       - name: Run pytest
-        env:
-          SAVE_DIR: "${GITHUB_WORKSPACE}"
         run: uv run pytest test/test_retrievenodes.py
 
       - name: Ensure pip cache folder exists
