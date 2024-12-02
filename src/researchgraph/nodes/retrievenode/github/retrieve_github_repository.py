@@ -2,32 +2,20 @@ import os
 import re
 import subprocess
 import glob
-import logging
 
-from typing_extensions import TypedDict
-from langgraph.graph import StateGraph
-
-logger = logging.getLogger("researchgraph")
+from researchgraph.core.node import Node
 
 
-class State(TypedDict):
-    github_url: str
-    folder_structure: str
-    github_file: str
-
-
-class GithubNode:
-    def __init__(self, save_dir: str, input_variable: str, output_variable: list[str]):
+class RetrieveGithubRepositoryNode(Node):
+    def __init__(
+        self, input_variable: list[str], output_variable: list[str], save_dir: str
+    ):
+        super().__init__(input_variable, output_variable)
         self.save_dir = save_dir
-        self.input_variable = input_variable
-        self.output_variable = output_variable
-        print("GithubNode initialized")
-        print(f"input: {self.input_variable}")
-        print(f"output: {self.output_variable}")
 
-    def _format_url(self, state: State) -> str:
+    def _format_url(self, state) -> str:
         pattern = r"(https://github\.com/[^/]+/[^/?#]+)"
-        url = re.search(pattern, state[self.input_variable]).group(1)
+        url = re.search(pattern, state[self.input_variable[0]]).group(1)
         return url
 
     def _get_repository(self, url: str, repo_name: str):
@@ -77,7 +65,7 @@ class GithubNode:
             :10000
         ]  # TODO: The problem of Python code becoming too long. GPT-4o context window is 128,000.
 
-    def __call__(self, state: State) -> dict:
+    def execute(self, state) -> dict:
         github_url = self._format_url(state)
         repository_name = github_url.split("/")[-1]
         target_dir = os.path.join(self.save_dir, repository_name)
@@ -85,38 +73,8 @@ class GithubNode:
         result = self._get_repository(github_url, repository_name)
         all_file_path = self._get_all_file_path(target_dir)
         python_script_text = self._get_python_script_text(target_dir)
-        logger.info("---GithubNode---")
-        logger.info(f"All file path: {all_file_path}")
-        logger.info(f"Python script text: {python_script_text[:500]}")
         return {
-            self.input_variable: github_url,
+            self.input_variable[0]: github_url,
             self.output_variable[0]: all_file_path,
             self.output_variable[1]: python_script_text,
         }
-
-
-if __name__ == "__main__":
-    save_dir = "/workspaces/researchgraph/data"
-    input_variable = "github_url"
-    output_variable = ["folder_structure", "github_file"]
-
-    graph_builder = StateGraph(State)
-    graph_builder.add_node(
-        "githubretriever",
-        GithubNode(
-            save_dir=save_dir,
-            input_variable=input_variable,
-            output_variable=output_variable,
-        ),
-    )
-    graph_builder.set_entry_point("githubretriever")
-    graph_builder.set_finish_point("githubretriever")
-    graph = graph_builder.compile()
-
-    # memory = {"github_url": "https://github.com/abhi2610/ohem/tree/1f07dd09b50c8c21716ae36aede92125fe437579"}
-    memory = {
-        "github_url": "https://github.com/adelnabli/acid?tab=readme-ov-file/info/refs"
-    }
-
-    # graph.invoke(memory, debug=True)
-    graph.invoke(memory)

@@ -1,7 +1,9 @@
 from typing import TypedDict
 from langgraph.graph import StateGraph
-from researchgraph.nodes.llmnode.structured_llmnode import StructuredLLMNode
-from researchgraph.nodes.llmnode.llmlinks_llmnode import LLMLinksLLMNode
+from researchgraph.nodes.llmnode.structured_output.structured_llmnode import (
+    StructuredLLMNode,
+)
+from researchgraph.nodes.llmnode.llmlinks.llmlinks_llmnode import LLMLinksLLMNode
 
 
 class State(TypedDict):

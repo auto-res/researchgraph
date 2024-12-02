@@ -7,7 +7,7 @@ from langchain_community.document_loaders import PyPDFLoader
 from semanticscholar import SemanticScholar
 from typing import Any, TypedDict
 from langgraph.graph import StateGraph
-from pydantic import BaseModel, ValidationError, validate_arguments
+from pydantic import BaseModel, ValidationError, validate_call
 
 
 class State(TypedDict):
@@ -23,7 +23,7 @@ class SemanticScholarResponse(BaseModel):
 
 
 class SemanticScholarNode:
-    @validate_arguments
+    @validate_call
     def __init__(
         self,
         save_dir: str,

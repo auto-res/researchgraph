@@ -1,34 +1,25 @@
 import os
 import importlib.util
-from typing import TypedDict
-from langgraph.graph import StateGraph
 from unsloth import FastLanguageModel
 from datasets import load_dataset
 from trl import SFTTrainer
 from transformers import TrainingArguments
 
-
-class State(TypedDict):
-    script_save_path: str
-    model_save_path: str
+from researchgraph.core.node import Node
 
 
-class LLMTrainNode:
+class LLMSFTTrainNode(Node):
     def __init__(
         self,
-        input_variable: str,
-        output_variable: str,
+        input_variable: list[str],
+        output_variable: list[str],
         model_name: str,
         dataset_name: str,
         model_save_path: str,
         lora: bool = False,
         num_train_data: int | None = None,
     ):
-        self.input_variable = input_variable
-        self.output_variable = output_variable
-        print("LLMTrainNode")
-        print(f"input: {self.input_variable}")
-        print(f"output: {self.output_variable}")
+        super().__init__(input_variable, output_variable)
         self.model_name = model_name
         self.dataset_name = dataset_name
         self.model_save_path = model_save_path
@@ -121,8 +112,8 @@ class LLMTrainNode:
         new_optimizer = NewOptimizer(self.model.parameters())
         return new_optimizer
 
-    def __call__(self, state: State) -> dict:
-        script_path = state[self.input_variable]
+    def execute(self, state) -> dict:
+        script_path = state[self.input_variable[0]]
         new_optimizer = self._set_up_optimizer(script_path)
         trainer = SFTTrainer(
             model=self.model,
@@ -139,33 +130,4 @@ class LLMTrainNode:
 
         self.model.save_pretrained(self.model_save_path)
         self.tokenizer.save_pretrained(self.model_save_path)
-        return {self.output_variable: self.model_save_path}
-
-
-if __name__ == "__main__":
-    model_name = "unsloth/Meta-Llama-3.1-8B"
-    dataset_name = "openai/gsm8k"
-    model_save_path = "model"
-    input_variable = "script_save_path"
-    output_variable = "model_save_path"
-
-    graph_builder = StateGraph(State)
-    graph_builder.add_node(
-        "llmtrainer",
-        LLMTrainNode(
-            model_name=model_name,
-            dataset_name=dataset_name,
-            model_save_path=model_save_path,
-            input_variable="script_save_path",
-            output_variable="model_save_path",
-        ),
-    )
-    graph_builder.set_entry_point("llmtrainer")
-    graph_builder.set_finish_point("llmtrainer")
-    graph = graph_builder.compile()
-
-    memory = {
-        "script_save_path": "/content/new_method.py",
-    }
-
-    graph.invoke(memory)
+        return {self.output_variable[0]: self.model_save_path}
