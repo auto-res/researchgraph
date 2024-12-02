@@ -26,7 +26,7 @@ def test_retrieve_arxiv_text_node():
         RetrievearXivTextNode(
             input_variable=input_variable,
             output_variable=output_variable,
-            save_dir=SAVE_DIR,  # 環境変数から取得したSAVE_DIRを使用
+            save_dir=SAVE_DIR,
         ),
     )
     graph_builder.set_entry_point("arxivretriever")
@@ -46,9 +46,9 @@ def test_retrieve_github_repository_node():
     graph_builder.add_node(
         "githubretriever",
         RetrieveGithubRepositoryNode(
-            save_dir=SAVE_DIR,  # 環境変数から取得したSAVE_DIRを使用
             input_variable=input_variable,
             output_variable=output_variable,
+            save_dir=SAVE_DIR,
         ),
     )
     graph_builder.set_entry_point("githubretriever")
