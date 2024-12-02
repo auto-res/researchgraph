@@ -47,6 +47,8 @@ jobs:
   test-retrievenodes:
     name: Test of RetrieveNodes
     runs-on: ubuntu-latest
+    env:
+      SAVE_DIR: $GITHUB_WORKSPACE/save_dir
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
@@ -68,11 +70,9 @@ jobs:
       - name: Print PYTHONPATH
         run: echo "PYTHONPATH=$PYTHONPATH"
 
-      - name: Create Directory
-        run: mkdir -p $GITHUB_WORKSPACE/save_dir
-        env:
-          SAVE_DIR: $GITHUB_WORKSPACE/save_dir
-
+      # - name: Create Directory
+      #   run: mkdir -p $GITHUB_WORKSPACE/save_dir
+        
       - name: Run pytest
         run: uv run pytest test/test_retrievenodes.py
 
