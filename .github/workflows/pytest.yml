@@ -68,9 +68,6 @@ jobs:
       - name: Print PYTHONPATH
         run: echo "PYTHONPATH=$PYTHONPATH"
 
-      - name: Create necessary directories
-        run: mkdir -p /workspaces/researchgraph/data
-
       - name: Run pytest
         env:
           SAVE_DIR: "/github/workspace/special_save_dir"
