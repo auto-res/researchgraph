@@ -3,8 +3,7 @@ name: ResearchGraph Nodes Test
 on:
   pull_request:
     types: [opened, reopened, synchronize]
-    paths: 
-      - "src/**"
+    paths: ['src/**', 'test/**']
 
 defaults:
   run:
@@ -74,9 +73,6 @@ jobs:
         run: mkdir -p $SAVE_DIR
         
       - name: Run pytest
-        #run: mkdir -p $GITHUB_WORKSPACE/save_dir
-        # env:
-        #   SAVE_DIR: $GITHUB_WORKSPACE/save_dir
         run: uv run pytest test/test_retrievenodes.py
 
       - name: Ensure pip cache folder exists
