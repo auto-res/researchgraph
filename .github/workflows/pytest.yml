@@ -70,7 +70,7 @@ jobs:
 
       - name: Run pytest
         env:
-          SAVE_DIR: /github/workspace
+          SAVE_DIR: $GITHUB_WORKSPACE
         run: uv run pytest test/test_retrievenodes.py
 
       - name: Ensure pip cache folder exists
