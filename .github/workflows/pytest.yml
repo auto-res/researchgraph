@@ -67,6 +67,9 @@ jobs:
       - name: Print PYTHONPATH
         run: echo "PYTHONPATH=$PYTHONPATH"
 
+      - name: Create necessary directories
+        run: mkdir -p /workspaces/researchgraph/data
+
       - name: Run pytest
         run: uv run pytest test/test_retrievenodes.py
 
