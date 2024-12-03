@@ -19,8 +19,8 @@ def test_llmtain_node():
     model_name = "unsloth/Meta-Llama-3.1-8B"
     dataset_name = "openai/gsm8k"
     model_save_path = "model"
-    input_variable = ["script_save_path"]
-    output_variable = ["model_save_path"]
+    input_key = ["script_save_path"]
+    output_key = ["model_save_path"]
 
     graph_builder = StateGraph(State)
     graph_builder.add_node(
@@ -29,8 +29,8 @@ def test_llmtain_node():
             model_name=model_name,
             dataset_name=dataset_name,
             model_save_path=model_save_path,
-            input_variable=input_variable,
-            output_variable=output_variable,
+            input_key=input_key,
+            output_key=output_key,
         ),
     )
     graph_builder.set_entry_point("llmtrainer")
@@ -45,8 +45,8 @@ def test_llmtain_node():
 
 
 def test_llminference_node():
-    input_variable = ["model_save_path"]
-    output_variable = ["result_save_path"]
+    input_key = ["model_save_path"]
+    output_key = ["result_save_path"]
     dataset_name = "openai/gsm8k"
     result_save_path = "/content/test.csv"
     num_inference_data = 20
@@ -55,8 +55,8 @@ def test_llminference_node():
     graph_builder.add_node(
         "llminferencer",
         LLMInferenceNode(
-            input_variable=input_variable,
-            output_variable=output_variable,
+            input_key=input_key,
+            output_key=output_key,
             dataset_name=dataset_name,
             num_inference_data=num_inference_data,
             result_save_path=result_save_path,
@@ -76,15 +76,15 @@ def test_llminference_node():
 def test_llmevaluate_node():
     answer_data_path = "/content/answer_30.csv"
     dataset_name = "openai/gsm8k"
-    input_variable = ["result_save_path"]
-    output_variable = ["accuracy"]
+    input_key = ["result_save_path"]
+    output_key = ["accuracy"]
 
     graph_builder = StateGraph(State)
     graph_builder.add_node(
         "llmevaluater",
         LLMEvaluateNode(
-            input_variable=input_variable,
-            output_variable=output_variable,
+            input_key=input_key,
+            output_key=output_key,
             answer_data_path=answer_data_path,
             # dataset_name,
         ),

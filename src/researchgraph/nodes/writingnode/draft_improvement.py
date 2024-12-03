@@ -15,13 +15,13 @@ class State(TypedDict):
 class DraftImprovementComponent:
     def __init__(
         self,
-        input_variable: list,  # writeup_file, notes, review_path
-        output_variable: str,  # review_path
+        input_key: list,  # writeup_file, notes, review_path
+        output_key: str,  # review_path
         model: str,
         io: InputOutput,
     ):
-        self.input_variable = input_variable
-        self.output_variable = output_variable
+        self.input_key = input_key
+        self.output_key = output_key
         self.model = model
         self.io = io
         self.coder = None
@@ -35,7 +35,7 @@ class DraftImprovementComponent:
         # Initialize the Coder instance
         self.coder = Coder.create(
             main_model=Model(self.model),
-            fnames=self.input_variable,
+            fnames=self.input_key,
             io=self.io,
             stream=False,
             use_git=False,
@@ -50,11 +50,11 @@ class DraftImprovementComponent:
         improved_content = self._perform_improvement(review_content)
 
         # Save the improved content to the output file
-        output_file = state[self.output_variable]
+        output_file = state[self.output_key]
         with open(output_file, "w") as f:
             f.write(improved_content + "\n")
 
-        return {self.output_variable: output_file}
+        return {self.output_key: output_file}
 
     def _perform_improvement(self, review: str) -> str:
         improvement_prompt = '''The following review has been created for your research paper:
@@ -71,8 +71,8 @@ if __name__ == "__main__":
     import openai
 
     # Define input and output variables
-    input_variable = ["writeup_file_path", "notes_path"]
-    output_variable = "review_path"
+    input_key = ["writeup_file_path", "notes_path"]
+    output_key = "review_path"
     model = "gpt-3.5-turbo"
     io = InputOutput()
     template_dir = "/workspaces/researchgraph/src/researchgraph/graph/ai_scientist/templates/2d_diffusion"
@@ -80,8 +80,8 @@ if __name__ == "__main__":
 
     # Initialize DraftImprovementComponent as a LangGraph node
     draft_improvement_component = DraftImprovementComponent(
-        input_variable=input_variable,
-        output_variable=output_variable,
+        input_key=input_key,
+        output_key=output_key,
         model=model,
         io=io,
     )

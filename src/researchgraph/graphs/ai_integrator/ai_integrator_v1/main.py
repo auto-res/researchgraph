@@ -86,16 +86,16 @@ class AIIntegratorv1:
             "githubretriever",
             GithubNode(
                 save_dir=self.save_dir,
-                input_variable="github_url",
-                output_variable=["folder_structure", "github_file"],
+                input_key="github_url",
+                output_key=["folder_structure", "github_file"],
             ),
         )
         self.graph_builder.add_node(
             "arxivretriever",
             RetrievearXivTextNode(
                 save_dir=self.save_dir,
-                input_variable="arxiv_url",
-                output_variable="paper_text",
+                input_key="arxiv_url",
+                output_key="paper_text",
             ),
         )
         self.graph_builder.add_node(
@@ -110,8 +110,8 @@ class AIIntegratorv1:
         self.graph_builder.add_node(
             "text2script",
             Text2ScriptNode(
-                input_variable="new_method_code",
-                output_variable="script_save_path",
+                input_key="new_method_code",
+                output_key="script_save_path",
                 save_file_path=os.path.join(self.save_dir, self.new_method_file_name),
             ),
         )
@@ -122,15 +122,15 @@ class AIIntegratorv1:
                 dataset_name=self.dataset_name,
                 num_train_data=self.num_train_data,
                 model_save_path=os.path.join(self.save_dir, self.model_save_dir_name),
-                input_variable="script_save_path",
-                output_variable="model_save_path",
+                input_key="script_save_path",
+                output_key="model_save_path",
             ),
         )
         self.graph_builder.add_node(
             "llminferencer",
             LLMInferenceNode(
-                input_variable="model_save_path",
-                output_variable="result_save_path",
+                input_key="model_save_path",
+                output_key="result_save_path",
                 dataset_name=self.dataset_name,
                 num_inference_data=self.num_inference_data,
                 result_save_path=os.path.join(
@@ -141,8 +141,8 @@ class AIIntegratorv1:
         self.graph_builder.add_node(
             "llmevaluater",
             LLMEvaluateNode(
-                input_variable="result_save_path",
-                output_variable="accuracy",
+                input_key="result_save_path",
+                output_key="accuracy",
                 answer_data_path=self.answer_data_path,
             ),
         )

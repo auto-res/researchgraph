@@ -27,17 +27,17 @@ class SemanticScholarNode:
     def __init__(
         self,
         save_dir: str,
-        search_variable: str,
-        output_variable: str,
+        search_key: str,
+        output_key: str,
         num_retrieve_paper: int,
     ):
         self.save_dir = save_dir
-        self.search_variable = search_variable
-        self.output_variable = output_variable
+        self.search_key = search_key
+        self.output_key = output_key
         self.num_retrieve_paper = num_retrieve_paper
         print("SemanticScholarRetriever initialized")
-        print(f"input: {search_variable}")
-        print(f"output: {output_variable}")
+        print(f"input: {search_key}")
+        print(f"output: {output_key}")
 
     def _download_from_arxiv_id(self, arxiv_id: str) -> None:
         """Download PDF file from arXiv
@@ -97,7 +97,7 @@ class SemanticScholarNode:
         Args:
             state (_type_): _description_
         """
-        keywords_list = json.loads(state[self.search_variable])
+        keywords_list = json.loads(state[self.search_key])
         # keywords_list = [keywords_list[: self.num_keywords]]
         sch = SemanticScholar()
 
@@ -142,21 +142,21 @@ class SemanticScholarNode:
                 paper_key = f"paper_{idx+1}"
                 paper_list_dict[paper_key] = paper_content
 
-        return {self.output_variable: paper_list_dict}
+        return {self.output_key: paper_list_dict}
 
 
 if __name__ == "__main__":
     save_dir = "/workspaces/researchgraph/data"
-    search_variable = "keywords"
-    output_variable = "collection_of_papers"
+    search_key = "keywords"
+    output_key = "collection_of_papers"
 
     graph_builder = StateGraph(State)
     graph_builder.add_node(
         "semanticscholarretriever",
         SemanticScholarNode(
             save_dir=save_dir,
-            search_variable=search_variable,
-            output_variable=output_variable,
+            search_key=search_key,
+            output_key=output_key,
             num_retrieve_paper=3,
         ),
     )

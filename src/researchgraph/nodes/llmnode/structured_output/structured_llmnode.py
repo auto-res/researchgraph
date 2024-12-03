@@ -14,12 +14,12 @@ class DynamicModel(BaseModel):
 class StructuredLLMNode(Node):
     def __init__(
         self,
-        input_variable: list[str],
-        output_variable: list[str],
+        input_key: list[str],
+        output_key: list[str],
         llm_name: str,
         prompt_template: str,
     ):
-        super().__init__(input_variable, output_variable)
+        super().__init__(input_key, output_key)
         self.llm_name = llm_name
         self.prompt_template = prompt_template
         self.dynamicmodel = self._create_dynamic_model(DynamicModel)
@@ -28,7 +28,7 @@ class StructuredLLMNode(Node):
         default_type = str
         default_required = ...
         fields = {
-            field: (default_type, default_required) for field in self.output_variable
+            field: (default_type, default_required) for field in self.output_key
         }
         return create_model(
             base_model.__name__,
@@ -49,7 +49,7 @@ class StructuredLLMNode(Node):
         return output_dict
 
     def execute(self, state) -> dict:
-        data = {key: state[key] for key in self.input_variable}
+        data = {key: state[key] for key in self.input_key}
 
         env = Environment()
         template = env.from_string(self.prompt_template)

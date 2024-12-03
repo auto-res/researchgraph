@@ -9,13 +9,13 @@ from researchgraph.core.node import Node
 class LLMInferenceNode(Node):
     def __init__(
         self,
-        input_variable: list[str],
-        output_variable: list[str],
+        input_key: list[str],
+        output_key: list[str],
         result_save_path: str,
         dataset_name: str,
         num_inference_data: Optional[int] = None,
     ):
-        super().__init__(input_variable, output_variable)
+        super().__init__(input_key, output_key)
         self.result_save_path = result_save_path
         self.dataset_name = dataset_name
         self.num_inference_data = num_inference_data
@@ -38,7 +38,7 @@ class LLMInferenceNode(Node):
         return dataset
 
     def execute(self, state) -> dict:
-        model_save_path = state[self.input_variable[0]]
+        model_save_path = state[self.input_key[0]]
         model, tokenizer = self._set_up_model(model_save_path)
         result_list = []
         prompt = """### Input:
@@ -64,4 +64,4 @@ class LLMInferenceNode(Node):
 
         df = pd.DataFrame({"llm_output": result_list})
         df.to_csv(self.result_save_path, index=False)
-        return {self.output_variable[0]: self.result_save_path}
+        return {self.output_key[0]: self.result_save_path}

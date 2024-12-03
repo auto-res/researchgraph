@@ -4,22 +4,22 @@ from researchgraph.nodes.writingnode.texnode import LatexNode
 
 
 class State(TypedDict):
-    paper_content: dict  # input_variable: ["paper_content"]
-    pdf_file_path: str  # output_variable: ["pdf_file_path"]
+    paper_content: dict
+    pdf_file_path: str
 
 
 def test_latex_node():
-    # Define input and output variables
-    input_variable = ["paper_content"]
-    output_variable = ["pdf_file_path"]
+    # Define input and output keys
+    input_key = ["paper_content"]
+    output_key = ["pdf_file_path"]
     model = "gpt-4o"
     template_dir = "/workspaces/researchgraph/src/researchgraph/graphs/ai_scientist/templates/2d_diffusion"
     figures_dir = "/workspaces/researchgraph/images"
 
     # Initialize LatexNode
     latex_node = LatexNode(
-        input_variable=input_variable,
-        output_variable=output_variable,
+        input_key=input_key,
+        output_key=output_key,
         model=model,
         template_dir=template_dir,
         figures_dir=figures_dir,

@@ -28,19 +28,19 @@ class OpenAlexNode:
     def __init__(
         self,
         save_dir: str,
-        search_variable: str,
-        output_variable: str,
+        search_key: str,
+        output_key: str,
         num_keywords: int,
         num_retrieve_paper: int,
     ):
         self.save_dir = save_dir
-        self.search_variable = search_variable
-        self.output_variable = output_variable
+        self.search_key = search_key
+        self.output_key = output_key
         self.num_keywords = num_keywords
         self.num_retrieve_paper = num_retrieve_paper
         print("OpenAlexRetriever initialized")
-        print(f"input: {search_variable}")
-        print(f"output: {output_variable}")
+        print(f"input: {search_key}")
+        print(f"output: {output_key}")
 
     def download_from_arxiv_id(self, arxiv_id: str) -> None:
         """Download PDF file from arXiv
@@ -101,7 +101,7 @@ class OpenAlexNode:
         Args:
             state (_type_): _description_
         """
-        keywords_list = json.loads(state[self.search_variable])
+        keywords_list = json.loads(state[self.search_key])
         keywords_list = [keywords_list[: self.num_keywords]]
 
         # 2012年以降を検索対象にする
@@ -155,7 +155,7 @@ class OpenAlexNode:
             self.download_from_arxiv_ids(arxiv_ids[: self.num_retrieve_paper])
 
         return {
-            self.output_variable: {
+            self.output_key: {
                 f"paper_{idx + 1}": {
                     "full_text": self.convert_pdf_to_text(
                         os.path.join(self.save_dir, filename)
@@ -169,8 +169,8 @@ class OpenAlexNode:
 
 if __name__ == "__main__":
     save_dir = "/workspaces/researchgraph/data"
-    search_variable = "keywords"
-    output_variable = "collection_of_papers"
+    search_key = "keywords"
+    output_key = "collection_of_papers"
 
     memory = {"keywords": '["Grokking"]'}
 
@@ -179,8 +179,8 @@ if __name__ == "__main__":
         "openalexretriever",
         OpenAlexNode(
             save_dir=save_dir,
-            search_variable=search_variable,
-            output_variable=output_variable,
+            search_key=search_key,
+            output_key=output_key,
             num_keywords=1,
             num_retrieve_paper=3,
         ),

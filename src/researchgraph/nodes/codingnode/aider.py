@@ -19,8 +19,8 @@ class State(TypedDict):
 class AiderNode:
     def __init__(
         self,
-        input_variable: str,
-        # output_variable: str,
+        input_key: str,
+        # output_key: str,
         llm_model_name: str,
         folder_name: str,
     ):
@@ -31,7 +31,7 @@ class AiderNode:
             llm_model_name (str): The name of the language model to use.
             folder_name (str): The directory where work files are stored.
         """
-        self.input_variable = input_variable
+        self.input_key = input_key
         # self.output_variable = output_variable
         self.main_model = Model(llm_model_name)
         self.folder_name = folder_name
@@ -142,7 +142,7 @@ class AiderNode:
             print(f"File not found in managed list: {filepath}")
 
     def __call__(self, state: State):
-        prompt = state[self.input_variable]
+        prompt = state[self.input_key]
         output = self._run_prompt(prompt)
         print("Coder Output:", output)
         return
@@ -174,7 +174,7 @@ if __name__ == "__main__":
     graph_builder.add_node(
         "aider",
         AiderNode(
-            input_variable="instruction",
+            input_key="instruction",
             llm_model_name=llm_model_name,
             folder_name=folder_name,
         ),
