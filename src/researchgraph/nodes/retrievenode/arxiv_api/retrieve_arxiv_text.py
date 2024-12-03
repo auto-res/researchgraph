@@ -12,15 +12,15 @@ from researchgraph.core.node import Node
 class RetrievearXivTextNode(Node):
     def __init__(
         self,
-        input_variable: list[str],
-        output_variable: list[str],
+        input_key: list[str],
+        output_key: list[str],
         save_dir: str,
     ):
-        super().__init__(input_variable, output_variable)
+        super().__init__(input_key, output_key)
         self.save_dir = save_dir
 
     def execute(self, state) -> dict:
-        arxiv_url = state[self.input_variable[0]]
+        arxiv_url = state[self.input_key[0]]
         arxiv_id = re.sub(r"^https://arxiv\.org/abs/", "", arxiv_url)
 
         text_path = os.path.join(self.save_dir, f"{arxiv_id}.txt")
@@ -40,7 +40,7 @@ class RetrievearXivTextNode(Node):
                     shutil.copyfileobj(response.raw, file)
             except RequestException as e:
                 logging.error(f"Failed to download {pdf_url}: {e}")
-                return {self.output_variable: None}
+                return {self.output_key: None}
 
             loader = PyPDFLoader(pdf_path)
             pages = loader.load_and_split()
@@ -49,5 +49,5 @@ class RetrievearXivTextNode(Node):
                 text_file.write(full_text)
 
         return {
-            self.output_variable[0]: full_text,
+            self.output_key[0]: full_text,
         }

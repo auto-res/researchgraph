@@ -17,8 +17,8 @@ class State(TypedDict):
 
 
 def test_structured_llmnode():
-    input_variable = ["week"]
-    output_variable = ["name", "date", "participants"]
+    input_key = ["week"]
+    output_key = ["name", "date", "participants"]
     llm_name = "gpt-4o-2024-08-06"
     prompt_template = """
     Extract the event information.
@@ -29,8 +29,8 @@ def test_structured_llmnode():
     graph_builder.add_node(
         "LLMNode",
         StructuredLLMNode(
-            input_variable=input_variable,
-            output_variable=output_variable,
+            input_key=input_key,
+            output_key=output_key,
             llm_name=llm_name,
             prompt_template=prompt_template,
         ),
@@ -45,8 +45,8 @@ def test_structured_llmnode():
 
 
 def test_llmlinks_llmnode():
-    input_variable = ["source", "language"]
-    output_variable = ["translation1"]
+    input_key = ["source", "language"]
+    output_key = ["translation1"]
     llm_name = "gpt-4o-2024-08-06"
     prompt_template = """
 <source>
@@ -64,8 +64,8 @@ sourceタグで与えられた文章を languageで指定された言語に翻�
     graph_builder.add_node(
         "LLMLinksLLMNode",
         LLMLinksLLMNode(
-            input_variable=input_variable,
-            output_variable=output_variable,
+            input_key=input_key,
+            output_key=output_key,
             llm_name=llm_name,
             prompt_template=prompt_template,
         ),

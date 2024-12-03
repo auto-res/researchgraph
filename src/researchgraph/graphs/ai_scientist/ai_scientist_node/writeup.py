@@ -305,8 +305,8 @@ class RelatedWorkSection(BaseSection):
 class WriteupComponent:
     def __init__(
         self,
-        input_variable: str,  # notes_path
-        output_variable: dict,  # paper_content
+        input_key: str,  # notes_path
+        output_key: dict,  # paper_content
         model: str,
         template_dir: str,
         cite_client: Any,
@@ -314,8 +314,8 @@ class WriteupComponent:
         paper_search_service: PaperSearchService,
         llm_service: LLMService,
     ):
-        self.input_variable = input_variable
-        self.output_variable = output_variable
+        self.input_key = input_key
+        self.output_key = output_key
         self.model = model
         self.template_dir = template_dir
         self.cite_client = cite_client
@@ -327,8 +327,8 @@ class WriteupComponent:
 
     # PERFORM WRITEUP
     def __call__(self, state: State) -> dict:
-        notes_path = state[self.input_variable]
-        paper_content = state[self.output_variable]
+        notes_path = state[self.input_key]
+        paper_content = state[self.output_key]
 
         # Check if the notes file exists, raise an error if it doesn't
         if not os.path.exists(notes_path):
@@ -420,9 +420,9 @@ if __name__ == "__main__":
     from src.researchgraph.writingnode.texnode import LatexNode
 
     # Define input and output variables
-    input_variable = "notes_path"
-    writeup_output_variable = "paper_content"
-    latex_output_variable = "pdf_file_path"
+    input_key = "notes_path"
+    writeup_output_key = "paper_content"
+    latex_output_key = "pdf_file_path"
     model = "gpt-4o"
     io = InputOutput()
     template_dir = "/workspaces/researchgraph/src/researchgraph/graph/ai_scientist/templates/2d_diffusion"
@@ -433,8 +433,8 @@ if __name__ == "__main__":
 
     # Initialize WriteupComponent as a LangGraph node
     writeup_component = WriteupComponent(
-        input_variable=input_variable,
-        output_variable=writeup_output_variable,
+        input_key=input_key,
+        output_key=writeup_output_key,
         model=model,
         template_dir=template_dir,
         cite_client=cite_client,
@@ -445,8 +445,8 @@ if __name__ == "__main__":
 
     # Initialize LatexNode as a LangGraph node
     latex_node = LatexNode(
-        input_variable=writeup_output_variable,
-        output_variable=latex_output_variable,
+        input_key=writeup_output_key,
+        output_key=latex_output_key,
         model="gpt-4o",
         template_dir=template_dir,
         figures_dir=figures_dir,

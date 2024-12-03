@@ -145,15 +145,15 @@ class LatexUtils:
 class LatexNode(Node):
     def __init__(
         self,
-        input_variable: list[str],
-        output_variable: list[str],
+        input_key: list[str],
+        output_key: list[str],
         model: str,
         template_dir: str,
         figures_dir: str,
         timeout: int = 30,
         num_error_corrections: int = 5,
     ):
-        super().__init__(input_variable, output_variable)
+        super().__init__(input_key, output_key)
         self.latex_utils = LatexUtils(model)
         self.timeout = timeout
         self.num_error_corrections = num_error_corrections
@@ -169,8 +169,8 @@ class LatexNode(Node):
 
     def execute(self, state) -> dict:
         try:
-            paper_content = state.get(self.input_variable[0])
-            pdf_file_path = osp.expanduser(state.get(self.output_variable[0]))
+            paper_content = state.get(self.input_key[0])
+            pdf_file_path = osp.expanduser(state.get(self.output_key[0]))
 
             if not paper_content or not pdf_file_path:
                 raise ValueError(
@@ -220,7 +220,7 @@ class LatexNode(Node):
             )
 
             # Update state with output PDF path
-            return {self.output_variable[0]: pdf_file_path}
+            return {self.output_key[0]: pdf_file_path}
 
         except Exception as e:
             print(f"Error occurred: {e}")

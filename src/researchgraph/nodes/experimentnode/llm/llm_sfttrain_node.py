@@ -11,15 +11,15 @@ from researchgraph.core.node import Node
 class LLMSFTTrainNode(Node):
     def __init__(
         self,
-        input_variable: list[str],
-        output_variable: list[str],
+        input_key: list[str],
+        output_key: list[str],
         model_name: str,
         dataset_name: str,
         model_save_path: str,
         lora: bool = False,
         num_train_data: int | None = None,
     ):
-        super().__init__(input_variable, output_variable)
+        super().__init__(input_key, output_key)
         self.model_name = model_name
         self.dataset_name = dataset_name
         self.model_save_path = model_save_path
@@ -113,7 +113,7 @@ class LLMSFTTrainNode(Node):
         return new_optimizer
 
     def execute(self, state) -> dict:
-        script_path = state[self.input_variable[0]]
+        script_path = state[self.input_key[0]]
         new_optimizer = self._set_up_optimizer(script_path)
         trainer = SFTTrainer(
             model=self.model,
@@ -130,4 +130,4 @@ class LLMSFTTrainNode(Node):
 
         self.model.save_pretrained(self.model_save_path)
         self.tokenizer.save_pretrained(self.model_save_path)
-        return {self.output_variable[0]: self.model_save_path}
+        return {self.output_key[0]: self.model_save_path}

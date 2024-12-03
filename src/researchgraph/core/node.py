@@ -6,16 +6,16 @@ class Node(ABC):
 
     def __init__(
         self,
-        input_variable: list[str],
-        output_variable: list[str],
+        input_key: list[str],
+        output_key: list[str],
     ):
         """
         Node initialization
         """
-        self.input_variable = input_variable
-        self.output_variable = output_variable
-        print(f"input: {self.input_variable}")
-        print(f"output: {self.output_variable}")
+        self.input_key = input_key
+        self.output_key = output_key
+        print(f"input: {self.input_key}")
+        print(f"output: {self.output_key}")
 
     @abstractmethod
     def execute(self, state) -> dict:
