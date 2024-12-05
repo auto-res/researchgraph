@@ -110,6 +110,13 @@ jobs:
       - name: Run pytest
         run: uv run pytest test/test_writingnode.py
 
+      - name: Upload PDF Artifact
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: generated-pdfs
+          path: ${{ env.SAVE_DIR }}/*.pdf
+
       - name: Ensure pip cache folder exists
         run: mkdir -p /home/runner/.cache/pip
 
