@@ -112,7 +112,7 @@ jobs:
 
       - name: Upload PDF Artifact
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: generated-pdfs
           path: ${{ env.SAVE_DIR }}/*.pdf

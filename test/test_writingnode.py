@@ -56,3 +56,4 @@ def test_latex_node():
 
     # Execute the graph
     assert graph.invoke(state, debug=True)
+    assert os.path.exists(state["pdf_file_path"]), f"PDF file was not generated at {state['pdf_file_path']}!"
