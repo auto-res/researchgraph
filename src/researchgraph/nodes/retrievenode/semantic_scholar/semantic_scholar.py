@@ -5,15 +5,10 @@ import shutil
 import requests
 from langchain_community.document_loaders import PyPDFLoader
 from semanticscholar import SemanticScholar
-from typing import Any, TypedDict
-from langgraph.graph import StateGraph
 from pydantic import BaseModel, ValidationError, validate_call
 
-
-class State(TypedDict):
-    keywords: str
-    collection_of_papers: dict
-
+from researchgraph.core.node import Node
+from researchgraph.nodes.retrievenode.base.paper_search import PaperSearch
 
 class SemanticScholarResponse(BaseModel):
     paper_title: str
@@ -22,22 +17,37 @@ class SemanticScholarResponse(BaseModel):
     publication_date: str
 
 
-class SemanticScholarNode:
+class SemanticScholarNode(Node, PaperSearch):
     @validate_call
     def __init__(
         self,
+        input_key: list[str],
+        output_key: list[str],
         save_dir: str,
-        search_key: str,
-        output_key: str,
         num_retrieve_paper: int,
     ):
+        super().__init__(input_key, output_key)
         self.save_dir = save_dir
-        self.search_key = search_key
-        self.output_key = output_key
         self.num_retrieve_paper = num_retrieve_paper
-        print("SemanticScholarRetriever initialized")
-        print(f"input: {search_key}")
-        print(f"output: {output_key}")
+
+    def search_paper(self, keywords: list[str], num_retrieve_paper: int) -> list[dict]:
+        """Search papers using Semantic Scholar API."""
+        sch = SemanticScholar()
+        search_results = []
+        for keyword in keywords:
+            results = sch.search_paper(keyword, limit=num_retrieve_paper)
+            for item in results:
+                try:
+                    validated_result = SemanticScholarResponse(
+                        paper_title=getattr(item, "title", "Unknown Title"),
+                        paper_abstract=getattr(item, "abstract", "No abstract available."),
+                        authors=getattr(item, "authors", []),
+                        publication_date=getattr(item, "publicationDate", "Unknown date"),
+                    )
+                    search_results.append(validated_result.model_dump())
+                except ValidationError as e:
+                    print(f"Validation error for item {item}: {e}")
+        return search_results
 
     def _download_from_arxiv_id(self, arxiv_id: str) -> None:
         """Download PDF file from arXiv
@@ -91,46 +101,20 @@ class SemanticScholarNode:
 
         return content
 
-    def __call__(self, state: State) -> dict[str, Any]:
+    def execute(self, state) -> dict:
         """Retriever
 
         Args:
             state (_type_): _description_
         """
-        keywords_list = json.loads(state[self.search_key])
-        # keywords_list = [keywords_list[: self.num_keywords]]
-        sch = SemanticScholar()
+        keywords = json.loads(state[self.input_key[0]])
+        search_results = self.search_paper(keywords=keywords, num_retrieve_paper=self.num_retrieve_paper)
 
-        all_search_results = []
-        for search_term in keywords_list:
-            results = sch.search_paper(search_term, limit=self.num_retrieve_paper)
-
-            # Validate each result using Pydantic
-            validated_results = []
-            for item in results.items:
-                try:
-                    validated_result = SemanticScholarResponse(
-                        paper_title=getattr(item, "title", "Unknown Title"),
-                        paper_abstract=getattr(
-                            item, "abstract", "No abstract available."
-                        ),
-                        authors=getattr(item, "authors", []),
-                        publication_date=getattr(
-                            item, "publicationDate", "Unknown date"
-                        ),
-                    )
-                    validated_results.append(validated_result.dict())
-                except ValidationError as e:
-                    print(f"Validation error for item {item}: {e}")
-
-            all_search_results.append(validated_results)
-
-        DOI_ids = [
-            item["externalIds"]
-            for results in all_search_results
-            for item in results.items
+        arxiv_ids = [
+            item.get("externalIds", {}).get("ArXiv")
+            for item in search_results
+            if item.get("externalIds", {}).get("ArXiv")
         ]
-        arxiv_ids = [item["ArXiv"] for item in DOI_ids if "ArXiv" in item]
 
         self._download_from_arxiv_ids(arxiv_ids[: self.num_retrieve_paper])
 
@@ -142,28 +126,4 @@ class SemanticScholarNode:
                 paper_key = f"paper_{idx+1}"
                 paper_list_dict[paper_key] = paper_content
 
-        return {self.output_key: paper_list_dict}
-
-
-if __name__ == "__main__":
-    save_dir = "/workspaces/researchgraph/data"
-    search_key = "keywords"
-    output_key = "collection_of_papers"
-
-    graph_builder = StateGraph(State)
-    graph_builder.add_node(
-        "semanticscholarretriever",
-        SemanticScholarNode(
-            save_dir=save_dir,
-            search_key=search_key,
-            output_key=output_key,
-            num_retrieve_paper=3,
-        ),
-    )
-    graph_builder.set_entry_point("semanticscholarretriever")
-    graph_builder.set_finish_point("semanticscholarretriever")
-    graph = graph_builder.compile()
-
-    memory = {"keywords": '["Grokking"]'}
-
-    graph.invoke(memory, debug=True)
+        return {self.output_key[0]: paper_list_dict}
