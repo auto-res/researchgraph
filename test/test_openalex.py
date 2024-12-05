@@ -1,3 +1,4 @@
+import os
 from typing import TypedDict
 from langgraph.graph import StateGraph
 from researchgraph.nodes.retrievenode.open_alex.openalex import OpenAlexNode
@@ -21,7 +22,7 @@ def test_openalex(mock_filter):
         },
     ]
 
-    save_dir = "/workspaces/researchgraph/data"
+    SAVE_DIR = os.environ.get("SAVE_DIR", "/workspaces/researchgraph/data")
     input_key = ["keywords"]
     output_key = ["collection_of_papers"]
 
@@ -33,7 +34,7 @@ def test_openalex(mock_filter):
         OpenAlexNode(
             input_key=input_key,
             output_key=output_key,
-            save_dir=save_dir,
+            save_dir=SAVE_DIR,
             num_keywords=1,
             num_retrieve_paper=3,
         ),
