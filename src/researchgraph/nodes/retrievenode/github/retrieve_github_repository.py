@@ -8,14 +8,14 @@ from researchgraph.core.node import Node
 
 class RetrieveGithubRepositoryNode(Node):
     def __init__(
-        self, input_variable: list[str], output_variable: list[str], save_dir: str
+        self, input_key: list[str], output_key: list[str], save_dir: str
     ):
-        super().__init__(input_variable, output_variable)
+        super().__init__(input_key, output_key)
         self.save_dir = save_dir
 
     def _format_url(self, state) -> str:
         pattern = r"(https://github\.com/[^/]+/[^/?#]+)"
-        url = re.search(pattern, state[self.input_variable[0]]).group(1)
+        url = re.search(pattern, state[self.input_key[0]]).group(1)
         return url
 
     def _get_repository(self, url: str, repo_name: str):
@@ -74,7 +74,7 @@ class RetrieveGithubRepositoryNode(Node):
         all_file_path = self._get_all_file_path(target_dir)
         python_script_text = self._get_python_script_text(target_dir)
         return {
-            self.input_variable[0]: github_url,
-            self.output_variable[0]: all_file_path,
-            self.output_variable[1]: python_script_text,
+            self.input_key[0]: github_url,
+            self.output_key[0]: all_file_path,
+            self.output_key[1]: python_script_text,
         }

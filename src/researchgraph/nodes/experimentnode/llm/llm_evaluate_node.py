@@ -8,12 +8,12 @@ from researchgraph.core.node import Node
 class LLMEvaluateNode(Node):
     def __init__(
         self,
-        input_variable: list[str],
-        output_variable: list[str],
+        input_key: list[str],
+        output_key: list[str],
         answer_data_path: str = None,
         dataset_name: str = None,
     ):
-        super().__init__(input_variable, output_variable)
+        super().__init__(input_key, output_key)
         self.answer_data_path = answer_data_path
         self.dataset_name = dataset_name
 
@@ -55,8 +55,8 @@ class LLMEvaluateNode(Node):
         return accuracy
 
     def execute(self, state) -> dict:
-        result_save_path = state[self.input_variable]
+        result_save_path = state[self.input_key]
         result_list = self._parse_llm_output(result_save_path)
         answer_list = self._parse_dataset()
         accuracy = self._calculate_accuracy(result_list, answer_list)
-        return {self.output_variable: accuracy}
+        return {self.output_key: accuracy}

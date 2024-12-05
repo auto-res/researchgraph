@@ -18,14 +18,14 @@ SAVE_DIR = os.environ.get("SAVE_DIR", "/workspaces/researchgraph/data")
 
 
 def test_retrieve_arxiv_text_node():
-    input_variable = ["arxiv_url"]
-    output_variable = ["paper_text"]
+    input_key = ["arxiv_url"]
+    output_key = ["paper_text"]
     graph_builder = StateGraph(State)
     graph_builder.add_node(
         "arxivretriever",
         RetrievearXivTextNode(
-            input_variable=input_variable,
-            output_variable=output_variable,
+            input_key=input_key,
+            output_key=output_key,
             save_dir=SAVE_DIR,
         ),
     )
@@ -40,14 +40,14 @@ def test_retrieve_arxiv_text_node():
 
 
 def test_retrieve_github_repository_node():
-    input_variable = ["github_url"]
-    output_variable = ["folder_structure", "github_file"]
+    input_key = ["github_url"]
+    output_key = ["folder_structure", "github_file"]
     graph_builder = StateGraph(State)
     graph_builder.add_node(
         "githubretriever",
         RetrieveGithubRepositoryNode(
-            input_variable=input_variable,
-            output_variable=output_variable,
+            input_key=input_key,
+            output_key=output_key,
             save_dir=SAVE_DIR,
         ),
     )

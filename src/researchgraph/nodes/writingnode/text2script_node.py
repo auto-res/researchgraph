@@ -8,16 +8,16 @@ class State(TypedDict):
 
 
 class Text2ScriptNode:
-    def __init__(self, input_variable: str, output_variable: str, save_file_path: str):
-        self.input_variable = input_variable
-        self.output_variable = output_variable
+    def __init__(self, input_key: str, output_key: str, save_file_path: str):
+        self.input_key = input_key
+        self.output_key = output_key
         self.save_file_path = save_file_path
 
     def __call__(self, state: State) -> dict:
-        code_string = state[self.input_variable]
+        code_string = state[self.input_key]
         with open(self.save_file_path, "w", encoding="utf-8") as file:
             file.write(code_string)
-        return {self.output_variable: self.save_file_path}
+        return {self.output_key: self.save_file_path}
 
 
 if __name__ == "__main__":
@@ -27,8 +27,8 @@ if __name__ == "__main__":
     graph_builder.add_node(
         "text2script",
         Text2ScriptNode(
-            input_variable="code_string",
-            output_variable="script_save_path",
+            input_key="code_string",
+            output_key="script_save_path",
             save_file_path=save_file_path,
         ),
     )
