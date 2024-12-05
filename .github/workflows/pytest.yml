@@ -94,8 +94,8 @@ jobs:
 
       - name: Install LaTeX dependencies
         run: |
-          apt-get update
-          DEBIAN_FRONTEND=noninteractive apt-get install -y texlive-base texlive-latex-recommended texlive-fonts-recommended texlive-latex-extra texlive-science chktex
+          sudo apt-get update
+          DEBIAN_FRONTEND=noninteractive sudo apt-get install -y texlive-base texlive-latex-recommended texlive-fonts-recommended texlive-latex-extra texlive-science chktex
 
       - name: Install uv
         run: curl -LsSf https://astral.sh/uv/0.5.5/install.sh | bash || exit 1
