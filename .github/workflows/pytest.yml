@@ -114,7 +114,7 @@ jobs:
       - name: Ensure pip cache folder exists
         run: mkdir -p /home/runner/.cache/pip
 
-test-openalexnode:
+  test-openalexnode:
     name: Test of OpenAlexNode
     runs-on: ubuntu-latest
     env:
