@@ -1,3 +1,4 @@
+import os
 from typing import TypedDict
 from langgraph.graph import StateGraph
 from researchgraph.nodes.writingnode.texnode import LatexNode
@@ -6,6 +7,9 @@ from researchgraph.nodes.writingnode.texnode import LatexNode
 class State(TypedDict):
     paper_content: dict
     pdf_file_path: str
+
+
+SAVE_DIR = os.environ.get("SAVE_DIR", "/workspaces/researchgraph/data")
 
 
 def test_latex_node():
@@ -47,7 +51,7 @@ def test_latex_node():
             "results": "These are the results.",
             "conclusions": "This is the conclusion.",
         },
-        "pdf_file_path": "/workspaces/researchgraph/data/sample.pdf",
+        "pdf_file_path": os.path.join(SAVE_DIR, "sample.pdf"), 
     }
 
     # Execute the graph
