@@ -83,7 +83,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       SAVE_DIR: ${{ github.workspace }}/save_dir
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
 
@@ -91,6 +91,11 @@ jobs:
         with:
           python-version: "3.10"
           cache: "pip"
+
+      - name: Install LaTeX dependencies
+        run: |
+          apt-get update
+          DEBIAN_FRONTEND=noninteractive apt-get install -y texlive-base texlive-latex-recommended texlive-fonts-recommended texlive-latex-extra texlive-science chktex
 
       - name: Install uv
         run: curl -LsSf https://astral.sh/uv/0.5.5/install.sh | bash || exit 1
@@ -108,7 +113,7 @@ jobs:
         run: mkdir -p $SAVE_DIR
         
       - name: Run pytest
-        run: uv run pytest test/test_writingnode.py
+        run: uv run pytest -s test/test_writingnode.py
 
       - name: Upload PDF Artifact
         if: always()
@@ -116,6 +121,9 @@ jobs:
         with:
           name: generated-pdfs
           path: ${{ env.SAVE_DIR }}/*.pdf
+
+      - name: Verify PDF generation
+        run: ls ${{ env.SAVE_DIR }}
 
       - name: Ensure pip cache folder exists
         run: mkdir -p /home/runner/.cache/pip
