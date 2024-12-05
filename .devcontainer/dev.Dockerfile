@@ -1,15 +1,18 @@
 FROM ubuntu:22.04
 
+ENV DEBIAN_FRONTEND=noninteractive
+
 RUN apt-get update && apt-get install -y \
     git \
     curl \
     vim \
     build-essential \
-    #texlive-base \
-    #texlive-latex-recommended \
-    #texlive-fonts-recommended \
-    #texlive-latex-extra \
-    #texlive-science \
+    texlive-base \
+    texlive-latex-recommended \
+    texlive-fonts-recommended \
+    texlive-latex-extra \
+    texlive-science \
+    chktex \
     locales && \
     rm -rf /var/lib/apt/lists/*
 
