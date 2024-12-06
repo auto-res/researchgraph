@@ -199,8 +199,8 @@ jobs:
       - name: Ensure pip cache folder exists
         run: mkdir -p /home/runner/.cache/pip
 
-  test-retrievenodes:
-    name: Test of LLMNodes
+  test-test2scriptnodes:
+    name: Test of Text2ScriptNode
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
