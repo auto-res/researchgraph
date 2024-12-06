@@ -1,4 +1,9 @@
+import sys
 import os
+
+if "GITHUB_WORKSPACE" in os.environ:
+    sys.path.insert(0, os.path.join(os.environ["GITHUB_WORKSPACE"], "src"))
+
 from typing import TypedDict
 from langgraph.graph import StateGraph
 from researchgraph.nodes.writingnode.texnode import LatexNode
