@@ -3387,7 +3387,7 @@ wheels = [
 
 [[package]]
 name = "researchgraph"
-version = "0.0.50"
+version = "0.0.62"
 source = { virtual = "." }
 dependencies = [
     { name = "aider-chat" },
