@@ -3,7 +3,11 @@ name: ResearchGraph Nodes Test
 on:
   pull_request:
     types: [opened, reopened, synchronize]
-    paths: ['src/researchgraph/nodes/**', 'test/**']
+    paths: [
+      'src/researchgraph/nodes/**', 
+      'test/**',
+      '.github/workflows/pytest.yml'
+      ]
 
 defaults:
   run:
@@ -220,6 +224,9 @@ jobs:
       - name: Set PYTHONPATH
         run: echo "PYTHONPATH=$PYTHONPATH:$GITHUB_WORKSPACE/src" >> $GITHUB_ENV
 
+      - name: Create Directory
+        run: mkdir -p $SAVE_DIR
+        
       - name: Run pytest
         run: uv run pytest test/test_text2scriptnode.py
 

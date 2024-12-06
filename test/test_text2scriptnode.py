@@ -15,15 +15,13 @@ SAVE_DIR = os.environ.get("SAVE_DIR", "/workspaces/researchgraph/data")
 
 
 def test_latex_node():
-    save_file_path = "/workspaces/researchgraph/data/new_method.py"
-
     graph_builder = StateGraph(State)
     graph_builder.add_node(
         "text2script",
         Text2ScriptNode(
             input_key=["code_string"],
             output_key=["script_save_path"],
-            save_file_path=save_file_path,
+            save_file_path=SAVE_DIR,
         ),
     )
     graph_builder.set_entry_point("text2script")
