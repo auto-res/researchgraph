@@ -7,7 +7,7 @@ from unittest.mock import patch
 
 class State(TypedDict):
     keywords: list[str]
-    collection_of_papers: dict
+    paper_results: dict
 
 
 @patch("pyalex.Works.filter")
@@ -24,7 +24,7 @@ def test_openalex(mock_filter):
 
     SAVE_DIR = os.environ.get("SAVE_DIR", "/workspaces/researchgraph/data")
     input_key = ["keywords"]
-    output_key = ["collection_of_papers"]
+    output_key = ["paper_results"]
 
     memory = {"keywords": '["Grokking"]'}
 
