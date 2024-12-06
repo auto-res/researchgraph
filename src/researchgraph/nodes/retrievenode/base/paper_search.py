@@ -13,13 +13,19 @@ class PaperSearch(ABC):
         """
         pass
 
+    def normalize_keywords(self, keywords: str | list[str]) -> list[str]:
+        """
+        Normalize keywords to always be a list of strings.
+        """
+        if isinstance(keywords, str):
+            return [keywords]
+        return keywords    
 
     def download_from_arxiv_ids(self, arxiv_ids: list[str]) -> None:
         """
         Method to download a paper PDF by specified arXiv ID
         """
         pass
-
 
     def convert_pdf_to_text(self, pdf_path: str) -> str:
         """
