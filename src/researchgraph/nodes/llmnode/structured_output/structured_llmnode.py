@@ -27,9 +27,7 @@ class StructuredLLMNode(Node):
     def _create_dynamic_model(self, base_model: BaseModel):
         default_type = str
         default_required = ...
-        fields = {
-            field: (default_type, default_required) for field in self.output_key
-        }
+        fields = {field: (default_type, default_required) for field in self.output_key}
         return create_model(
             base_model.__name__,
             **fields,
