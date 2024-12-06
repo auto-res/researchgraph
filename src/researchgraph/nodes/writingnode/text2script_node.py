@@ -9,8 +9,8 @@ class Text2ScriptNode(Node):
         super().__init__(input_key, output_key)
         self.save_file_path = save_file_path
 
-    def _remove_code_block_markers_with_regex(self, code_string):
-        return re.sub(r"^```[\w]*[\r\n]?|```$", "", code_string, flags=re.S).strip()
+    def remove_code_block_markers_with_regex(code_string):
+        return re.sub(r"^```[\w]*\n|```$", "", code_string, flags=re.S).strip()
 
     def execute(self, state) -> dict:
         code_string = state[self.input_key[0]]
