@@ -190,9 +190,6 @@ jobs:
 
       - name: Set PYTHONPATH
         run: echo "PYTHONPATH=$PYTHONPATH:$GITHUB_WORKSPACE/src" >> $GITHUB_ENV
-
-      - name: Print PYTHONPATH
-        run: echo "PYTHONPATH=$PYTHONPATH"
         
       - name: Create Directory
         run: mkdir -p $SAVE_DIR
@@ -206,6 +203,8 @@ jobs:
   test-test2scriptnodes:
     name: Test of Text2ScriptNode
     runs-on: ubuntu-latest
+    env:
+      SAVE_DIR: ${{ github.workspace }}/save_dir
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
