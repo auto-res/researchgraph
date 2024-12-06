@@ -12,7 +12,6 @@ class NewOptimizer(Optimizer):
     
     def step(self, closure: None = None) -> None:
         "processing details"
-
 """,
     "base_method_code": """
 from torch.optim import Optimizer
