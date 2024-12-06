@@ -6,7 +6,7 @@ ai_integratorv1_setting = {
 from typing import Iterable
 from torch.optim import Optimizer
 
-class NewOptimizer(Optimizer):
+class NewOptimizer(Optimizer):  # Please do not change the name of the class “NewOptimizer”.
     def __init__(self, params: Iterable,...):
         "parameter initialization"
     
