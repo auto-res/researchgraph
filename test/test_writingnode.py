@@ -10,16 +10,15 @@ class State(TypedDict):
 
 
 SAVE_DIR = os.environ.get("SAVE_DIR", "/workspaces/researchgraph/data")
-GITHUB_WORKSPACE = os.environ.get("GITHUB_WORKSPACE", os.path.abspath(os.path.join(os.getcwd(), "../")))
-
+GITHUB_WORKSPACE = os.environ.get("GITHUB_WORKSPACE", os.path.abspath(os.path.join(os.getcwd())))
 
 def test_latex_node():
     # Define input and output keys
     input_key = ["paper_content"]
     output_key = ["pdf_file_path"]
     model = "gpt-4o"
-    template_dir = os.path.join(GITHUB_WORKSPACE, "researchgraph/src/researchgraph/graphs/ai_scientist/templates/2d_diffusion")
-    figures_dir = os.path.join(GITHUB_WORKSPACE, "researchgraph/images")
+    template_dir = os.path.join(GITHUB_WORKSPACE, "src/researchgraph/graphs/ai_scientist/templates/2d_diffusion")
+    figures_dir = os.path.join(GITHUB_WORKSPACE, "images")
 
     # Initialize LatexNode
     latex_node = LatexNode(
