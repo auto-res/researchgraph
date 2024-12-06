@@ -420,7 +420,7 @@ class WriteupComponent:
 
 if __name__ == "__main__":
     import openai
-    from researchgraph.nodes.writingnode.texnode import LatexNode
+    from researchgraph.nodes.writingnode.latexnode import LatexNode
 
     SAVE_DIR = os.environ.get("SAVE_DIR", "/workspaces/researchgraph/data")
 
