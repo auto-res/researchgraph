@@ -1,6 +1,6 @@
 import os
 import importlib.util
-from unsloth import FastLanguageModel
+from unsloth import FastLanguageModel, is_bfloat16_supported
 from datasets import load_dataset
 from trl import SFTTrainer
 from transformers import TrainingArguments
@@ -35,8 +35,8 @@ class LLMSFTTrainNode(Node):
             "gradient_accumulation_steps": 4,
             "warmup_steps": 5,
             "learning_rate": 2e-4,
-            # "fp16": not is_bfloat16_supported(),
-            # "bf16": is_bfloat16_supported(),
+            "fp16": not is_bfloat16_supported(),
+            "bf16": is_bfloat16_supported(),
             "logging_steps": 1,
             "weight_decay": 0.01,
             "lr_scheduler_type": "linear",
@@ -58,7 +58,7 @@ class LLMSFTTrainNode(Node):
             model_name=self.model_name,
             max_seq_length=2048,
             dtype=None,
-            # load_in_4bit=True,
+            load_in_4bit=True,
         )
 
         if self.lora:
