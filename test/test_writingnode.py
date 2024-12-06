@@ -6,7 +6,7 @@ if "GITHUB_WORKSPACE" in os.environ:
 
 from typing import TypedDict
 from langgraph.graph import StateGraph
-from researchgraph.nodes.writingnode.texnode import LatexNode
+from researchgraph.nodes.writingnode.latexnode import LatexNode
 
 
 class State(TypedDict):
