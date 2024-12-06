@@ -3,7 +3,7 @@ name: ResearchGraph Nodes Test
 on:
   pull_request:
     types: [opened, reopened, synchronize]
-    paths: ['src/**', 'test/**']
+    paths: ['src/researchgraph/nodes/**', 'test/**']
 
 defaults:
   run:
