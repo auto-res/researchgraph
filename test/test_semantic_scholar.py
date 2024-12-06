@@ -1,13 +1,16 @@
 import os
 from typing import TypedDict
 from langgraph.graph import StateGraph
-from researchgraph.nodes.retrievenode.semantic_scholar.semantic_scholar import SemanticScholarNode
+from researchgraph.nodes.retrievenode.semantic_scholar.semantic_scholar import (
+    SemanticScholarNode,
+)
 from unittest.mock import patch
 
 
 class State(TypedDict):
     keywords: str
     paper_results: dict
+
 
 @patch("semanticscholar.SemanticScholar.search_paper")
 def test_semantic_scholar_node(mock_search_paper):
@@ -17,15 +20,15 @@ def test_semantic_scholar_node(mock_search_paper):
             "abstract": "This is a mock abstract.",
             "authors": [{"name": "Author One"}],
             "publicationDate": "2023-01-01",
-            "arxivId": "1234.5678"
+            "arxivId": "1234.5678",
         },
         {
             "title": "Mock Paper 2",
             "abstract": "This is another mock abstract.",
             "authors": [{"name": "Author Two"}],
             "publicationDate": "2023-01-02",
-            "arxivId": "2345.6789"
-        }
+            "arxivId": "2345.6789",
+        },
     ]
 
     SAVE_DIR = os.environ.get("SAVE_DIR", "/workspaces/researchgraph/data")
@@ -48,4 +51,4 @@ def test_semantic_scholar_node(mock_search_paper):
 
     memory = {"keywords": '["Grokking"]'}
 
-    graph.invoke(memory, debug=True)
+    assert graph.invoke(memory, debug=True)

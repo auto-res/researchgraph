@@ -1,4 +1,4 @@
-# from .factory import NodeFactory
+# from factory import NodeFactory
 
 # __all__ = [
 #     "NodeFactory"

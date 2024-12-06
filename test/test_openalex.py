@@ -18,7 +18,7 @@ def test_openalex(mock_filter):
             "author": "Mock Author",
             "publication_date": "2023-01-01",
             "indexed_in": ["arxiv"],
-            "locations": [{"landing_page_url": "https://arxiv.org/abs/1234.5678"}]
+            "locations": [{"landing_page_url": "https://arxiv.org/abs/1234.5678"}],
         },
     ]
 
@@ -45,4 +45,4 @@ def test_openalex(mock_filter):
 
     memory = {"keywords": '["Grokking"]'}
 
-    graph.invoke(memory,debug=True)
+    assert graph.invoke(memory, debug=True)

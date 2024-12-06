@@ -55,8 +55,8 @@ class LLMEvaluateNode(Node):
         return accuracy
 
     def execute(self, state) -> dict:
-        result_save_path = state[self.input_key]
+        result_save_path = state[self.input_key[0]]
         result_list = self._parse_llm_output(result_save_path)
         answer_list = self._parse_dataset()
         accuracy = self._calculate_accuracy(result_list, answer_list)
-        return {self.output_key: accuracy}
+        return {self.output_key[0]: accuracy}
