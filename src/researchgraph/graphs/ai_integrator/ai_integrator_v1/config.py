@@ -3,8 +3,9 @@ ai_integratorv1_setting = {
     "arxiv_url": "https://arxiv.org/abs/1804.00325v3",
     "github_url": "https://github.com/AtheMathmo/AggMo",
     "method_template": """
+import torch
 from typing import Iterable
-from torch.optim import Optimizer
+from torch.optim import Optimizer  # Please do not change this code
 
 class NewOptimizer(Optimizer):  # Please do not change the name of the class “NewOptimizer”.
     def __init__(self, params: Iterable,...):
