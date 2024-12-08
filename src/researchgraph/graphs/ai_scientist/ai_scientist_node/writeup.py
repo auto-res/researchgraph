@@ -6,8 +6,11 @@ from aider.models import Model
 from aider.io import InputOutput
 from dataclasses import dataclass
 from langgraph.graph import StateGraph
+from researchgraph.nodes.retrievenode.base.paper_search import PaperSearch
+from researchgraph.nodes.retrievenode.semantic_scholar.semantic_scholar import SemanticScholarNode
+from researchgraph.nodes.retrievenode.open_alex.openalex import OpenAlexNode
 
-from src.researchgraph.writingnode.writeup_prompt import (
+from researchgraph.graphs.ai_scientist.ai_scientist_node.writeup_prompt import (
     per_section_tips,
     error_list,
     citation_system_msg,
@@ -34,12 +37,12 @@ class CitationContext:
 
 
 class PaperSearchService:
-    def search(self, query: str) -> list:
-        from src.researchgraph.graphs.ai_scientist.ai_scientist_node.generate_ideas import (
-            search_for_papers,
-        )
+    def __init__(self, search_node: PaperSearch):
+        # This allows users to choose the appropriate API for their needs.
+        self.search_node = search_node
 
-        return search_for_papers(query)
+    def search(self, keywords: str | list[str], num_retrieve_paper: int) -> list:
+        return self.search_node.search_paper(keywords=keywords, num_retrieve_paper=num_retrieve_paper)
 
 
 class LLMService:
@@ -327,8 +330,8 @@ class WriteupComponent:
 
     # PERFORM WRITEUP
     def __call__(self, state: State) -> dict:
-        notes_path = state[self.input_key]
-        paper_content = state[self.output_key]
+        notes_path = state[self.input_key[0]]
+        paper_content = state[self.output_key[0]]
 
         # Check if the notes file exists, raise an error if it doesn't
         if not os.path.exists(notes_path):
@@ -403,7 +406,7 @@ class WriteupComponent:
             paper_content[section_name] = section.content
 
         # Return the paper content as a dictionary
-        return {self.output_variable: paper_content}
+        return {self.output_key[0]: paper_content}
 
     """
     def _select_model(self, model: str) -> Model:
@@ -417,18 +420,27 @@ class WriteupComponent:
 
 if __name__ == "__main__":
     import openai
-    from src.researchgraph.writingnode.texnode import LatexNode
+    from researchgraph.nodes.writingnode.latexnode import LatexNode
+
+    SAVE_DIR = os.environ.get("SAVE_DIR", "/workspaces/researchgraph/data")
+
+    semantic_scholar_node = SemanticScholarNode(
+        input_key=["keywords"],
+        output_key=["paper_results"],
+        save_dir=SAVE_DIR,
+        num_retrieve_paper=3, 
+    )
 
     # Define input and output variables
-    input_key = "notes_path"
-    writeup_output_key = "paper_content"
-    latex_output_key = "pdf_file_path"
+    input_key = ["notes_path"]
+    writeup_output_key = ["paper_content"]
+    latex_output_key = ["pdf_file_path"]
     model = "gpt-4o"
     io = InputOutput()
-    template_dir = "/workspaces/researchgraph/src/researchgraph/graph/ai_scientist/templates/2d_diffusion"
+    template_dir = "/workspaces/researchgraph/src/researchgraph/graphs/ai_scientist/templates/2d_diffusion"
     cite_client = openai
     figures_dir = "/workspaces/researchgraph/images"
-    paper_search_service = PaperSearchService()
+    paper_search_service = PaperSearchService(semantic_scholar_node)
     llm_service = LLMService()
 
     # Initialize WriteupComponent as a LangGraph node
@@ -466,6 +478,8 @@ if __name__ == "__main__":
 
     # Define initial state
     memory = {
+        "keywords": "", 
+        "paper_results": "", 
         "notes_path": "/workspaces/researchgraph/data/notes.txt",
         "paper_content": {},
         "pdf_file_path": "/workspaces/researchgraph/data/sample.pdf",
