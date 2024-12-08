@@ -1,4 +1,9 @@
+import sys
 import os
+
+if "GITHUB_WORKSPACE" in os.environ:
+    sys.path.insert(0, os.path.join(os.environ["GITHUB_WORKSPACE"], "src"))
+
 from typing import TypedDict
 from langgraph.graph import StateGraph
 from researchgraph.nodes.writingnode.latexnode import LatexNode
@@ -10,19 +15,14 @@ class State(TypedDict):
 
 
 SAVE_DIR = os.environ.get("SAVE_DIR", "/workspaces/researchgraph/data")
-GITHUB_WORKSPACE = os.environ.get(
-    "GITHUB_WORKSPACE", os.path.abspath(os.path.join(os.getcwd(), "../"))
-)
-
+GITHUB_WORKSPACE = os.environ.get("GITHUB_WORKSPACE", os.path.abspath(os.path.join(os.getcwd())))
 
 def test_latex_node():
     # Define input and output keys
     input_key = ["paper_content"]
     output_key = ["pdf_file_path"]
     model = "gpt-4o"
-    template_dir = os.path.join(
-        GITHUB_WORKSPACE, "src/researchgraph/graphs/ai_scientist/templates/2d_diffusion"
-    )
+    template_dir = os.path.join(GITHUB_WORKSPACE, "src/researchgraph/graphs/ai_scientist/templates/2d_diffusion")
     figures_dir = os.path.join(GITHUB_WORKSPACE, "images")
 
     # Initialize LatexNode
@@ -56,11 +56,9 @@ def test_latex_node():
             "results": "These are the results.",
             "conclusions": "This is the conclusion.",
         },
-        "pdf_file_path": os.path.join(SAVE_DIR, "sample.pdf"),
+        "pdf_file_path": os.path.join(SAVE_DIR, "sample.pdf"), 
     }
 
     # Execute the graph
     assert graph.invoke(state, debug=True)
-    assert os.path.exists(
-        state["pdf_file_path"]
-    ), f"PDF file was not generated at {state['pdf_file_path']}!"
+    assert os.path.exists(state["pdf_file_path"]), f"PDF file was not generated at {state['pdf_file_path']}!"
