@@ -15,7 +15,7 @@ class State(TypedDict):
 
 
 SAVE_DIR = os.environ.get("SAVE_DIR", "/workspaces/researchgraph/data")
-GITHUB_WORKSPACE = os.environ.get("GITHUB_WORKSPACE", os.path.abspath(os.path.join(os.getcwd())))
+GITHUB_WORKSPACE = os.environ.get("GITHUB_WORKSPACE", os.path.abspath(os.path.join(os.getcwd(), "..")))
 
 def test_latex_node():
     # Define input and output keys
