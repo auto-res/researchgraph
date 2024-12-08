@@ -5,9 +5,9 @@ from langgraph.graph import StateGraph
 
 from researchgraph.core.factory import NodeFactory
 from researchgraph.graphs.ai_integrator.ai_integrator_v1 import (
-    extractor_prompt_template,
-    codeextractor_prompt_template,
-    creator_prompt_template,
+    ai_integrator_v1_extractor_prompt,
+    ai_integrator_v1_codeextractor_prompt,
+    ai_integrator_v1_creator_prompt,
 )
 
 
@@ -87,7 +87,7 @@ class AIIntegratorv1:
                 input_key=["paper_text"],
                 output_key=["add_method_text"],
                 llm_name=llm_name,
-                prompt_template=extractor_prompt_template,
+                prompt_template=ai_integrator_v1_extractor_prompt,
             ),
         )
         self.graph_builder.add_node(
@@ -97,7 +97,7 @@ class AIIntegratorv1:
                 input_key=["add_method_text", "folder_structure", "github_file"],
                 output_key=["add_method_code"],
                 llm_name=llm_name,
-                prompt_template=codeextractor_prompt_template,
+                prompt_template=ai_integrator_v1_codeextractor_prompt,
             ),
         )
         self.graph_builder.add_node(
@@ -114,7 +114,7 @@ class AIIntegratorv1:
                 ],
                 output_key=["new_method_text", "new_method_code"],
                 llm_name=llm_name,
-                prompt_template=creator_prompt_template,
+                prompt_template=ai_integrator_v1_creator_prompt,
             ),
         )
         self.graph_builder.add_node(
