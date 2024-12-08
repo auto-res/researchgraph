@@ -9,7 +9,7 @@ from unittest.mock import patch
 
 class State(TypedDict):
     keywords: str
-    collection_of_papers: dict
+    paper_results: dict
 
 
 @patch("semanticscholar.SemanticScholar.search_paper")
@@ -33,7 +33,7 @@ def test_semantic_scholar_node(mock_search_paper):
 
     SAVE_DIR = os.environ.get("SAVE_DIR", "/workspaces/researchgraph/data")
     input_key = ["keywords"]
-    output_key = ["collection_of_papers"]
+    output_key = ["paper_results"]
 
     graph_builder = StateGraph(State)
     graph_builder.add_node(

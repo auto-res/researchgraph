@@ -30,8 +30,11 @@ class SemanticScholarNode(Node, PaperSearch):
         self.save_dir = save_dir
         self.num_retrieve_paper = num_retrieve_paper
 
-    def search_paper(self, keywords: list[str], num_retrieve_paper: int) -> list[dict]:
+    def search_paper(self, keywords: str | list[str], num_retrieve_paper: int) -> list[dict]:
         """Search papers using Semantic Scholar API."""
+        # Normalize keywords to ensure it's always a list
+        keywords = self.normalize_keywords(keywords) 
+
         sch = SemanticScholar()
         search_results = []
         for keyword in keywords:
