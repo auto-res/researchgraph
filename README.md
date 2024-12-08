@@ -1,1 +1,1 @@
-# ResearchChain
+# ResearchGraph
