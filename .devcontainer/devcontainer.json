@@ -13,7 +13,8 @@
 				"ms-toolsai.jupyter",
 				"njpwerner.autodocstring",
                 "mhutchie.git-graph",
-                "eamodio.gitlens"
+                "eamodio.gitlens",
+                "gruntfuggly.todo-tree"
 			]
 		}
 	}

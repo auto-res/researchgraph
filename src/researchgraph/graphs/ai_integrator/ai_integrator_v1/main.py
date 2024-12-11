@@ -4,11 +4,6 @@ from typing_extensions import TypedDict
 from langgraph.graph import StateGraph
 
 from researchgraph.core.factory import NodeFactory
-from researchgraph.graphs.ai_integrator.ai_integrator_v1 import (
-    ai_integrator_v1_extractor_prompt,
-    ai_integrator_v1_codeextractor_prompt,
-    ai_integrator_v1_creator_prompt,
-)
 
 
 class State(TypedDict):
@@ -44,6 +39,9 @@ class AIIntegratorv1:
         model_save_dir_name: str,
         result_save_file_name: str,
         answer_data_path: str,
+        ai_integrator_v1_extractor_prompt: str,
+        ai_integrator_v1_codeextractor_prompt: str,
+        ai_integrator_v1_creator_prompt: str,
         num_train_data: int | None = None,
         num_inference_data: int | None = None,
     ):
@@ -55,6 +53,11 @@ class AIIntegratorv1:
         self.model_save_dir_name = model_save_dir_name
         self.result_save_file_name = result_save_file_name
         self.answer_data_path = answer_data_path
+        self.ai_integrator_v1_extractor_prompt = ai_integrator_v1_extractor_prompt
+        self.ai_integrator_v1_codeextractor_prompt = (
+            ai_integrator_v1_codeextractor_prompt
+        )
+        self.ai_integrator_v1_creator_prompt = ai_integrator_v1_creator_prompt
         self.num_train_data = num_train_data
         self.num_inference_data = num_inference_data
 
@@ -86,8 +89,8 @@ class AIIntegratorv1:
                 node_name="structuredoutput_llmnode",
                 input_key=["paper_text"],
                 output_key=["add_method_text"],
-                llm_name=llm_name,
-                prompt_template=ai_integrator_v1_extractor_prompt,
+                llm_name=self.llm_name,
+                prompt_template=self.ai_integrator_v1_extractor_prompt,
             ),
         )
         self.graph_builder.add_node(
@@ -96,8 +99,8 @@ class AIIntegratorv1:
                 node_name="structuredoutput_llmnode",
                 input_key=["add_method_text", "folder_structure", "github_file"],
                 output_key=["add_method_code"],
-                llm_name=llm_name,
-                prompt_template=ai_integrator_v1_codeextractor_prompt,
+                llm_name=self.llm_name,
+                prompt_template=self.ai_integrator_v1_codeextractor_prompt,
             ),
         )
         self.graph_builder.add_node(
@@ -113,8 +116,8 @@ class AIIntegratorv1:
                     "method_template",
                 ],
                 output_key=["new_method_text", "new_method_code"],
-                llm_name=llm_name,
-                prompt_template=ai_integrator_v1_creator_prompt,
+                llm_name=self.llm_name,
+                prompt_template=self.ai_integrator_v1_creator_prompt,
             ),
         )
         self.graph_builder.add_node(
