@@ -5,6 +5,7 @@ from typing import Dict, Any, List, Optional
 
 from .cache import NodeCache
 from .logging import NodeLogger
+from .types import NodeState, NodeConfig, NodeResult, NodeInput, NodeOutput
 
 
 class NodeExecutionError(Exception):
@@ -24,7 +25,7 @@ class Node(ABC):
         cache_enabled: bool = True,
         log_dir: Optional[str] = None,
         log_enabled: bool = True,
-    ):
+    ) -> None:
         """Initialize node with optional caching and logging.
 
         Args:
@@ -66,7 +67,7 @@ class Node(ABC):
         return f"{self.__class__.__name__}:{':'.join(key_parts)}"
 
     @abstractmethod
-    def execute(self, state: Dict[str, Any]) -> Dict[str, Any]:
+    def execute(self, state: Dict[str, NodeInput]) -> Dict[str, NodeOutput]:
         """Execute node operation.
 
         Args:
@@ -80,7 +81,7 @@ class Node(ABC):
         """
         pass
 
-    def __call__(self, state: Dict[str, Any]) -> Dict[str, Any]:
+    def __call__(self, state: Dict[str, NodeInput]) -> Dict[str, NodeOutput]:
         """Execute node with caching and logging support.
 
         Args:
@@ -169,14 +170,14 @@ class Node(ABC):
                 original_error=e
             )
 
-    def before_execute(self):
+    def before_execute(self) -> None:
         """Process to be executed before main execution.
 
         Can be overridden in derived classes.
         """
         self.logger.debug("Running pre-execution hooks")
 
-    def after_execute(self):
+    def after_execute(self) -> None:
         """Process to be executed after main execution.
 
         Can be overridden in derived classes.

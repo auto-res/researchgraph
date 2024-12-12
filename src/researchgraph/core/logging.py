@@ -6,6 +6,8 @@ import logging
 from typing import Dict, Any, Optional
 from datetime import datetime
 
+from .types import NodeState, NodeResult, NodeInput, NodeOutput
+
 
 class NodeLogger:
     """Logger for tracking node execution progress."""
@@ -37,7 +39,7 @@ class NodeLogger:
     def log_start(
         self,
         node_name: str,
-        input_state: Dict[str, Any],
+        input_state: Dict[str, NodeInput],
         metadata: Optional[Dict[str, Any]] = None
     ) -> None:
         """Log node execution start.
@@ -66,10 +68,10 @@ class NodeLogger:
     def log_complete(
         self,
         node_name: str,
-        output_state: Dict[str, Any],
+        output_state: Dict[str, NodeOutput],
         execution_time: float,
         metadata: Optional[Dict[str, Any]] = None
-    ) -> None:
+    ) -> NodeResult:
         """Log node execution completion.
 
         Args:
@@ -77,6 +79,9 @@ class NodeLogger:
             output_state: Output state dictionary
             execution_time: Execution time in seconds
             metadata: Optional metadata to log
+
+        Returns:
+            NodeResult containing execution details
         """
         log_entry = {
             "node": node_name,
@@ -99,9 +104,9 @@ class NodeLogger:
         self,
         node_name: str,
         error: Exception,
-        state: Dict[str, Any],
+        state: NodeState,
         metadata: Optional[Dict[str, Any]] = None
-    ) -> None:
+    ) -> NodeResult:
         """Log node execution error.
 
         Args:
@@ -109,6 +114,9 @@ class NodeLogger:
             error: Exception that occurred
             state: Current state dictionary
             metadata: Optional metadata to log
+
+        Returns:
+            NodeResult containing error details
         """
         log_entry = {
             "node": node_name,

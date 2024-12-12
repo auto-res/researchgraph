@@ -3,13 +3,15 @@ import os
 import json
 import hashlib
 import logging
-from typing import Any, Optional
+from typing import Any, Optional, Dict, Union
+
+from .types import NodeState, NodeResult, NodeInput, NodeOutput
 
 
 class NodeCache:
     """Cache implementation for storing and retrieving node results."""
 
-    def __init__(self, cache_dir: str):
+    def __init__(self, cache_dir: str) -> None:
         """Initialize NodeCache.
 
         Args:
@@ -45,7 +47,7 @@ class NodeCache:
         hashed_key = self._generate_key(key)
         return os.path.join(self.cache_dir, f"{hashed_key}.json")
 
-    def get(self, key: str) -> Optional[Any]:
+    def get(self, key: str) -> Optional[Dict[str, NodeOutput]]:
         """Get value from cache.
 
         Args:
@@ -69,7 +71,7 @@ class NodeCache:
             self.logger.error(f"Failed to read cache for key {key}: {str(e)}")
             return None
 
-    def set(self, key: str, value: Any) -> bool:
+    def set(self, key: str, value: Dict[str, NodeOutput]) -> bool:
         """Set value in cache.
 
         Args:

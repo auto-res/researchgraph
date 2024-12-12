@@ -60,7 +60,10 @@ class AIIntegratorv1:
 
         if not os.path.exists(self.save_dir):
             os.makedirs(self.save_dir)
+
+        # Initialize StateGraph with parallel execution enabled
         self.graph_builder = StateGraph(State)
+        self.graph_builder.set_parallel_execution(True)  # Enable parallel execution
 
         self.graph_builder.add_node(
             "githubretriever",
@@ -162,10 +165,11 @@ class AIIntegratorv1:
             ),
         )
 
-        # make edges
-        self.graph_builder.add_edge("arxivretriever", "githubretriever")
+        # Update edge definitions to support parallel execution
+        # arxivretriever and githubretriever can run in parallel
         self.graph_builder.add_edge("arxivretriever", "extractor")
-        self.graph_builder.add_edge(["githubretriever", "extractor"], "codeextractor")
+        self.graph_builder.add_edge("githubretriever", "codeextractor")
+        self.graph_builder.add_edge("extractor", "codeextractor")
         self.graph_builder.add_edge("codeextractor", "creator")
         self.graph_builder.add_edge("creator", "text2script")
         self.graph_builder.add_edge("text2script", "llmsfttrainer")
