@@ -21,6 +21,7 @@ class IdeaExecutionComponent:
         pass
 
     def __call__(
+        self,
         base_dir,
         results_dir,
         idea,
@@ -59,7 +60,7 @@ class IdeaExecutionComponent:
             sys.stderr = log
         io = InputOutput(
             yes=True, chat_history_file=f"{folder_name}/{idea_name}_aider.txt"
-        )  # io は experiment でも　writeup でも共有なので、main.py で定義する
+        )
         try:
             print_time()
             print(f"*Starting idea: {idea_name}*")
@@ -81,7 +82,6 @@ class IdeaExecutionComponent:
                     baseline_results=baseline_results,
                 )
                 success = memory_["is_experiment_successful"]
-                # success = perform_experiments(idea, folder_name, coder, baseline_results)
             except Exception as e:
                 print(f"Error during experiments: {e}")
                 print(f"Experiments failed for idea {idea_name}")
@@ -109,7 +109,6 @@ class IdeaExecutionComponent:
                     memory_ = paper_writer(
                         idea, folder_name, client, client_model, memory_
                     )
-                    # perform_writeup(idea, folder_name, coder, client, client_model)
                 except Exception as e:
                     print(f"Failed to perform writeup: {e}")
                     memory_["is_idea_execution_successful"] = False
@@ -136,7 +135,6 @@ class IdeaExecutionComponent:
                         temperature=0.1,
                     )
                     review = memory_["review"]
-                    # Store the review in separate review.txt file
                     with open(os.path.join(folder_name, "review.txt"), "w") as f:
                         f.write(json.dumps(review, indent=4))
                 except Exception as e:
@@ -173,7 +171,6 @@ class IdeaExecutionComponent:
                         temperature=0.1,
                     )
                     review = memory_["review"]
-                    # Store the review in separate review.txt file
                     with open(
                         os.path.join(folder_name, "review_improved.txt"), "w"
                     ) as f:
