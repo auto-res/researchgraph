@@ -4,7 +4,7 @@ import json
 from pypdf import PdfReader
 import pymupdf
 import pymupdf4llm
-from ai_scientist.llm import (
+from researchgraph.graphs.ai_scientist.ai_scientist_node.llm import (
     get_response_from_llm,
     get_batch_responses_from_llm,
     extract_json_between_markers,

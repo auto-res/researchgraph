@@ -4,10 +4,10 @@ import json
 import shutil
 import sys
 import openai
-from perform_experiments import ExperimentComponent
-from perform_review import ReviewComponent, load_paper
-from researchgraph.writingnode.writeup import WriteupComponent
-from researchgraph.writingnode.draft_improvement import DraftImprovementComponent
+from researchgraph.graphs.ai_scientist.ai_scientist_node.perform_experiments import ExperimentComponent
+from researchgraph.graphs.ai_scientist.ai_scientist_node.perform_review import ReviewComponent, load_paper
+from researchgraph.graphs.ai_scientist.ai_scientist_node.writeup import WriteupComponent
+from researchgraph.graphs.ai_scientist.ai_scientist_node.draft_improvement import DraftImprovementComponent
 
 from aider.io import InputOutput
 

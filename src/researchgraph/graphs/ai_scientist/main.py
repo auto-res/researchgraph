@@ -1,20 +1,27 @@
 import argparse
 import os
 import os.path as osp
+from typing import Any
 
-from ai_scientist.generate_ideas import IdeaGenerationComponent
-from ai_scientist.execute_idea import IdeaExecutionComponent
+from researchgraph.graphs.ai_scientist.ai_scientist_node.generate_ideas import IdeaGenerationComponent
+from researchgraph.graphs.ai_scientist.ai_scientist_node.execute_idea import IdeaExecutionComponent
 
 NUM_REFLECTIONS = 3
 
 
 class AIscientist:
-    def __call__(self, *args: argparse.Any, **kwds: argparse.Any) -> argparse.Any:
+    def __call__(self, *args: Any, **kwds: Any) -> Any:
         pass
 
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Run AI scientist experiments")
+    parser.add_argument(
+        "--domain",
+        type=str,
+        default="test_domain",
+        help="Domain to run AI Scientist on (e.g., test_domain, nanoGPT)",
+    )
     parser.add_argument(
         "--skip-idea-generation",
         action="store_true",
@@ -118,8 +125,9 @@ def get_client(model):
 def main(args):
     client, client_model = get_client(args.model)
 
-    base_dir = osp.join("templates", args.experiment)
-    results_dir = osp.join("results", args.experiment)
+    # Use domain for template and result paths
+    base_dir = osp.join("templates", args.domain)
+    results_dir = osp.join("results", args.domain)
 
     idea_generator = IdeaGenerationComponent()
     memory = {}
