@@ -1,0 +1,12 @@
+{
+    "mlp": {
+        "test_accuracy": 91.90,
+        "train_accuracy": 93.48,
+        "training_time": 1.07
+    },
+    "cnn": {
+        "test_accuracy": 96.50,
+        "train_accuracy": 96.56,
+        "training_time": 1.40
+    }
+}
