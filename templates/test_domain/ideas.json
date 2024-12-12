@@ -1,0 +1,18 @@
+[
+    {
+        "Name": "baseline_comparison",
+        "Title": "Comparative Analysis of Model Performance on Simple Tasks",
+        "Experiment": "Implement a basic experiment comparing model performance on a simple classification task. The experiment should:\n1. Train models of different architectures (MLP, CNN) on MNIST\n2. Compare training speed and final accuracy\n3. Analyze the effect of model size on performance",
+        "Interestingness": 5,
+        "Feasibility": 8,
+        "Novelty": 3
+    },
+    {
+        "Name": "optimization_study",
+        "Title": "Impact of Optimization Strategies on Model Convergence",
+        "Experiment": "Study how different optimization strategies affect model training:\n1. Compare SGD, Adam, and RMSprop optimizers\n2. Analyze learning rate schedules (constant, step, cosine)\n3. Measure convergence speed and final performance",
+        "Interestingness": 6,
+        "Feasibility": 7,
+        "Novelty": 4
+    }
+]
