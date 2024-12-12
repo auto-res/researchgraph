@@ -1,0 +1,14 @@
+{
+    "mlp": {
+        "means": {
+            "accuracy": 0.92,
+            "training_time": 120
+        }
+    },
+    "cnn": {
+        "means": {
+            "accuracy": 0.98,
+            "training_time": 180
+        }
+    }
+}

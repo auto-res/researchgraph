@@ -11,26 +11,21 @@ def plot_results():
         return
 
     # Collect results
-    mlp_train_losses = []
-    mlp_train_accs = []
-    mlp_test_accs = []
-    cnn_train_losses = []
-    cnn_train_accs = []
-    cnn_test_accs = []
+    mlp_accuracies = []
+    cnn_accuracies = []
+    mlp_times = []
+    cnn_times = []
 
     for run in runs:
         try:
             with open(f"{run}/final_info.json", "r") as f:
                 results = json.load(f)
 
-            # Extract means
-            means = results['means']
-            mlp_train_losses.append(means['mlp_train_loss'])
-            mlp_train_accs.append(means['mlp_train_acc'])
-            mlp_test_accs.append(means['mlp_test_acc'])
-            cnn_train_losses.append(means['cnn_train_loss'])
-            cnn_train_accs.append(means['cnn_train_acc'])
-            cnn_test_accs.append(means['cnn_test_acc'])
+            # Extract metrics
+            mlp_accuracies.append(results['mlp']['means']['accuracy'])
+            cnn_accuracies.append(results['cnn']['means']['accuracy'])
+            mlp_times.append(results['mlp']['means']['training_time'])
+            cnn_times.append(results['cnn']['means']['training_time'])
         except (FileNotFoundError, KeyError) as e:
             print(f"Error reading results from {run}: {e}")
             continue
@@ -38,31 +33,26 @@ def plot_results():
     # Create plots
     plt.figure(figsize=(15, 5))
 
-    # Plot 1: Training Loss
-    plt.subplot(131)
-    plt.plot(mlp_train_losses, label='MLP')
-    plt.plot(cnn_train_losses, label='CNN')
-    plt.title('Training Loss')
-    plt.xlabel('Run')
-    plt.ylabel('Loss')
-    plt.legend()
-
-    # Plot 2: Training Accuracy
-    plt.subplot(132)
-    plt.plot(mlp_train_accs, label='MLP')
-    plt.plot(cnn_train_accs, label='CNN')
-    plt.title('Training Accuracy')
+    # Plot 1: Model Accuracy
+    plt.subplot(121)
+    x = np.arange(len(runs))
+    width = 0.35
+    plt.bar(x - width/2, mlp_accuracies, width, label='MLP')
+    plt.bar(x + width/2, cnn_accuracies, width, label='CNN')
+    plt.title('Model Accuracy')
     plt.xlabel('Run')
     plt.ylabel('Accuracy')
+    plt.xticks(x, [f'Run {i}' for i in range(len(runs))])
     plt.legend()
 
-    # Plot 3: Test Accuracy
-    plt.subplot(133)
-    plt.plot(mlp_test_accs, label='MLP')
-    plt.plot(cnn_test_accs, label='CNN')
-    plt.title('Test Accuracy')
+    # Plot 2: Training Time
+    plt.subplot(122)
+    plt.bar(x - width/2, mlp_times, width, label='MLP')
+    plt.bar(x + width/2, cnn_times, width, label='CNN')
+    plt.title('Training Time')
     plt.xlabel('Run')
-    plt.ylabel('Accuracy')
+    plt.ylabel('Time (s)')
+    plt.xticks(x, [f'Run {i}' for i in range(len(runs))])
     plt.legend()
 
     plt.tight_layout()
@@ -72,12 +62,12 @@ def plot_results():
     # Print summary statistics
     print("\nSummary Statistics:")
     print("\nMLP Results:")
-    print(f"Final Test Accuracy: {np.mean(mlp_test_accs):.3f} ± {np.std(mlp_test_accs):.3f}")
-    print(f"Final Training Loss: {np.mean(mlp_train_losses):.3f} ± {np.std(mlp_train_losses):.3f}")
+    print(f"Final Test Accuracy: {np.mean(mlp_accuracies):.3f} ± {np.std(mlp_accuracies):.3f}")
+    print(f"Final Training Time: {np.mean(mlp_times):.3f} ± {np.std(mlp_times):.3f}")
 
     print("\nCNN Results:")
-    print(f"Final Test Accuracy: {np.mean(cnn_test_accs):.3f} ± {np.std(cnn_test_accs):.3f}")
-    print(f"Final Training Loss: {np.mean(cnn_train_losses):.3f} ± {np.std(cnn_train_losses):.3f}")
+    print(f"Final Test Accuracy: {np.mean(cnn_accuracies):.3f} ± {np.std(cnn_accuracies):.3f}")
+    print(f"Final Training Time: {np.mean(cnn_times):.3f} ± {np.std(cnn_times):.3f}")
 
 if __name__ == "__main__":
     plot_results()
