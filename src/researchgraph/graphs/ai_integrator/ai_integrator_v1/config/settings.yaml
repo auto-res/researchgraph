@@ -1,0 +1,32 @@
+# AI Integrator v1 Settings
+
+# Research objective and sources
+objective: "I am researching Optimizers for fine-tuning LLM. The aim is to find a better Optimizer."
+arxiv_url: "https://arxiv.org/abs/1804.00325v3"
+github_url: "https://github.com/AtheMathmo/AggMo"
+
+# File and directory settings
+save_dir: "/content/drive/MyDrive/AutoRes/ai_integrator/exec-test"
+new_method_file_name: "new_method.py"
+ft_model_name: "meta-llama/Llama-2-7b-hf"
+dataset_name: "gsm8k"
+model_save_dir_name: "model_save"
+result_save_file_name: "results.json"
+
+# Training settings
+num_train_data: 100
+num_inference_data: 50
+
+# Method template configuration
+method_template: |
+  def {{method_name}}({{method_params}}):
+      """
+      {{method_description}}
+
+      Args:
+          {{param_descriptions}}
+
+      Returns:
+          {{return_description}}
+      """
+      {{method_implementation}}

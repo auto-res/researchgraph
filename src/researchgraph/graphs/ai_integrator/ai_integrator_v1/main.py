@@ -4,6 +4,10 @@ from typing_extensions import TypedDict
 from langgraph.graph import StateGraph
 
 from researchgraph.core.factory import NodeFactory
+from .config import ConfigLoader
+
+# Initialize config loader
+config = ConfigLoader()
 
 
 class State(TypedDict):
@@ -32,34 +36,27 @@ class AIIntegratorv1:
     def __init__(
         self,
         llm_name: str,
-        save_dir: str,
-        new_method_file_name: str,
-        ft_model_name: str,
-        dataset_name: str,
-        model_save_dir_name: str,
-        result_save_file_name: str,
         answer_data_path: str,
-        ai_integrator_v1_extractor_prompt: str,
-        ai_integrator_v1_codeextractor_prompt: str,
-        ai_integrator_v1_creator_prompt: str,
-        num_train_data: int | None = None,
-        num_inference_data: int | None = None,
     ):
+        # Load settings from config
+        settings = config.load_settings()
+        self.save_dir = settings["save_dir"]
+        self.new_method_file_name = settings["new_method_file_name"]
+        self.ft_model_name = settings["ft_model_name"]
+        self.dataset_name = settings["dataset_name"]
+        self.model_save_dir_name = settings["model_save_dir_name"]
+        self.result_save_file_name = settings["result_save_file_name"]
+        self.num_train_data = settings["num_train_data"]
+        self.num_inference_data = settings["num_inference_data"]
+
+        # Set instance variables
         self.llm_name = llm_name
-        self.save_dir = save_dir
-        self.new_method_file_name = new_method_file_name
-        self.ft_model_name = ft_model_name
-        self.dataset_name = dataset_name
-        self.model_save_dir_name = model_save_dir_name
-        self.result_save_file_name = result_save_file_name
         self.answer_data_path = answer_data_path
-        self.ai_integrator_v1_extractor_prompt = ai_integrator_v1_extractor_prompt
-        self.ai_integrator_v1_codeextractor_prompt = (
-            ai_integrator_v1_codeextractor_prompt
-        )
-        self.ai_integrator_v1_creator_prompt = ai_integrator_v1_creator_prompt
-        self.num_train_data = num_train_data
-        self.num_inference_data = num_inference_data
+
+        # Load prompts from config
+        self.ai_integrator_v1_extractor_prompt = config.get_prompt("extractor_prompt")
+        self.ai_integrator_v1_codeextractor_prompt = config.get_prompt("codeextractor_prompt")
+        self.ai_integrator_v1_creator_prompt = config.get_prompt("creator_prompt")
 
         if not os.path.exists(self.save_dir):
             os.makedirs(self.save_dir)
