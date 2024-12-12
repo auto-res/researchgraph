@@ -2,12 +2,19 @@ import matplotlib.pyplot as plt
 import json
 import os
 import numpy as np
+import argparse
 
-def plot_results():
+def plot_results(results_dir="."):
     # Find all run directories
-    runs = sorted([d for d in os.listdir(".") if d.startswith("run_")])
+    if os.path.isfile(os.path.join(results_dir, "final_info.json")):
+        # Single run case
+        runs = [results_dir]
+    else:
+        # Multiple runs case
+        runs = sorted([d for d in os.listdir(results_dir) if d.startswith("run_")])
+
     if not runs:
-        print("No run directories found")
+        print("No results found")
         return
 
     # Collect results
@@ -18,7 +25,8 @@ def plot_results():
 
     for run in runs:
         try:
-            with open(f"{run}/final_info.json", "r") as f:
+            results_path = os.path.join(run, "final_info.json") if run.startswith("run_") else os.path.join(run, "final_info.json")
+            with open(results_path, "r") as f:
                 results = json.load(f)
 
             # Extract metrics
@@ -56,7 +64,7 @@ def plot_results():
     plt.legend()
 
     plt.tight_layout()
-    plt.savefig('comparison_plot.png')
+    plt.savefig(os.path.join(results_dir, 'comparison_plot.png'))
     plt.close()
 
     # Print summary statistics
@@ -70,4 +78,7 @@ def plot_results():
     print(f"Final Training Time: {np.mean(cnn_times):.3f} ± {np.std(cnn_times):.3f}")
 
 if __name__ == "__main__":
-    plot_results()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--results_dir", type=str, default=".", help="Directory containing results")
+    args = parser.parse_args()
+    plot_results(args.results_dir)
