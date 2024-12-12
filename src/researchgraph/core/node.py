@@ -1,19 +1,20 @@
+import time
 import logging
 from abc import ABC, abstractmethod
 from typing import Dict, Any, List, Optional
 
 from .cache import NodeCache
+from .logging import NodeLogger
 
 
 class NodeExecutionError(Exception):
-    def __init__(self, node_name: str, message: str, original_error: Exception = None):
-        self.node_name = node_name
+    def __init__(self, node_name: str, message: str, original_error: Optional[Exception] = None):
+        super().__init__(f"[{node_name}] {message}")
         self.original_error = original_error
-        super().__init__(f"Node {node_name} execution failed: {message}")
 
 
 class Node(ABC):
-    """Base class of all nodes with caching support."""
+    """Base class of all nodes with caching and logging support."""
 
     def __init__(
         self,
@@ -21,24 +22,35 @@ class Node(ABC):
         output_key: List[str],
         cache_dir: Optional[str] = None,
         cache_enabled: bool = True,
+        log_dir: Optional[str] = None,
+        log_enabled: bool = True,
     ):
-        """Initialize node with optional caching.
+        """Initialize node with optional caching and logging.
 
         Args:
             input_key: List of input keys required by this node
             output_key: List of output keys produced by this node
             cache_dir: Directory for caching results, if None caching is disabled
             cache_enabled: Whether to enable caching
+            log_dir: Directory for logging, if None logging is disabled
+            log_enabled: Whether to enable logging
         """
         self.input_key = input_key
         self.output_key = output_key
         self.logger = logging.getLogger(self.__class__.__name__)
         self.logger.debug(f"Initialized node with input: {self.input_key}, output: {self.output_key}")
 
+        # Initialize cache if enabled
         self.cache = None
         if cache_dir and cache_enabled:
             self.cache = NodeCache(cache_dir)
             self.logger.debug(f"Initialized cache in {cache_dir}")
+
+        # Initialize logger if enabled
+        self.node_logger = None
+        if log_dir and log_enabled:
+            self.node_logger = NodeLogger(log_dir)
+            self.logger.debug(f"Initialized logger in {log_dir}")
 
     def _generate_cache_key(self, state: Dict[str, Any]) -> str:
         """Generate cache key from input state.
@@ -69,7 +81,7 @@ class Node(ABC):
         pass
 
     def __call__(self, state: Dict[str, Any]) -> Dict[str, Any]:
-        """Execute node with caching support.
+        """Execute node with caching and logging support.
 
         Args:
             state: Current state dictionary
@@ -80,8 +92,14 @@ class Node(ABC):
         Raises:
             NodeExecutionError: When execution fails
         """
+        start_time = time.time()
+        node_name = self.__class__.__name__
+
         try:
             self.logger.debug("Starting node execution")
+            if self.node_logger:
+                self.node_logger.log_start(node_name, state)
+
             self.before_execute()
 
             # Check cache if enabled
@@ -90,23 +108,32 @@ class Node(ABC):
                 cached_result = self.cache.get(cache_key)
                 if cached_result:
                     self.logger.debug("Returning cached result")
+                    execution_time = time.time() - start_time
+                    if self.node_logger:
+                        self.node_logger.log_complete(
+                            node_name,
+                            cached_result,
+                            execution_time,
+                            {"cached": True}
+                        )
                     return cached_result
 
             # Validate input keys
             missing_keys = [key for key in self.input_key if key not in state]
             if missing_keys:
                 raise NodeExecutionError(
-                    self.__class__.__name__,
+                    node_name,
                     f"Missing required input keys: {missing_keys}"
                 )
 
+            # Execute node
             result = self.execute(state)
 
             # Validate output keys
             missing_outputs = [key for key in self.output_key if key not in result]
             if missing_outputs:
                 raise NodeExecutionError(
-                    self.__class__.__name__,
+                    node_name,
                     f"Missing required output keys: {missing_outputs}"
                 )
 
@@ -115,16 +142,29 @@ class Node(ABC):
                 cache_key = self._generate_cache_key(state)
                 self.cache.set(cache_key, result)
 
+            execution_time = time.time() - start_time
+            if self.node_logger:
+                self.node_logger.log_complete(
+                    node_name,
+                    result,
+                    execution_time,
+                    {"cached": False}
+                )
+
             self.after_execute()
             self.logger.debug("Node execution completed successfully")
             return result
 
         except Exception as e:
+            execution_time = time.time() - start_time
+            if self.node_logger:
+                self.node_logger.log_error(node_name, e, state)
+
             if isinstance(e, NodeExecutionError):
                 raise
             self.logger.error(f"Node execution failed: {str(e)}", exc_info=True)
             raise NodeExecutionError(
-                self.__class__.__name__,
+                node_name,
                 str(e),
                 original_error=e
             )
