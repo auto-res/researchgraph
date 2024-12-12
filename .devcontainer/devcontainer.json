@@ -14,7 +14,8 @@
 				"njpwerner.autodocstring",
                 "mhutchie.git-graph",
                 "eamodio.gitlens",
-                "gruntfuggly.todo-tree"
+                "gruntfuggly.todo-tree",
+                "ms-python.vscode-pylance"
 			]
 		}
 	}
