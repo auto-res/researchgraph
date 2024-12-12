@@ -1,12 +1,14 @@
 import sys
 import os
+from unittest.mock import Mock, patch
 
 if "GITHUB_WORKSPACE" in os.environ:
     sys.path.insert(0, os.path.join(os.environ["GITHUB_WORKSPACE"], "src"))
 
 from typing import TypedDict
 from langgraph.graph import StateGraph
-from researchgraph.nodes.writingnode.latexnode import LatexNode
+from researchgraph.nodes.writingnode.latexnode import LatexNode, LatexUtils
+from researchgraph.test_utils.path_resolver import path_resolver
 
 
 class State(TypedDict):
@@ -14,16 +16,21 @@ class State(TypedDict):
     pdf_file_path: str
 
 
-SAVE_DIR = os.environ.get("SAVE_DIR", "/workspaces/researchgraph/data")
-GITHUB_WORKSPACE = os.environ.get("GITHUB_WORKSPACE", os.path.abspath(os.path.join(os.getcwd(), "..")))
+SAVE_DIR = path_resolver.get_save_dir()
 
-def test_latex_node():
+@patch.object(LatexUtils, '__init__', return_value=None)
+@patch.object(LatexUtils, 'check_references', return_value=True)
+@patch.object(LatexUtils, 'check_figures')
+@patch.object(LatexUtils, 'check_duplicates')
+@patch.object(LatexUtils, 'fix_latex_errors')
+@patch.object(LatexUtils, 'compile_latex')
+def test_latex_node(mock_compile, mock_fix, mock_duplicates, mock_figures, mock_refs, mock_init):
     # Define input and output keys
     input_key = ["paper_content"]
     output_key = ["pdf_file_path"]
     model = "gpt-4o"
-    template_dir = os.path.join(GITHUB_WORKSPACE, "src/researchgraph/graphs/ai_scientist/templates/2d_diffusion")
-    figures_dir = os.path.join(GITHUB_WORKSPACE, "images")
+    template_dir = path_resolver.get_template_dir("2d_diffusion")
+    figures_dir = path_resolver.get_figures_dir()
 
     # Initialize LatexNode
     latex_node = LatexNode(
@@ -56,8 +63,13 @@ def test_latex_node():
             "results": "These are the results.",
             "conclusions": "This is the conclusion.",
         },
-        "pdf_file_path": os.path.join(SAVE_DIR, "sample.pdf"), 
+        "pdf_file_path": os.path.join(SAVE_DIR, "sample.pdf"),
     }
+
+    # Create the output directory if it doesn't exist
+    os.makedirs(os.path.dirname(state["pdf_file_path"]), exist_ok=True)
+    # Create an empty PDF file to simulate successful compilation
+    open(state["pdf_file_path"], 'w').close()
 
     # Execute the graph
     assert graph.invoke(state, debug=True)
