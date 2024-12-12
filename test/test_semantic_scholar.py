@@ -4,6 +4,7 @@ from langgraph.graph import StateGraph
 from researchgraph.nodes.retrievenode.semantic_scholar.semantic_scholar import (
     SemanticScholarNode,
 )
+from researchgraph.test_utils.path_resolver import path_resolver
 from unittest.mock import patch
 
 
@@ -31,7 +32,7 @@ def test_semantic_scholar_node(mock_search_paper):
         },
     ]
 
-    SAVE_DIR = os.environ.get("SAVE_DIR", "/workspaces/researchgraph/data")
+    SAVE_DIR = path_resolver.get_save_dir()
     input_key = ["keywords"]
     output_key = ["paper_results"]
 

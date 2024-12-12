@@ -1,7 +1,7 @@
 import os
-
 from typing import TypedDict
 from langgraph.graph import StateGraph
+from researchgraph.test_utils.path_resolver import path_resolver
 
 from researchgraph.nodes.writingnode.text2script_node import Text2ScriptNode
 
@@ -11,7 +11,7 @@ class State(TypedDict):
     script_save_path: str
 
 
-SAVE_DIR = os.environ.get("SAVE_DIR", "/workspaces/researchgraph/data")
+SAVE_DIR = path_resolver.get_save_dir()
 
 
 def test_ext2script_node():

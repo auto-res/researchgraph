@@ -1,6 +1,7 @@
 import os
 from typing import TypedDict
 from langgraph.graph import StateGraph
+from researchgraph.test_utils.path_resolver import path_resolver
 
 from researchgraph.nodes.codingnode.aider import AiderNode
 
@@ -10,7 +11,7 @@ class State(TypedDict):
     instruction: str
 
 
-SAVE_DIR = os.environ.get("SAVE_DIR", "/workspaces/researchgraph/data")
+SAVE_DIR = path_resolver.get_save_dir()
 
 
 def test_aider_node():

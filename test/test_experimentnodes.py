@@ -1,5 +1,6 @@
 from typing import TypedDict
 from langgraph.graph import StateGraph
+from researchgraph.test_utils.path_resolver import path_resolver
 
 from researchgraph.nodes.experimentnode.llm import (
     LLMSFTTrainNode,
@@ -38,7 +39,7 @@ def test_llmtain_node():
     graph = graph_builder.compile()
 
     memory = {
-        "script_save_path": "/content/new_method.py",
+        "script_save_path": path_resolver.get_test_file_path("new_method.py"),
     }
 
     assert graph.invoke(memory)
@@ -59,7 +60,7 @@ def test_llminference_node():
             output_key=output_key,
             dataset_name=dataset_name,
             num_inference_data=num_inference_data,
-            result_save_path=result_save_path,
+            result_save_path=path_resolver.get_test_file_path("test.csv", subdir="results"),
         ),
     )
     graph_builder.set_entry_point("llminferencer")
@@ -67,7 +68,7 @@ def test_llminference_node():
     graph = graph_builder.compile()
 
     memory = {
-        "model_save_path": "model",
+        "model_save_path": path_resolver.get_test_file_path("model", subdir="models"),
     }
 
     assert graph.invoke(memory)
@@ -94,7 +95,7 @@ def test_llmevaluate_node():
     graph = graph_builder.compile()
 
     memory = {
-        "result_save_path": "/content/test.csv",
+        "result_save_path": path_resolver.get_test_file_path("test.csv", subdir="results"),
     }
 
     assert graph.invoke(memory, debug=True)

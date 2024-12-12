@@ -1,6 +1,7 @@
 import os
 from typing import TypedDict
 from langgraph.graph import StateGraph
+from researchgraph.test_utils.path_resolver import path_resolver
 
 from researchgraph.nodes.retrievenode import RetrievearXivTextNode
 from researchgraph.nodes.retrievenode import RetrieveGithubRepositoryNode
@@ -14,7 +15,7 @@ class State(TypedDict):
     github_file: str
 
 
-SAVE_DIR = os.environ.get("SAVE_DIR", "/workspaces/researchgraph/data")
+SAVE_DIR = path_resolver.get_save_dir()
 
 
 def test_retrieve_arxiv_text_node():
