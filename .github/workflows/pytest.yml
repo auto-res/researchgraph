@@ -4,7 +4,8 @@ on:
   pull_request:
     types: [opened, reopened, synchronize]
     paths: [
-      'src/researchgraph/nodes/**', 
+      'src/researchgraph/nodes/**',
+      'src/researchgraph/graphs/**',
       'test/**',
       '.github/workflows/pytest.yml'
       ]
@@ -72,10 +73,10 @@ jobs:
 
       - name: Print PYTHONPATH
         run: echo "PYTHONPATH=$PYTHONPATH"
-        
+
       - name: Create Directory
         run: mkdir -p $SAVE_DIR
-        
+
       - name: Run pytest
         run: uv run pytest test/test_retrievenodes.py
 
@@ -112,10 +113,10 @@ jobs:
 
       - name: Print PYTHONPATH
         run: echo "PYTHONPATH=$PYTHONPATH"
-        
+
       - name: Create Directory
         run: mkdir -p $SAVE_DIR
-        
+
       - name: Run pytest
         run: uv run pytest -s test/test_writingnode.py
 
@@ -158,10 +159,10 @@ jobs:
 
       - name: Print PYTHONPATH
         run: echo "PYTHONPATH=$PYTHONPATH"
-        
+
       - name: Create Directory
         run: mkdir -p $SAVE_DIR
-        
+
       - name: Run pytest
         run: uv run pytest test/test_semantic_scholar.py
 
@@ -190,10 +191,10 @@ jobs:
 
       - name: Set PYTHONPATH
         run: echo "PYTHONPATH=$PYTHONPATH:$GITHUB_WORKSPACE/src" >> $GITHUB_ENV
-        
+
       - name: Create Directory
         run: mkdir -p $SAVE_DIR
-        
+
       - name: Run pytest
         run: uv run pytest test/test_openalex.py
 
@@ -225,7 +226,7 @@ jobs:
 
       - name: Create Directory
         run: mkdir -p $SAVE_DIR
-        
+
       - name: Run pytest
         run: uv run pytest test/test_text2scriptnode.py
 
@@ -257,7 +258,7 @@ jobs:
 
       - name: Create Directory
         run: mkdir -p $SAVE_DIR
-        
+
       - name: Run pytest
         run: uv run pytest test/test_codingnodes.py
 
