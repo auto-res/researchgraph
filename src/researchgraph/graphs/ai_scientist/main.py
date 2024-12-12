@@ -1,4 +1,5 @@
 import argparse
+import json
 import os
 import os.path as osp
 from typing import Any
@@ -123,7 +124,11 @@ def get_client(model):
 
 
 def main(args):
-    client, client_model = get_client(args.model)
+    # Only initialize client if we're not skipping idea generation
+    client = None
+    client_model = None
+    if not args.skip_idea_generation:
+        client, client_model = get_client(args.model)
 
     # Use domain for template and result paths
     base_dir = osp.join("templates", args.domain)
@@ -131,16 +136,26 @@ def main(args):
 
     idea_generator = IdeaGenerationComponent()
     memory = {}
-    memory = idea_generator(
-        base_dir,
-        client,
-        args.model,
-        memory,
-        args.skip_idea_generation,
-        args.num_ideas,
-        NUM_REFLECTIONS,
-    )
-    ideas = memory["ideas"]
+
+    # Skip idea generation if requested
+    if not args.skip_idea_generation:
+        memory = idea_generator(
+            base_dir,
+            client,
+            args.model,
+            memory,
+            args.skip_idea_generation,
+            args.num_ideas,
+            NUM_REFLECTIONS,
+        )
+        ideas = memory["ideas"]
+    else:
+        # Load existing ideas from file
+        ideas_file = osp.join(base_dir, "ideas.json")
+        if not osp.exists(ideas_file):
+            raise FileNotFoundError(f"No ideas file found at {ideas_file}. Please run without --skip-idea-generation first.")
+        with open(ideas_file, "r") as f:
+            ideas = json.load(f)
 
     idea_executor = IdeaExecutionComponent()
     for idea in ideas:

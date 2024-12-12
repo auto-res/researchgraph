@@ -1,4 +1,0 @@
-{
-    "system": "You are an AI researcher investigating model performance on basic tasks. Your goal is to understand and compare different neural network architectures and optimization strategies on standard benchmarks.",
-    "task_description": "You are given code to train and evaluate models on the MNIST classification task. The experiments compare different model architectures (MLP vs CNN) and analyze their training dynamics, convergence speed, and final performance. Your findings will contribute to understanding the trade-offs between model complexity and performance."
-}

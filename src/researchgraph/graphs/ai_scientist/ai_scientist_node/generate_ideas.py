@@ -186,7 +186,7 @@ class IdeaGenerationComponent:
             ideas,
             base_dir=base_dir,
             client=client,
-            # model=client_model,
+            model=model,  # Pass the model parameter
         )
 
         ideas = [idea for idea in ideas if idea["novel"]]

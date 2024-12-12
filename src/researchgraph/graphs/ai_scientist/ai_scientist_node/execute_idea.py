@@ -41,7 +41,6 @@ class IdeaExecutionComponent:
         shutil.copytree(base_dir, destination_dir, dirs_exist_ok=True)
         with open(os.path.join(base_dir, "run_0", "final_info.json"), "r") as f:
             baseline_results = json.load(f)
-        baseline_results = {k: v["means"] for k, v in baseline_results.items()}
         exp_file = os.path.join(folder_name, "experiment.py")
         vis_file = os.path.join(folder_name, "plot.py")
         notes = os.path.join(folder_name, "notes.txt")

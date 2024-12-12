@@ -66,7 +66,6 @@ def run_experiment(folder_name, run_num, timeout=7200):
         else:
             with open(osp.join(cwd, f"run_{run_num}", "final_info.json"), "r") as f:
                 results = json.load(f)
-            results = {k: v["means"] for k, v in results.items()}
 
             next_prompt = f"""Run {run_num} completed. Here are the results:
 {results}
@@ -175,7 +174,7 @@ class ExperimentComponent:
 
         current_iter = 0
         next_prompt = """
-    Great job! Please modify `plot.py` to generate the most relevant plots for the final writeup. 
+    Great job! Please modify `plot.py` to generate the most relevant plots for the final writeup.
 
     In particular, be sure to fill in the "labels" dictionary with the correct names for each run that you want to plot.
 
