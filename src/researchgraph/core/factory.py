@@ -8,6 +8,7 @@ from researchgraph.nodes.llmnode.llmlinks.llmlinks_llmnode import LLMLinksLLMNod
 from researchgraph.nodes.writingnode import (
     LatexNode,
     Text2ScriptNode,
+    WriteupNode, 
 )
 from researchgraph.nodes.experimentnode.llm import (
     LLMSFTTrainNode,
@@ -47,6 +48,8 @@ class NodeFactory:
             return Text2ScriptNode(**kwargs)
         elif node_name == "latex_node":
             return LatexNode(**kwargs)
+        elif node_name == "writeup_node":
+            return WriteupNode(**kwargs)
 
         # ExperimentNode
         elif node_name == "llmsfttrain_node":
