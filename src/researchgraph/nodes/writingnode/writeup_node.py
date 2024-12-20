@@ -2,7 +2,7 @@ import re
 from jinja2 import Template
 from researchgraph.core.node import Node
 from litellm import completion
-from researchgraph.nodes.writingnode.writeup_prompt import generate_write_prompt, generate_refinement_prompt
+from researchgraph.nodes.writingnode.prompts.writeup_prompt import generate_write_prompt, generate_refinement_prompt
 
 
 regex_rules = {
