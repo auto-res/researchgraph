@@ -82,11 +82,12 @@ jobs:
       - name: Ensure pip cache folder exists
         run: mkdir -p /home/runner/.cache/pip
 
-  test-latexnode:
-    name: Test of LatexNode
+  test-writingnode:
+    name: Test of WritingNodes
     runs-on: ubuntu-latest
     env:
       SAVE_DIR: ${{ github.workspace }}/save_dir
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
