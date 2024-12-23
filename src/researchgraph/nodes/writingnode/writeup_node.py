@@ -1,18 +1,23 @@
 import re
+import json
 from jinja2 import Template
 from researchgraph.core.node import Node
 from litellm import completion
+from pydantic import BaseModel
 from researchgraph.nodes.writingnode.prompts.writeup_prompt import generate_write_prompt, generate_refinement_prompt
 
-
+# NOTE: These regex rules are used to classify the keys in state[""] into specific sections.
 regex_rules = {
     "Title": r"^(title|objective)$",
     "Methods": r".*_method_text$",
     "Codes": r".*_method_code$",
-    "Results": r".*_results$",  # accuracyを.*_resultsでもらいたい
+    "Results": r".*_results$",
     "Analyses": r".*_analysis$",
     # "Related Work": r"^(arxiv_url|github_url)$"
 }
+
+class WriteupResponse(BaseModel):
+    paper_text: str
 
 class WriteupNode(Node):
     def __init__(
@@ -58,10 +63,11 @@ class WriteupNode(Node):
             model=self.llm_name, 
             messages=[
                 {"role": "user", "content": prompt}, 
-            ]
+            ], 
+            response_format=WriteupResponse, 
         )
-        output = response.choices[0].message.content
-        return output.strip()
+        structured_output = json.loads(response.choices[0].message.content)
+        return structured_output["paper_text"]
 
     def _write(self, note: str, section_name: str) -> str:
         prompt = generate_write_prompt(section_name, note)
@@ -74,10 +80,10 @@ class WriteupNode(Node):
             content = self._call_llm(prompt)
         return content
 
-    def _relate_work(self, content: str) -> str:
-        return content
+    def _relate_work(self, content: str) -> str:            # TODO: Implement functionality to manage retrieved papers in a centralized references file (e.g., references.bib).
+        return content                                      #       Generate descriptions based on information in RelatedWorkNode.
 
-    def _clean_meta_information(self, text: str) -> str:
+    def _clean_meta_information(self, text: str) -> str:    # TODO: Combine with prompts to more accurately remove unnecessary meta-information and artifacts.
         meta_patterns = [     
             r"Here(?: is|'s) \w+ version.*?(\.|\n)", 
             r"This section discusses.*?(\.|\n)",         
@@ -111,7 +117,7 @@ class WriteupNode(Node):
             if not self.refine_only:
                 # generate and refine
                 initial_content = self._write(note, section)
-                initial_content = self._relate_work(initial_content)
+                # initial_content = self._relate_work(initial_content)
                 cleaned_initial_content = self._clean_meta_information(initial_content)
                 refined_content = self._refine(note, section, cleaned_initial_content)
             else:
