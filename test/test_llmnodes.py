@@ -5,8 +5,8 @@ from researchgraph.nodes.llmnode.structured_output.structured_llmnode import (
     StructuredLLMNode,
 )
 from researchgraph.nodes.llmnode.llmlinks.llmlinks_llmnode import LLMLinksLLMNode
-from researchgraph.nodes.llmnode.prompts.idea_generation_prompt import idea_generation_prompt
-from researchgraph.nodes.llmnode.prompts.code_generation_prompt import code_generation_prompt
+from researchgraph.nodes.llmnode.prompts.llmcreator_prompt import llmcreator_prompt
+from researchgraph.nodes.llmnode.prompts.llmcoder_prompt import llmcoder_prompt
 
 
 class State(TypedDict):
@@ -23,7 +23,7 @@ class State(TypedDict):
     num_ideas: int
     generated_ideas: list
 
-    selected_idea: str                  # TODO: state["generated_ideas"]の"description"を必要に応じて含める
+    selected_idea: str
     improved_method_text: str
     improved_method_code: str
 
@@ -91,14 +91,13 @@ sourceタグで与えられた文章を languageで指定された言語に翻�
     }
     assert graph.invoke(state, debug=True)
 
-
-def test_idea_generation_node():
+def test_llmcreator():
     llm_model_name = "gpt-4o-2024-08-06"
-    prompt_template = idea_generation_prompt
+    prompt_template = llmcreator_prompt
 
     graph_builder = StateGraph(State)
     graph_builder.add_node(
-        "idea_generation_node",
+        "llmcreator",
         StructuredLLMNode(
             input_key=["base_method_text", "base_method_code", "num_ideas"],
             output_key=["generated_ideas"],
@@ -106,8 +105,8 @@ def test_idea_generation_node():
             prompt_template=prompt_template,
         ),
     )
-    graph_builder.set_entry_point("idea_generation_node")
-    graph_builder.set_finish_point("idea_generation_node")
+    graph_builder.set_entry_point("llmcreator")
+    graph_builder.set_finish_point("llmcreator")
     graph = graph_builder.compile()
 
     state = {
@@ -135,13 +134,13 @@ def test_idea_generation_node():
     assert len(generated_ideas) >= 3, "The number of generated ideas should be at least 3."
 
 
-def test_code_generation_node():
+def test_llmcoder():
     llm_model_name = "gpt-4o-2024-08-06"
-    prompt_template = code_generation_prompt
+    prompt_template = llmcoder_prompt
 
     graph_builder = StateGraph(State)
     graph_builder.add_node(
-        "code_generation_node",
+        "llmcoder",
         StructuredLLMNode(
             input_key=["base_method_text", "base_method_code", "selected_idea"],
             output_key=["improved_method_text", "improved_method_code"],
@@ -149,8 +148,8 @@ def test_code_generation_node():
             prompt_template=prompt_template,
         ),
     )
-    graph_builder.set_entry_point("code_generation_node")
-    graph_builder.set_finish_point("code_generation_node")
+    graph_builder.set_entry_point("llmcoder")
+    graph_builder.set_finish_point("llmcoder")
     graph = graph_builder.compile()
 
     state = {
@@ -160,7 +159,6 @@ def test_code_generation_node():
     }
 
     result = graph.invoke(state, debug=True)
-    print(f"resultaa: {result}")
 
     assert "improved_method_text" in result, "Output 'improved_method_text' is missing."
     assert isinstance(result["improved_method_text"], str), "'improved_method_text' should be a string."
