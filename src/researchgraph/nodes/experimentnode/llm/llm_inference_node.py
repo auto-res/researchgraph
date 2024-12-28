@@ -1,9 +1,10 @@
 from typing import Optional
 from unsloth import FastLanguageModel
-from datasets import load_dataset
+# from datasets import load_dataset
 import pandas as pd
 
 from researchgraph.core.node import Node
+from dataset import dynamic_dataloader
 
 
 class LLMInferenceNode(Node):
@@ -33,7 +34,8 @@ class LLMInferenceNode(Node):
         return train_model, train_tokenizer
 
     def _set_up_dataset(self):
-        dataset = load_dataset(self.dataset_name, "main")
+        # dataset = load_dataset(self.dataset_name, "main")
+        dataset = dynamic_dataloader.custom_load_dataset(self.dataset_name)
         dataset = dataset["test"]
         return dataset
 

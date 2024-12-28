@@ -25,6 +25,8 @@ dependencies = [
     "jinja2>=3.1.4",
     "litellm>=1.52.16",
     "setuptools>=75.6.0",
+    "datasets>=2.14.4",
+    "huggingface-hub>=0.26.2",
 ]
 
 [project.urls]

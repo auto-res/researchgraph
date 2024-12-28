@@ -1,9 +1,9 @@
 import re
 import pandas as pd
-from datasets import load_dataset
+# from datasets import load_dataset
 
 from researchgraph.core.node import Node
-
+from dataset import dynamic_dataloader
 
 class LLMEvaluateNode(Node):
     def __init__(
@@ -33,12 +33,14 @@ class LLMEvaluateNode(Node):
             df = pd.read_csv(self.answer_data_path, index_col=0)
             answer_list = df["answer"].to_list()
         elif self.dataset_name == "openai/gsm8k":
-            dataset = load_dataset(self.dataset_name, "main")
+            # dataset = load_dataset(self.dataset_name, "main")
+            dataset = dynamic_dataloader.custom_load_dataset(self.dataset_name)
             answer_dataset = dataset["test"]["answer"]
             answer_list = [
-                int(match.group(1))
-                if (match := re.search(r"#### (\d+)", answer))
-                else None
+                # int(match.group(1))
+                # if (match := re.search(r"#### (\d+)", answer))
+                # else None
+                dynamic_dataloader(self.dataset_name).parse_answer(answer)
                 for answer in answer_dataset
             ]
         else:

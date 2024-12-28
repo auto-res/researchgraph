@@ -1,11 +1,11 @@
 import os
 import importlib.util
 from unsloth import FastLanguageModel, is_bfloat16_supported
-from datasets import load_dataset
 from trl import SFTTrainer
 from transformers import TrainingArguments
 
 from researchgraph.core.node import Node
+from dataset import dynamic_dataloader
 
 
 class LLMSFTTrainNode(Node):
@@ -85,7 +85,7 @@ class LLMSFTTrainNode(Node):
         return model, tokenizer
 
     def _set_up_dataset(self):
-        dataset = load_dataset(self.dataset_name, "main")
+        dataset = dynamic_dataloader.custom_load_dataset(self.dataset_name)
         dataset = dataset["train"].map(self._formatting_prompts_func, batched=True)
         return dataset
 
