@@ -2,6 +2,8 @@
 	"name": "researchgraph",
 	"dockerComposeFile": "docker-compose.yaml",
 	"service": "researchgraph",
+    // To run in a gpu environment, comment out the above code and use the code below
+    // "service": "researchgraph-gpu",
 	"workspaceFolder": "/workspaces/researchgraph",
 	"overrideCommand": true,
 	"customizations": {
