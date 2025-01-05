@@ -1,14 +1,14 @@
 import os
 
-from typing import TypedDict
+from pydantic import BaseModel, Field
 from langgraph.graph import StateGraph
 
 from researchgraph.nodes.writingnode.text2script_node import Text2ScriptNode
 
 
-class State(TypedDict):
-    code_string: str
-    script_save_path: str
+class State(BaseModel):
+    code_string: str = Field(default="")
+    script_save_path: str = Field(default="")
 
 
 SAVE_DIR = os.environ.get("SAVE_DIR", "/workspaces/researchgraph/data")

@@ -1,11 +1,26 @@
 import os
+import io
+import sys
 import importlib.util
-from unsloth import FastLanguageModel, is_bfloat16_supported
+import traceback
+#from unsloth import FastLanguageModel, is_bfloat16_supported
 from datasets import load_dataset
-from trl import SFTTrainer
-from transformers import TrainingArguments
+from trl import SFTTrainer, SFTConfig
+from transformers import AutoTokenizer, AutoModelForCausalLM
 
 from researchgraph.core.node import Node
+
+from typing import TypedDict
+from pydantic import BaseModel, Field
+from langgraph.graph import StateGraph
+
+
+class State(BaseModel):
+    script_save_path: str = Field(default="")
+    model_save_path: str = Field(default="") 
+    log_save_path: str = Field(default="")    
+    error_log_save_path: str = Field(default="")
+    execution_flag_list: list = Field(default_factory=list)
 
 
 class LLMSFTTrainNode(Node):
@@ -25,66 +40,44 @@ class LLMSFTTrainNode(Node):
         self.model_save_path = model_save_path
         self.lora = lora
         self.num_train_data = num_train_data
-        self.training_args = self._set_up_training_args()
+        self.sft_args = self._set_up_training_args()
         self.model, self.tokenizer = self._set_up_model()
         self.dataset = self._set_up_dataset()
 
     def _set_up_training_args(self):
-        training_args_kwargs = {
-            "per_device_train_batch_size": 2,
-            "gradient_accumulation_steps": 4,
-            "warmup_steps": 5,
-            "learning_rate": 2e-4,
-            "fp16": not is_bfloat16_supported(),
-            "bf16": is_bfloat16_supported(),
-            "logging_steps": 1,
-            "weight_decay": 0.01,
-            "lr_scheduler_type": "linear",
-            "seed": 3407,
-            "output_dir": "outputs",
-            "report_to": "none",
-        }
-
-        if self.num_train_data is None:
-            training_args_kwargs["num_train_epochs"] = 1
-        else:
-            training_args_kwargs["max_steps"] = self.num_train_data
-
-        training_args = TrainingArguments(**training_args_kwargs)
-        return training_args
-
-    def _set_up_model(self):
-        model, tokenizer = FastLanguageModel.from_pretrained(
-            model_name=self.model_name,
-            max_seq_length=2048,
-            dtype=None,
-            load_in_4bit=True,
+        sft_args = SFTConfig(
+            per_device_train_batch_size=2,
+            gradient_accumulation_steps=4,
+            warmup_steps=5,
+            learning_rate=2e-4,
+            logging_steps=1,
+            weight_decay=0.01,
+            lr_scheduler_type="linear",
+            seed=3407,
+            output_dir="outputs",
+            report_to="none",
+            dataset_num_proc=2,
+            packing=False,
+            dataset_text_field="text",
+            max_seq_length=2048,  
+            #max_steps=self.num_train_data,
+            logging_first_step=True,
         )
 
-        if self.lora:
-            model = FastLanguageModel.get_peft_model(
-                model,
-                r=16,
-                target_modules=[
-                    "q_proj",
-                    "k_proj",
-                    "v_proj",
-                    "o_proj",
-                    "gate_proj",
-                    "up_proj",
-                    "down_proj",
-                ],
-                lora_alpha=16,
-                lora_dropout=0,
-                bias="none",
-                use_gradient_checkpointing="unsloth",
-                random_state=3407,
-                use_rslora=False,
-                loftq_config=None,
-            )
+        if self.num_train_data is None:
+            sft_args.num_train_epochs = 1
+        else:
+            sft_args.max_steps = self.num_train_data
+        return sft_args
+
+    def _set_up_model(self):
+        model = AutoModelForCausalLM.from_pretrained(self.model_name).to("cuda")
+        tokenizer = AutoTokenizer.from_pretrained(self.model_name)
+        tokenizer.pad_token_id = model.config.eos_token_id
         return model, tokenizer
 
     def _set_up_dataset(self):
+        print(f"Dataset name: {self.dataset_name}")
         dataset = load_dataset(self.dataset_name, "main")
         dataset = dataset["train"].map(self._formatting_prompts_func, batched=True)
         return dataset
@@ -111,23 +104,110 @@ class LLMSFTTrainNode(Node):
         NewOptimizer = module.NewOptimizer
         new_optimizer = NewOptimizer(self.model.parameters())
         return new_optimizer
+    
+    def redirect_stdout_to_string(self):
+        """
+        Redirects standard output to a string buffer.
+        Returns the buffer and the original stdout.
+        """
+        buffer = io.StringIO()
+        original_stdout = sys.stdout
+        sys.stdout = buffer
+        return buffer, original_stdout
+
+    def redirect_stderr_to_string(self):
+        """
+        Redirects standard error to a string buffer.
+        Returns the buffer and the original stderr.
+        """
+        buffer = io.StringIO()
+        original_stderr = sys.stderr
+        sys.stderr = buffer
+        return buffer, original_stderr
+
+    def restore_streams(self, buffer, original_stream):
+        """
+        Restores the original stdout or stderr and retrieves buffer content.
+        """
+        sys.stdout = original_stream if original_stream is not None else sys.stdout
+        sys.stderr = original_stream if original_stream is not None else sys.stderr
+        return buffer.getvalue()
 
     def execute(self, state) -> dict:
-        script_path = state[self.input_key[0]]
-        new_optimizer = self._set_up_optimizer(script_path)
-        trainer = SFTTrainer(
-            model=self.model,
-            tokenizer=self.tokenizer,
-            train_dataset=self.dataset,
-            dataset_text_field="text",
-            max_seq_length=2048,
-            dataset_num_proc=2,
-            packing=False,
-            optimizers=(new_optimizer, None),
-            args=self.training_args,
-        )
-        trainer_stats = trainer.train()
+        script_path = getattr(state, self.input_key[0])
+        execution_flag_list = getattr(state, self.output_key[3])
 
+        log_output = ""
+        error_log_output = ""
+    
+        # NOTE: 
+        try:
+            stdout_buffer, original_stdout = self.redirect_stdout_to_string()
+
+            new_optimizer = self._set_up_optimizer(script_path)
+            # NOTE: Please refer to the following link for SFTTrainer
+            # https://huggingface.co/docs/trl/sft_trainer
+            trainer = SFTTrainer(
+                model=self.model,
+                tokenizer=self.tokenizer,
+                train_dataset=self.dataset,
+                optimizers=(new_optimizer, None),
+                args=self.sft_args,
+            )
+            trainer.train()
+            execution_flag_list.append(True)
+        except Exception as e:
+            execution_flag_list.append(False)
+            # NOTE:
+            stderr_buffer, original_stderr = self.redirect_stderr_to_string()
+            try:
+                print("An error has occurred.", file=sys.stderr)
+                print(f"Error type: {type(e).__name__}", file=sys.stderr)
+                print(f"Error message: {e}", file=sys.stderr)
+                print("Traceback:", file=sys.stderr)
+                traceback.print_exc(file=sys.stderr)
+            finally:
+                error_log_output = self.restore_streams(stderr_buffer, original_stderr)
+        finally:
+            log_output = self.restore_streams(stdout_buffer, original_stdout)
+    
         self.model.save_pretrained(self.model_save_path)
         self.tokenizer.save_pretrained(self.model_save_path)
-        return {self.output_key[0]: self.model_save_path}
+        return {
+            self.output_key[0]: log_output,
+            self.output_key[1]: self.model_save_path,
+            self.output_key[2]: error_log_output,
+            self.output_key[3]: execution_flag_list,
+            }
+
+
+# NOTE: We have not implemented the test code in pytest because we do not have a GPU environment for testing with GitHub Actions.
+if __name__ == "__main__":
+    model_name = "meta-llama/Llama-3.2-3B"
+    dataset_name = "openai/gsm8k"
+    model_save_path = "/workspaces/researchgraph/data/model"
+    input_key = ["script_save_path"]
+    output_key = ["logs","model_save_path", "error_logs", "execution_flag_list"]
+    num_train_data = 5
+
+    graph_builder = StateGraph(State)
+    graph_builder.add_node(
+        "llmsfttrainer",
+        LLMSFTTrainNode(
+            input_key=input_key,
+            output_key=output_key,
+            model_name=model_name,
+            dataset_name=dataset_name,
+            model_save_path=model_save_path,
+            num_train_data=num_train_data,
+        ),
+    )
+    graph_builder.set_entry_point("llmsfttrainer")
+    graph_builder.set_finish_point("llmsfttrainer")
+    graph = graph_builder.compile()
+
+    state = {
+        "script_save_path": "/workspaces/researchgraph/test/experimentnode/new_method.py",
+    }
+
+    graph.invoke(state, debug=True)

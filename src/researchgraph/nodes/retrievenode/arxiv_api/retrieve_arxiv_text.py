@@ -20,7 +20,7 @@ class RetrievearXivTextNode(Node):
         self.save_dir = save_dir
 
     def execute(self, state) -> dict:
-        arxiv_url = state[self.input_key[0]]
+        arxiv_url = getattr(state, self.input_key[0])
         arxiv_id = re.sub(r"^https://arxiv\.org/abs/", "", arxiv_url)
 
         text_path = os.path.join(self.save_dir, f"{arxiv_id}.txt")

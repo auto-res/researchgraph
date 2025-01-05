@@ -1,17 +1,17 @@
 import os
-from typing import TypedDict
+from pydantic import BaseModel, Field
 from langgraph.graph import StateGraph
 
 from researchgraph.nodes.retrievenode import RetrievearXivTextNode
 from researchgraph.nodes.retrievenode import RetrieveGithubRepositoryNode
 
 
-class State(TypedDict):
-    arxiv_url: str
-    paper_text: str
-    github_url: str
-    folder_structure: str
-    github_file: str
+class State(BaseModel):
+    arxiv_url: str = Field(default="")
+    paper_text: str = Field(default="")
+    github_url: str = Field(default="")
+    folder_structure: str = Field(default="")
+    github_file: str = Field(default="")
 
 
 SAVE_DIR = os.environ.get("SAVE_DIR", "/workspaces/researchgraph/data")
