@@ -3,8 +3,8 @@ from IPython.display import Image
 from pydantic import BaseModel, Field
 from langgraph.graph import START,END, StateGraph
 
-from researchgraph.graphs.ai_integrator.ai_integrator_v2.executor_subgraph.input_data import executor_subgraph_input_data
-from researchgraph.graphs.ai_integrator.ai_integrator_v2.executor_subgraph.llmnode_prompt import ai_integrator_v2_modifier_prompt
+from researchgraph.graphs.ai_integrator.ai_integrator_v3.executor_subgraph.input_data import executor_subgraph_input_data
+from researchgraph.graphs.ai_integrator.ai_integrator_v3.executor_subgraph.llmnode_prompt import ai_integrator_v3_modifier_prompt
 from researchgraph.core.factory import NodeFactory
 
 
@@ -30,7 +30,7 @@ class ExecutorSubgraph:
         model_save_dir_name: str,
         result_save_file_name: str,
         answer_data_path: str,
-        ai_integrator_v2_modifier_prompt: str,
+        ai_integrator_v3_modifier_prompt: str,
         num_train_data: int | None = None,
         num_inference_data: int | None = None,
     ):
@@ -42,7 +42,7 @@ class ExecutorSubgraph:
         self.model_save_dir_name = model_save_dir_name
         self.result_save_file_name = result_save_file_name
         self.answer_data_path = answer_data_path
-        self.ai_integrator_v2_modifier_prompt = ai_integrator_v2_modifier_prompt
+        self.ai_integrator_v3_modifier_prompt = ai_integrator_v3_modifier_prompt
         self.num_train_data = num_train_data
         self.num_inference_data = num_inference_data
 
@@ -66,7 +66,7 @@ class ExecutorSubgraph:
                 input_key=["new_method_code", "error_logs"],
                 output_key=["new_method_code"],
                 llm_name=self.llm_name,
-                prompt_template=self.ai_integrator_v2_modifier_prompt,
+                prompt_template=self.ai_integrator_v3_modifier_prompt,
             ),
         )
         self.graph_builder.add_node(
@@ -137,7 +137,7 @@ class ExecutorSubgraph:
 
     def make_image(self, path: str):
         image = Image(self.graph.get_graph().draw_mermaid_png())
-        with open(path + "ai_integrator_v2_executor_subgraph.png", "wb") as f:
+        with open(path + "ai_integrator_v3_executor_subgraph.png", "wb") as f:
             f.write(image.data)
 
 if __name__ == "__main__":
@@ -160,14 +160,14 @@ if __name__ == "__main__":
         model_save_dir_name=model_save_path,
         result_save_file_name=result_save_file_name,
         answer_data_path=answer_data_path,
-        ai_integrator_v2_modifier_prompt=ai_integrator_v2_modifier_prompt,
+        ai_integrator_v3_modifier_prompt=ai_integrator_v3_modifier_prompt,
         num_train_data=num_train_data,
         num_inference_data=num_inference_data,
     )
     
-    # executor_subgraph(
-    #     state = executor_subgraph_input_data, 
-    #     )
+    executor_subgraph(
+        state = executor_subgraph_input_data, 
+        )
     
-    image_dir = "/workspaces/researchgraph/images/"
-    executor_subgraph.make_image(image_dir)
+    # image_dir = "/workspaces/researchgraph/images/"
+    # executor_subgraph.make_image(image_dir)

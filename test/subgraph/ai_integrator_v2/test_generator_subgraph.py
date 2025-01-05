@@ -1,6 +1,6 @@
-from researchgraph.graphs.ai_integrator.ai_integrator_v2.generator_subgraph.main import GeneratorSubgraph
-from researchgraph.graphs.ai_integrator.ai_integrator_v2.generator_subgraph.input_data import generator_subgraph_input_data
-from researchgraph.graphs.ai_integrator.ai_integrator_v2.generator_subgraph.llmnode_prompt import (
+from researchgraph.graphs.ai_integrator.ai_integrator_v3.generator_subgraph.main import GeneratorSubgraph
+from researchgraph.graphs.ai_integrator.ai_integrator_v3.generator_subgraph.input_data import generator_subgraph_input_data
+from researchgraph.graphs.ai_integrator.ai_integrator_v3.generator_subgraph.llmnode_prompt import (
     ai_integrator_v2_extractor_prompt,
     ai_integrator_v2_codeextractor_prompt,
     ai_integrator_v2_creator_prompt,

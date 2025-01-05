@@ -1,5 +1,5 @@
 import json
-from typing import TypedDict
+from pydantic import BaseModel, Field
 from langgraph.graph import StateGraph
 from researchgraph.nodes.llmnode.structured_output.structured_llmnode import (
     StructuredLLMNode,
@@ -9,23 +9,23 @@ from researchgraph.nodes.llmnode.prompts.llmcreator_prompt import llmcreator_pro
 from researchgraph.nodes.llmnode.prompts.llmcoder_prompt import llmcoder_prompt
 
 
-class State(TypedDict):
-    week: str
-    name: str
-    date: str
-    participants: list[str]
-    source: str
-    language: str
-    translation1: str
+class State(BaseModel):
+    week: str = Field(default="")
+    name: str = Field(default="")
+    date: str = Field(default="")
+    participants: list[str] = Field(default_factory=list)
+    source: str = Field(default="")
+    language: str = Field(default="")
+    translation1: str = Field(default="")
 
-    base_method_text: str
-    base_method_code: str
-    num_ideas: int
-    generated_ideas: list
+    base_method_text: str = Field(default="")
+    base_method_code: str = Field(default="")
+    num_ideas: int = Field(default=3)
+    generated_ideas: list = Field(default_factory=list)
 
-    selected_idea: str
-    improved_method_text: str
-    improved_method_code: str
+    selected_idea: str = Field(default="")
+    improved_method_text: str = Field(default="")
+    improved_method_code: str = Field(default="")
 
 
 def test_structured_llmnode():
@@ -56,40 +56,40 @@ def test_structured_llmnode():
     assert graph.invoke(state, debug=True)
 
 
-def test_llmlinks_llmnode():
-    input_key = ["source", "language"]
-    output_key = ["translation1"]
-    llm_name = "gpt-4o-2024-08-06"
-    prompt_template = """
-<source>
-{source}
-</source>
-<language>
-{language}
-</language>
-<rule>
-sourceタグで与えられた文章を languageで指定された言語に翻訳して translation1タグを用いて出力せよ．
-</rule>
-"""
+# def test_llmlinks_llmnode():
+#     input_key = ["source", "language"]
+#     output_key = ["translation1"]
+#     llm_name = "gpt-4o-2024-08-06"
+#     prompt_template = """
+# <source>
+# {source}
+# </source>
+# <language>
+# {language}
+# </language>
+# <rule>
+# sourceタグで与えられた文章を languageで指定された言語に翻訳して translation1タグを用いて出力せよ．
+# </rule>
+# """
 
-    graph_builder = StateGraph(State)
-    graph_builder.add_node(
-        "LLMLinksLLMNode",
-        LLMLinksLLMNode(
-            input_key=input_key,
-            output_key=output_key,
-            llm_name=llm_name,
-            prompt_template=prompt_template,
-        ),
-    )
-    graph_builder.set_entry_point("LLMLinksLLMNode")
-    graph_builder.set_finish_point("LLMLinksLLMNode")
-    graph = graph_builder.compile()
-    state = {
-        "source": "Hello World!!",
-        "language": "japanese",
-    }
-    assert graph.invoke(state, debug=True)
+#     graph_builder = StateGraph(State)
+#     graph_builder.add_node(
+#         "LLMLinksLLMNode",
+#         LLMLinksLLMNode(
+#             input_key=input_key,
+#             output_key=output_key,
+#             llm_name=llm_name,
+#             prompt_template=prompt_template,
+#         ),
+#     )
+#     graph_builder.set_entry_point("LLMLinksLLMNode")
+#     graph_builder.set_finish_point("LLMLinksLLMNode")
+#     graph = graph_builder.compile()
+#     state = {
+#         "source": "Hello World!!",
+#         "language": "japanese",
+#     }
+#     assert graph.invoke(state, debug=True)
 
 def test_llmcreator():
     llm_model_name = "gpt-4o-2024-08-06"

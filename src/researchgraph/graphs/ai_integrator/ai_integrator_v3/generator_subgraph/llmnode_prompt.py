@@ -1,4 +1,4 @@
-ai_integrator_v2_extractor_prompt = """
+ai_integrator_v3_extractor_prompt = """
 You are a researcher working on machine learning.
 The following <paper_text> tags enclose the full text data of the paper.
 Please extract the explanation of the method introduced in the given paper.
@@ -7,7 +7,7 @@ Please extract the explanation of the method introduced in the given paper.
 </paper_text>
 """
 
-ai_integrator_v2_codeextractor_prompt = """
+ai_integrator_v3_codeextractor_prompt = """
 <RULE>
 You are a researcher working on machine learning.
 - Tag Descriptions
@@ -32,7 +32,7 @@ You are a researcher working on machine learning.
 <EOS></EOS>"""
 
 
-ai_integrator_v2_creator_prompt = """
+ai_integrator_v3_creator_prompt = """
 You are a researcher working on machine learning.
 Please check the descriptions of the tags listed in Tag Descriptions and follow the instructions.
 - Tag Descriptions

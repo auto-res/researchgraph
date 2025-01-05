@@ -51,7 +51,7 @@ class WriteupNode(Node):
         sections = {}
         for section, pattern in regex_rules.items():
             matched_items = {}
-            for key, value in state.items():
+            for key, value in state.dict().items():
                 if re.search(pattern, key):
                     matched_items[key] = ", ".join(value) if isinstance(value, list) else value
             sections[section] = matched_items
@@ -110,7 +110,8 @@ class WriteupNode(Node):
         return cleaned_text
 
     def execute(self, state: dict) -> dict:
-        paper_content = state.get(self.output_key[0], {})
+        #paper_content = state.get(self.output_key[0], {})
+        paper_content = getattr(state, self.output_key[0])
         note = self._generate_note(state)
 
         for section in self.target_sections:
@@ -122,7 +123,8 @@ class WriteupNode(Node):
                 refined_content = self._refine(note, section, cleaned_initial_content)
             else:
                 # refine only
-                initial_content = paper_content.get(section, "")
+                # initial_content = paper_content.get(section, "")
+                initial_content = getattr(state, section)
                 refined_content = self._refine(note, section, initial_content)
 
             final_content = self._clean_meta_information(refined_content)

@@ -1,14 +1,15 @@
 import os
 from langgraph.graph import START, END, StateGraph
 
-from researchgraph.graphs.ai_integrator.ai_integrator_v2.generator_subgraph.main import GeneratorSubgraph, GeneratorState
-from researchgraph.graphs.ai_integrator.ai_integrator_v2.generator_subgraph.input_data import generator_subgraph_input_data
-from researchgraph.graphs.ai_integrator.ai_integrator_v2.generator_subgraph.llmnode_prompt import (
-    ai_integrator_v2_extractor_prompt,
-    ai_integrator_v2_codeextractor_prompt,
-    ai_integrator_v2_creator_prompt,
+from researchgraph.graphs.ai_integrator.ai_integrator_v3.generator_subgraph.main import GeneratorSubgraph, GeneratorState
+from researchgraph.graphs.ai_integrator.ai_integrator_v3.generator_subgraph.input_data import generator_subgraph_input_data
+from researchgraph.graphs.ai_integrator.ai_integrator_v3.generator_subgraph.llmnode_prompt import (
+    ai_integrator_v3_extractor_prompt,
+    ai_integrator_v3_codeextractor_prompt,
+    ai_integrator_v3_creator_prompt,
 )
-from researchgraph.graphs.ai_integrator.ai_integrator_v2.executor_subgraph.main import ExecutorSubgraph, ExecutorState
+from researchgraph.graphs.ai_integrator.ai_integrator_v3.executor_subgraph.main import ExecutorSubgraph, ExecutorState
+from researchgraph.graphs.ai_integrator.ai_integrator_v3.executor_subgraph.llmnode_prompt import ai_integrator_v3_modifier_prompt
 
 class AIIntegratorv2State(GeneratorState, ExecutorState):
     pass
@@ -25,20 +26,21 @@ class AIIntegratorv2:
         model_save_dir_name: str,
         result_save_file_name: str,
         answer_data_path: str,
-        ai_integrator_v2_extractor_prompt: str,
-        ai_integrator_v2_codeextractor_prompt: str,
-        ai_integrator_v2_creator_prompt: str,
+        ai_integrator_v3_extractor_prompt: str,
+        ai_integrator_v3_codeextractor_prompt: str,
+        ai_integrator_v3_creator_prompt: str,
+        ai_integrator_v3_modifier_prompt: str,
         num_train_data: int | None = None,
         num_inference_data: int | None = None,
     ):
         self.llm_name = llm_name
         self.save_dir = save_dir
         # Generator Subgraph
-        self.ai_integrator_v2_extractor_prompt = ai_integrator_v2_extractor_prompt
-        self.ai_integrator_v2_codeextractor_prompt = (
-            ai_integrator_v2_codeextractor_prompt
+        self.ai_integrator_v3_extractor_prompt = ai_integrator_v3_extractor_prompt
+        self.ai_integrator_v3_codeextractor_prompt = (
+            ai_integrator_v3_codeextractor_prompt
         )
-        self.ai_integrator_v2_creator_prompt = ai_integrator_v2_creator_prompt
+        self.ai_integrator_v3_creator_prompt = ai_integrator_v3_creator_prompt
         # Executor Subgraph
         self.new_method_file_name = new_method_file_name
         self.ft_model_name = ft_model_name
@@ -46,6 +48,7 @@ class AIIntegratorv2:
         self.model_save_dir_name = model_save_dir_name
         self.result_save_file_name = result_save_file_name
         self.answer_data_path = answer_data_path
+        self.ai_integrator_v3_modifier_prompt = ai_integrator_v3_modifier_prompt
         self.num_train_data = num_train_data
         self.num_inference_data = num_inference_data
 
@@ -58,9 +61,9 @@ class AIIntegratorv2:
             GeneratorSubgraph(
                 llm_name=llm_name,
                 save_dir=save_dir,
-                ai_integrator_v2_extractor_prompt=self.ai_integrator_v2_extractor_prompt,
-                ai_integrator_v2_codeextractor_prompt=self.ai_integrator_v2_codeextractor_prompt,
-                ai_integrator_v2_creator_prompt=self.ai_integrator_v2_creator_prompt,
+                ai_integrator_v3_extractor_prompt=self.ai_integrator_v3_extractor_prompt,
+                ai_integrator_v3_codeextractor_prompt=self.ai_integrator_v3_codeextractor_prompt,
+                ai_integrator_v3_creator_prompt=self.ai_integrator_v3_creator_prompt,
             )
         )
         self.graph_builder.add_node(
@@ -74,6 +77,7 @@ class AIIntegratorv2:
                 model_save_dir_name=self.model_save_dir_name,
                 result_save_file_name=self.result_save_file_name,
                 answer_data_path=self.answer_data_path,
+                ai_integrator_v3_modifier_prompt=self.ai_integrator_v3_modifier_prompt,
                 num_train_data=self.num_train_data,
                 num_inference_data=self.num_inference_data,
             )
@@ -111,9 +115,10 @@ if __name__ == "__main__":
         model_save_dir_name=model_save_dir_name,
         result_save_file_name=result_save_file_name,
         answer_data_path=answer_data_path,
-        ai_integrator_v2_extractor_prompt=ai_integrator_v2_extractor_prompt,
-        ai_integrator_v2_codeextractor_prompt=ai_integrator_v2_codeextractor_prompt,
-        ai_integrator_v2_creator_prompt=ai_integrator_v2_creator_prompt,
+        ai_integrator_v3_extractor_prompt=ai_integrator_v3_extractor_prompt,
+        ai_integrator_v3_codeextractor_prompt=ai_integrator_v3_codeextractor_prompt,
+        ai_integrator_v3_creator_prompt=ai_integrator_v3_creator_prompt,
+        ai_integrator_v3_modifier_prompt=ai_integrator_v3_modifier_prompt,
         num_train_data=num_train_data,
         num_inference_data=num_inference_data,
     )

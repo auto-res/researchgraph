@@ -1,5 +1,5 @@
-from researchgraph.graphs.ai_integrator.ai_integrator_v2.executor_subgraph.main import ExecutorSubgraph
-from researchgraph.graphs.ai_integrator.ai_integrator_v2.executor_subgraph.input_data import executor_subgraph_input_data
+from researchgraph.graphs.ai_integrator.ai_integrator_v3.executor_subgraph.main import ExecutorSubgraph
+from researchgraph.graphs.ai_integrator.ai_integrator_v3.executor_subgraph.input_data import executor_subgraph_input_data
 
 
 def test_executor_subgraph():

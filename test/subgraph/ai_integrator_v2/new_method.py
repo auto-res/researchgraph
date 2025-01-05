@@ -16,7 +16,7 @@ class NewOptimizer(Optimizer):  # Please do not change the name of the class “
     def step(self, closure: None = None) -> None:
         for group in self.param_groups:
             beta1 = group['beta1']
-            beta2 = group['beta2']  # Fix: Define 'beta2'
+            beta2 = group['beta2']  # Modified here to correct the error
             epsilon = group['epsilon']
             lr = group['lr']
             step = group['step'] + 1

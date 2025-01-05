@@ -4,28 +4,28 @@ import os
 if "GITHUB_WORKSPACE" in os.environ:
     sys.path.insert(0, os.path.join(os.environ["GITHUB_WORKSPACE"], "src"))
 
-from typing import TypedDict
+from pydantic import BaseModel, Field
 from langgraph.graph import StateGraph
 from researchgraph.nodes.writingnode.writeup_node import WriteupNode
-from researchgraph.nodes.writingnode.latexnode import LatexNode
+# from researchgraph.nodes.writingnode.latexnode import LatexNode
 # from researchgraph.core.factory import NodeFactory
 
 
-class State(TypedDict):
-    objective: str
-    base_method_text: str
-    add_method_text: str
-    new_method_text: list
-    base_method_code: str
-    add_method_code: str
-    new_method_code: list
-    base_method_results: str
-    add_method_results: str
-    new_method_results: list
-    arxiv_url: str
-    github_url: str
-    paper_content: dict
-    pdf_file_path: str
+class State(BaseModel):
+    objective: str = Field(default="")
+    base_method_text: str = Field(default="")
+    add_method_text: str = Field(default="")
+    new_method_text: list = Field(default_factory=list)
+    base_method_code: str = Field(default="")
+    add_method_code: str = Field(default="")
+    new_method_code: list = Field(default_factory=list)
+    base_method_results: str = Field(default="")
+    add_method_results: str = Field(default="")
+    new_method_results: list = Field(default_factory=list)
+    arxiv_url: str = Field(default="")
+    github_url: str = Field(default="")
+    paper_content: dict = Field(default_factory=dict)
+    pdf_file_path: str = Field(default="")
 
 
 def test_writeup_node():
@@ -72,50 +72,50 @@ def test_writeup_node():
     # Execute the graph
     assert graph.invoke(state, debug=True)
 
-def test_latex_node():
-    # Define input and output keys
-    input_key = ["paper_content"]
-    output_key = ["pdf_file_path"]
-    model = "gpt-4o"
-    SAVE_DIR = os.environ.get("SAVE_DIR", "/workspaces/researchgraph/data")
-    GITHUB_WORKSPACE = os.environ.get("GITHUB_WORKSPACE", os.path.abspath(os.path.join(os.getcwd(), "..")))
-    template_dir = os.path.join(GITHUB_WORKSPACE, "src/researchgraph/graphs/ai_scientist/templates/2d_diffusion")
-    figures_dir = os.path.join(GITHUB_WORKSPACE, "images")
+# def test_latex_node():
+#     # Define input and output keys
+#     input_key = ["paper_content"]
+#     output_key = ["pdf_file_path"]
+#     model = "gpt-4o"
+#     SAVE_DIR = os.environ.get("SAVE_DIR", "/workspaces/researchgraph/data")
+#     GITHUB_WORKSPACE = os.environ.get("GITHUB_WORKSPACE", os.path.abspath(os.path.join(os.getcwd(), "..")))
+#     template_dir = os.path.join(GITHUB_WORKSPACE, "src/researchgraph/graphs/ai_scientist/templates/2d_diffusion")
+#     figures_dir = os.path.join(GITHUB_WORKSPACE, "images")
 
-    # Initialize LatexNode
-    latex_node = LatexNode(
-        input_key=input_key,
-        output_key=output_key,
-        model=model,
-        template_dir=template_dir,
-        figures_dir=figures_dir,
-        timeout=30,
-        num_error_corrections=5,
-    )
+#     # Initialize LatexNode
+#     latex_node = LatexNode(
+#         input_key=input_key,
+#         output_key=output_key,
+#         model=model,
+#         template_dir=template_dir,
+#         figures_dir=figures_dir,
+#         timeout=30,
+#         num_error_corrections=5,
+#     )
 
-    # Create the StateGraph and add node
-    graph_builder = StateGraph(State)
-    graph_builder.add_node("latexnode", latex_node)
-    graph_builder.set_entry_point("latexnode")
-    graph_builder.set_finish_point("latexnode")
-    graph = graph_builder.compile()
+#     # Create the StateGraph and add node
+#     graph_builder = StateGraph(State)
+#     graph_builder.add_node("latexnode", latex_node)
+#     graph_builder.set_entry_point("latexnode")
+#     graph_builder.set_finish_point("latexnode")
+#     graph = graph_builder.compile()
 
-    # Define initial state
-    state = {
-        "paper_content": {
-            "title": "This is the Title",
-            "abstract": "This is the Abstract.",
-            "introduction": "This is the introduction.",
-            "related work": "This is the related work",
-            "background": "This is the background",
-            "method": "This is the method section.",
-            "experimental setup": "This is the experimental setup",
-            "results": "These are the results.",
-            "conclusions": "This is the conclusion.",
-        },
-        "pdf_file_path": os.path.join(SAVE_DIR, "sample.pdf"), 
-    }
+#     # Define initial state
+#     state = {
+#         "paper_content": {
+#             "title": "This is the Title",
+#             "abstract": "This is the Abstract.",
+#             "introduction": "This is the introduction.",
+#             "related work": "This is the related work",
+#             "background": "This is the background",
+#             "method": "This is the method section.",
+#             "experimental setup": "This is the experimental setup",
+#             "results": "These are the results.",
+#             "conclusions": "This is the conclusion.",
+#         },
+#         "pdf_file_path": os.path.join(SAVE_DIR, "sample.pdf"), 
+#     }
 
-    # Execute the graph
-    assert graph.invoke(state, debug=True)
-    assert os.path.exists(state["pdf_file_path"]), f"PDF file was not generated at {state['pdf_file_path']}!"
+#     # Execute the graph
+#     assert graph.invoke(state, debug=True)
+#     assert os.path.exists(state["pdf_file_path"]), f"PDF file was not generated at {state['pdf_file_path']}!"

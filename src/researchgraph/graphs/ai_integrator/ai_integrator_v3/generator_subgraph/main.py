@@ -3,12 +3,12 @@ from IPython.display import Image
 from langgraph.graph import START, END, StateGraph
 # from typing import TypedDict
 from pydantic import BaseModel, Field
-from researchgraph.graphs.ai_integrator.ai_integrator_v2.generator_subgraph.llmnode_prompt import (
-    ai_integrator_v2_extractor_prompt,
-    ai_integrator_v2_codeextractor_prompt,
-    ai_integrator_v2_creator_prompt,
+from researchgraph.graphs.ai_integrator.ai_integrator_v3.generator_subgraph.llmnode_prompt import (
+    ai_integrator_v3_extractor_prompt,
+    ai_integrator_v3_codeextractor_prompt,
+    ai_integrator_v3_creator_prompt,
 )
-from researchgraph.graphs.ai_integrator.ai_integrator_v2.generator_subgraph.input_data import generator_subgraph_input_data
+from researchgraph.graphs.ai_integrator.ai_integrator_v3.generator_subgraph.input_data import generator_subgraph_input_data
 from researchgraph.core.factory import NodeFactory
 
 
@@ -34,17 +34,17 @@ class GeneratorSubgraph:
         self,
         llm_name: str,
         save_dir: str,
-        ai_integrator_v2_extractor_prompt: str,
-        ai_integrator_v2_codeextractor_prompt: str,
-        ai_integrator_v2_creator_prompt: str,
+        ai_integrator_v3_extractor_prompt: str,
+        ai_integrator_v3_codeextractor_prompt: str,
+        ai_integrator_v3_creator_prompt: str,
     ):
         self.llm_name = llm_name
         self.save_dir = save_dir
-        self.ai_integrator_v2_extractor_prompt = ai_integrator_v2_extractor_prompt
-        self.ai_integrator_v2_codeextractor_prompt = (
-            ai_integrator_v2_codeextractor_prompt
+        self.ai_integrator_v3_extractor_prompt = ai_integrator_v3_extractor_prompt
+        self.ai_integrator_v3_codeextractor_prompt = (
+            ai_integrator_v3_codeextractor_prompt
         )
-        self.ai_integrator_v2_creator_prompt = ai_integrator_v2_creator_prompt
+        self.ai_integrator_v3_creator_prompt = ai_integrator_v3_creator_prompt
 
         if not os.path.exists(self.save_dir):
             os.makedirs(self.save_dir)
@@ -75,7 +75,7 @@ class GeneratorSubgraph:
                 input_key=["paper_text"],
                 output_key=["add_method_text"],
                 llm_name=self.llm_name,
-                prompt_template=self.ai_integrator_v2_extractor_prompt,
+                prompt_template=self.ai_integrator_v3_extractor_prompt,
             ),
         )
         self.graph_builder.add_node(
@@ -85,7 +85,7 @@ class GeneratorSubgraph:
                 input_key=["add_method_text", "folder_structure", "github_file"],
                 output_key=["add_method_code"],
                 llm_name=self.llm_name,
-                prompt_template=self.ai_integrator_v2_codeextractor_prompt,
+                prompt_template=self.ai_integrator_v3_codeextractor_prompt,
             ),
         )
         self.graph_builder.add_node(
@@ -102,7 +102,7 @@ class GeneratorSubgraph:
                 ],
                 output_key=["new_method_text", "new_method_code"],
                 llm_name=self.llm_name,
-                prompt_template=self.ai_integrator_v2_creator_prompt,
+                prompt_template=self.ai_integrator_v3_creator_prompt,
             ),
         )
         # make edges
@@ -116,12 +116,12 @@ class GeneratorSubgraph:
         self.graph = self.graph_builder.compile()
 
     def __call__(self, state: GeneratorState) -> dict:
-        result = self.graph.invoke(state)
+        result = self.graph.invoke(state, debug=True)
         return result
 
     def make_image(self, path: str):
         image = Image(self.graph.get_graph().draw_mermaid_png())
-        with open(path + "ai_integrator_v2_generator_subgraph.png", "wb") as f:
+        with open(path + "ai_integrator_v3_generator_subgraph.png", "wb") as f:
             f.write(image.data)
 
 
@@ -131,14 +131,14 @@ if __name__ == "__main__":
     generator_subgraph = GeneratorSubgraph(
         llm_name=llm_name,
         save_dir=save_dir,
-        ai_integrator_v2_extractor_prompt=ai_integrator_v2_extractor_prompt,
-        ai_integrator_v2_codeextractor_prompt=ai_integrator_v2_codeextractor_prompt,
-        ai_integrator_v2_creator_prompt=ai_integrator_v2_creator_prompt,
+        ai_integrator_v3_extractor_prompt=ai_integrator_v3_extractor_prompt,
+        ai_integrator_v3_codeextractor_prompt=ai_integrator_v3_codeextractor_prompt,
+        ai_integrator_v3_creator_prompt=ai_integrator_v3_creator_prompt,
     )
     
-    # generator_subgraph(
-    #     state = generator_subgraph_input_data, 
-    #     )
+    generator_subgraph(
+        state = generator_subgraph_input_data, 
+        )
 
-    image_dir = "/workspaces/researchgraph/images/"
-    generator_subgraph.make_image(image_dir)
+    # image_dir = "/workspaces/researchgraph/images/"
+    # generator_subgraph.make_image(image_dir)
