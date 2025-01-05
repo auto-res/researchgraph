@@ -1,7 +1,7 @@
 from typing import Optional
-from unsloth import FastLanguageModel
 from datasets import load_dataset
 import pandas as pd
+from transformers import AutoTokenizer, AutoModelForCausalLM
 
 from researchgraph.core.node import Node
 
@@ -22,14 +22,8 @@ class LLMInferenceNode(Node):
         self.dataset = self._set_up_dataset()
 
     def _set_up_model(self, model_save_path):
-        train_model, train_tokenizer = FastLanguageModel.from_pretrained(
-            model_name=model_save_path,
-            max_seq_length=2048,
-            dtype=None,
-            load_in_4bit=True,
-        )
-
-        FastLanguageModel.for_inference(train_model)
+        train_model = AutoModelForCausalLM.from_pretrained(model_save_path).to("cuda")
+        train_tokenizer = AutoTokenizer.from_pretrained(model_save_path)
         return train_model, train_tokenizer
 
     def _set_up_dataset(self):
@@ -38,7 +32,7 @@ class LLMInferenceNode(Node):
         return dataset
 
     def execute(self, state) -> dict:
-        model_save_path = state[self.input_key[0]]
+        model_save_path = getattr(state, self.input_key[0])
         model, tokenizer = self._set_up_model(model_save_path)
         result_list = []
         prompt = """### Input:
