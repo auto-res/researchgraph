@@ -137,7 +137,7 @@ class ExecutorSubgraph:
 
     def make_image(self, path: str):
         image = Image(self.graph.get_graph().draw_mermaid_png())
-        with open(path + "ai_integrator_v1_graph.png", "wb") as f:
+        with open(path + "ai_integrator_v2_executor_subgraph.png", "wb") as f:
             f.write(image.data)
 
 if __name__ == "__main__":
@@ -165,6 +165,9 @@ if __name__ == "__main__":
         num_inference_data=num_inference_data,
     )
     
-    executor_subgraph(
-        state = executor_subgraph_input_data, 
-        )
+    # executor_subgraph(
+    #     state = executor_subgraph_input_data, 
+    #     )
+    
+    image_dir = "/workspaces/researchgraph/images/"
+    executor_subgraph.make_image(image_dir)

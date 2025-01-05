@@ -3,12 +3,12 @@ from IPython.display import Image
 from langgraph.graph import START, END, StateGraph
 # from typing import TypedDict
 from pydantic import BaseModel, Field
-from .llmnode_prompt import (
+from researchgraph.graphs.ai_integrator.ai_integrator_v2.generator_subgraph.llmnode_prompt import (
     ai_integrator_v2_extractor_prompt,
     ai_integrator_v2_codeextractor_prompt,
     ai_integrator_v2_creator_prompt,
 )
-from .input_data import generator_subgraph_input_data
+from researchgraph.graphs.ai_integrator.ai_integrator_v2.generator_subgraph.input_data import generator_subgraph_input_data
 from researchgraph.core.factory import NodeFactory
 
 
@@ -121,7 +121,7 @@ class GeneratorSubgraph:
 
     def make_image(self, path: str):
         image = Image(self.graph.get_graph().draw_mermaid_png())
-        with open(path + "ai_integrator_v1_generate_subgraph.png", "wb") as f:
+        with open(path + "ai_integrator_v2_generator_subgraph.png", "wb") as f:
             f.write(image.data)
 
 
@@ -136,6 +136,9 @@ if __name__ == "__main__":
         ai_integrator_v2_creator_prompt=ai_integrator_v2_creator_prompt,
     )
     
-    generator_subgraph(
-        state = generator_subgraph_input_data, 
-        )
+    # generator_subgraph(
+    #     state = generator_subgraph_input_data, 
+    #     )
+
+    image_dir = "/workspaces/researchgraph/images/"
+    generator_subgraph.make_image(image_dir)
