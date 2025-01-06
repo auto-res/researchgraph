@@ -3,9 +3,8 @@ import os.path as osp
 import re
 import subprocess
 import shutil
-from aider.coders import Coder
-from aider.models import Model
-from aider.io import InputOutput
+from pydantic import BaseModel
+from litellm import completion
 from researchgraph.core.node import Node
 
 
@@ -14,27 +13,31 @@ class LatexNode(Node):
         self,
         input_key: list[str],
         output_key: list[str],
-        model: str,
+        llm_name: str,
         template_dir: str,
         figures_dir: str,
         timeout: int = 30,
-        num_error_corrections: int = 5,
     ):
         super().__init__(input_key, output_key)
+        self.llm_name = llm_name
         self.timeout = timeout
-        self.num_error_corrections = num_error_corrections
         self.figures_dir = figures_dir
         self.template_file = osp.join(osp.abspath(template_dir), "latex", "template.tex")
         self.template_copy_file = osp.join(osp.abspath(template_dir), "latex", "template_copy.tex")
 
-        self.coder = Coder.create(
-            main_model=Model(model),
-            fnames=[],
-            io=InputOutput(),
-            stream=False,
-            use_git=False,
-            edit_format="diff",
-        )
+    def _call_llm(self, prompt: str) -> str:
+        try:
+            response = completion(
+                model=self.llm_name, 
+                messages=[
+                    {"role": "user", "content": prompt}
+                ], 
+            )
+            output = response.choices[0].message.content
+            return output
+        except Exception as e:
+            print("Error calling LLM: {e}")
+            raise
 
     def _copy_template(self):
         # Copy the LaTeX template to a working copy for modifications
@@ -56,7 +59,7 @@ class LatexNode(Node):
             f.write(tex_text)
         return tex_text
 
-    def _check_references(self, tex_text: str) -> bool:
+    def _check_references(self, tex_text: str) -> str:
         # Check for missing references in the LaTeX content against the references.bib section
         cites = re.findall(r"\\cite[a-z]*{([^}]*)}", tex_text)
         references_bib = re.search(
@@ -64,66 +67,123 @@ class LatexNode(Node):
             tex_text,
             re.DOTALL,
         )
-
         if references_bib is None:
-            print("No references.bib found in template_copy.tex")
-            return False
+            raise FileNotFoundError("references.bib not found in template_copy.tex")
         
         bib_text = references_bib.group(1)
         missing_cites = [cite for cite in cites if cite.strip() not in bib_text]
+        if not missing_cites:
+            print("No missing references found.")
+            return  tex_text
 
-        for cite in missing_cites:
-            print(f"Reference {cite} not found in references.")
-            prompt = f"""Reference {cite} not found in references.bib. Is this included under a different name?
-            If so, please modify the citation in template_copy.tex to match the name in references.bib at the top. Otherwise, remove the cite."""
-            self.coder.run(prompt)
+        print(f"Missing references found: {missing_cites}")
+        prompt = f""""
+        LaTeX text:
+        {tex_text}
+
+        
+        References.bib content:
+        {bib_text}
+
+
+        The following reference is missing from references.bib: {missing_cites}.
+        Please provide the complete corrected LaTeX text, ensuring the reference issue is fixed.
+        
+        Return the complete LaTeX document, including any bibtex changes.
+        """
+        llm_response = self._call_llm(prompt)
+        if not llm_response:
+            raise RuntimeError(f"LLM failed to respond for missing references: {missing_cites}")
+        return llm_response
 
     def _check_figures(
         self,
         tex_text: str,
         figures_dir: str,
         pattern: str = r"\\includegraphics.*?{(.*?)}",
-    ):
+    ) -> str:
         # Verify all referenced figures in the LaTeX content exist in the figures directory
         referenced_figs = re.findall(pattern, tex_text)
         all_figs = [f for f in os.listdir(figures_dir) if f.endswith(".png")]
 
-        for fig in referenced_figs:
-            if fig not in all_figs:
-                print(f"Figure {fig} not found in directory.")
-                if not all_figs:
-                    prompt = f"""The image {fig} not found in the directory and there are no images present. Please add the required image to the directory, ensuring the filename matches {fig}. Refer to the project documentation or notes for details on what the figure should contain."""
-                else:
-                    prompt = f"""The image {fig} not found in the directory. The images in the directory are: {all_figs}.
-                    Please ensure that the figure is in the directory and that the filename is correct. Check the notes to see what each figure contains."""
-                self.coder.run(prompt)
+        missing_figs = [fig for fig in referenced_figs if fig not in all_figs]
+        if not missing_figs:
+            print("No missing figures found.")
+            return tex_text
 
-    def _check_duplicates(self, tex_text: str, patterns: dict):
+        print(f"Missin figures found: {missing_figs}")
+        prompt = f"""
+        LaTeX text:
+        {tex_text}
+
+
+        The following images were not found in the directory {figures_dir}: {', '.join(missing_figs)}.
+        Available images are: {all_figs}.
+        Please provide the complete corrected LaTeX text, ensuring the figure issue is fixed.
+
+        Return the complete LaTeX document.
+        """
+        llm_response = self._call_llm(prompt)
+        if not llm_response:
+            raise RuntimeError(f"LLM failed to respond for missing figures: {missing_figs}")
+        return llm_response
+
+    def _check_duplicates(self, tex_text: str, patterns: dict) -> str:
         # Detect and prompt for duplicate elements in the LaTeX content
         for element_type, pattern in patterns.items():
             items = re.findall(pattern, tex_text)
             duplicates = {x for x in items if items.count(x) > 1}
-            for dup in duplicates:
-                print(f"Duplicate {element_type} found: {dup}.")
-                prompt = f"""Duplicate {element_type} found: {dup}. Ensure any {element_type} is only included once.
-                If duplicated, identify the best location for the {element_type} and remove any other."""
-                self.coder.run(prompt)
+            if duplicates:
+                print(f"Duplicate {element_type} found: {duplicates}.")
+                prompt = f"""
+                LaTeX text:
+                {tex_text}
 
-    def _fix_latex_errors(self, writeup_file: str, num_error_corrections: int = 5):
-        # Fix LaTeX errors iteratively using chktex and automated suggestions
-        for _ in range(num_error_corrections):
-            check_output = os.popen(
-                f"chktex {writeup_file} -q -n2 -n24 -n13 -n1"
-            ).read()
-            if check_output:
-                prompt = f"""Please fix the following LaTeX errors in `template_copy.tex` guided by the output of `chktex`:
-                {check_output}.
-                Make the minimal fix required and do not remove or change any packages.
-                Pay attention to any accidental uses of HTML syntax, e.g. </end instead of \\end.
+
+                Duplicate {element_type} found: {', '.join(duplicates)}. Ensure any {element_type} is only included once. 
+                If duplicated, identify the best location for the {element_type} and remove any other.
+                
+               Return the complete corrected LaTeX text with the duplicates fixed.
                 """
-                self.coder.run(prompt)
-            else:
-                break
+                llm_response = self._call_llm(prompt)
+                if not llm_response:
+                    raise RuntimeError(f"LLM failed to respond for missing figures: {duplicates}")
+                tex_text = llm_response
+            return tex_text
+
+
+    def _fix_latex_errors(self, writeup_file: str) -> str:
+        # Fix LaTeX errors iteratively using chktex and automated suggestions
+        with open(writeup_file, "r") as f:
+            tex_text = f.read()
+        check_output = os.popen(
+            f"chktex {writeup_file} -q -n2 -n24 -n13 -n1"
+        ).read()
+        
+        if check_output:
+            error_messages = check_output.strip().split("\n")
+            formatted_errors = "\n".join(
+                f"- {msg}" for msg in error_messages if msg
+            )
+            prompt = f"""
+            LaTeX text:
+            {tex_text}
+
+
+            Please fix the following LaTeX errors: {formatted_errors}.      
+            Make the minimal fix required and do not remove or change any packages unnecessarily.
+            Pay attention to any accidental uses of HTML syntax, e.g. </end instead of \\end.
+
+            Return the complete corrected LaTeX text.
+            """
+            llm_response = self._call_llm(prompt)
+
+            if not llm_response:
+                raise RuntimeError(f"LLM failed to fix latex errors for {writeup_file}")
+            return llm_response
+        else:
+            print("No LaTex errors found by chktex.")
+            return tex_text
 
     def _compile_latex(
         self, cwd: str, template_copy_file: str, pdf_file_path: str, timeout: int = 30
@@ -144,7 +204,7 @@ class LatexNode(Node):
                     cwd=cwd,
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE,
-                    text=True,
+                    text=True, 
                     timeout=timeout,
                 )
                 print("Standard Output:\n", result.stdout)
@@ -165,23 +225,46 @@ class LatexNode(Node):
 
     def execute(self, state) -> dict:
         try:
-            paper_content = state.get(self.input_key[0])
-            pdf_file_path = osp.expanduser(state.get(self.output_key[0]))
+            paper_content = getattr(state, self.input_key[0])
+            pdf_file_path = osp.expanduser(getattr(state, self.output_key[0]))
 
             if not paper_content or not pdf_file_path:
                 raise ValueError("Input paper content or output file path not found in state.")
             
             self._copy_template()
             tex_text = self._fill_template(paper_content)
-            self._check_references(tex_text)
-            self._check_figures(tex_text, self.figures_dir)
-            self._check_duplicates(tex_text, {
+
+            while True:
+                original_tex_text = tex_text
+                tex_text = self._check_references(tex_text)
+                if tex_text != original_tex_text:
+                    continue
+
+                original_tex_text = tex_text
+                tex_text = self._check_figures(tex_text, self.figures_dir)
+                if tex_text != original_tex_text:
+                    continue
+
+                original_tex_text = tex_text
+                tex_text = self._check_duplicates(tex_text, {
                 "figure": r"\\includegraphics.*?{(.*?)}",
                 "section header": r"\\section{([^}]*)}",
-            })
-            self._fix_latex_errors(self.template_copy_file, self.num_error_corrections)
+                })
+                if tex_text != original_tex_text:
+                    continue
+
+                original_tex_text = tex_text
+                tex_text = self._fix_latex_errors(self.template_copy_file)
+                if tex_text != original_tex_text:
+                    continue
+
+                break
+
+            with open(self.template_copy_file, "w") as f:
+                f.write(tex_text)
+
             self._compile_latex(
-                osp.dirname(self.template_file),
+                osp.dirname(self.template_copy_file),
                 self.template_copy_file,
                 pdf_file_path,
                 timeout=self.timeout,
