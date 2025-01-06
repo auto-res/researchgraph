@@ -31,6 +31,7 @@ class LatexNode(Node):
                 messages=[
                     {"role": "user", "content": prompt}
                 ], 
+                temperature=0,
             )
             output = response.choices[0].message.content
             return output
@@ -233,15 +234,21 @@ class LatexNode(Node):
             self._copy_template()
             tex_text = self._fill_template(paper_content)
 
-            while True:
+            max_iterations = 10
+            iteration_count = 0
+
+            while iteration_count < max_iterations:
+                print(f"Start iteration: {iteration_count}")
                 original_tex_text = tex_text
                 tex_text = self._check_references(tex_text)
                 if tex_text != original_tex_text:
+                    iteration_count += 1
                     continue
 
                 original_tex_text = tex_text
                 tex_text = self._check_figures(tex_text, self.figures_dir)
                 if tex_text != original_tex_text:
+                    iteration_count += 1
                     continue
 
                 original_tex_text = tex_text
@@ -250,14 +257,20 @@ class LatexNode(Node):
                 "section header": r"\\section{([^}]*)}",
                 })
                 if tex_text != original_tex_text:
+                    iteration_count += 1
                     continue
 
                 original_tex_text = tex_text
                 tex_text = self._fix_latex_errors(self.template_copy_file)
                 if tex_text != original_tex_text:
+                    iteration_count += 1
                     continue
 
+                print("No changes detected, exiting loop.")
                 break
+
+            if iteration_count == max_iterations:
+                print(f"Maximum iterations reached ({max_iterations}), exiting loop.")
 
             with open(self.template_copy_file, "w") as f:
                 f.write(tex_text)
