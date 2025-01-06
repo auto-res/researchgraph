@@ -136,9 +136,11 @@ if __name__ == "__main__":
         ai_integrator_v3_creator_prompt=ai_integrator_v3_creator_prompt,
     )
     
-    generator_subgraph(
+    result = generator_subgraph(
         state = generator_subgraph_input_data, 
         )
+    
+    print(result["add_method_text"])
 
     # image_dir = "/workspaces/researchgraph/images/"
     # generator_subgraph.make_image(image_dir)
