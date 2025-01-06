@@ -122,7 +122,8 @@ jobs:
     name: Test of LatexNode
     runs-on: ubuntu-latest
     env:
-      SAVE_DIR: ${{ github.workspace }}/save_dir
+      GITHUB_WORKSPACE: ${{ github.workspace }}
+      SAVE_DIR: ${{ github.workspace }}/data
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
     timeout-minutes: 10
     steps:
@@ -152,6 +153,11 @@ jobs:
         
       - name: Create Directory
         run: mkdir -p $SAVE_DIR
+
+      - name: Create images directory and dummy image
+        run: |
+          mkdir -p ${{ env.GITHUB_WORKSPACE }}/images
+          touch ${{ env.GITHUB_WORKSPACE }}/images/generated_images.png
         
       - name: Run pytest
         run: uv run pytest -s test/test_latexnode.py

@@ -206,6 +206,7 @@ class LatexNode(Node):
                     stderr=subprocess.PIPE,
                     text=True, 
                     timeout=timeout,
+                    check=True
                 )
                 print("Standard Output:\n", result.stdout)
                 print("Standard Error:\n", result.stderr)
