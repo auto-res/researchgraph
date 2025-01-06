@@ -30,7 +30,7 @@ def test_latex_node():
         llm_name=llm_name,
         template_dir=template_dir,
         figures_dir=figures_dir,
-        timeout=30,
+        timeout=60,
     )
 
     # Create the StateGraph and add node

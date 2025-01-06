@@ -3,7 +3,6 @@ import os.path as osp
 import re
 import subprocess
 import shutil
-from pydantic import BaseModel
 from litellm import completion
 from researchgraph.core.node import Node
 
