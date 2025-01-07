@@ -54,7 +54,8 @@ class GeneratorSubgraph:
             "githubretriever",
             NodeFactory.create_node(
                 node_name="retrieve_github_repository_node",
-                save_dir="/content/drive/MyDrive/AutoRes/ai_integrator/exec-test",
+                # save_dir="/content/drive/MyDrive/AutoRes/ai_integrator/exec-test",
+                save_dir = self.save_dir, 
                 input_key=["github_url"],
                 output_key=["folder_structure", "github_file"],
             ),

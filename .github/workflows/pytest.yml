@@ -238,6 +238,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       SAVE_DIR: ${{ github.workspace }}/save_dir
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
