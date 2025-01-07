@@ -260,7 +260,7 @@ jobs:
         run: mkdir -p $SAVE_DIR
         
       - name: Run pytest
-        run: uv run pytest test/subgraphs/test_generator_subgraph.py
+        run: uv run pytest test/subgraphs/ai_integrator_v2/test_generator_subgraph.py
 
       - name: Ensure pip cache folder exists
         run: mkdir -p /home/runner/.cache/pip
