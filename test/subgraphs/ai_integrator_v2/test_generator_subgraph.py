@@ -8,7 +8,7 @@ from researchgraph.graphs.ai_integrator.ai_integrator_v3.generator_subgraph.llmn
 )
 
 GITHUB_WORKSPACE = os.environ.get("GITHUB_WORKSPACE", os.getcwd())
-SAVE_DIR = os.path.join("GITHUB_WORKSPACE", "data")
+SAVE_DIR = os.path.join(GITHUB_WORKSPACE, "data")
 
 
 def test_generator_subgraph():
