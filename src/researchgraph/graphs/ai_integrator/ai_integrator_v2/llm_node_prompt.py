@@ -71,21 +71,45 @@ Please check the descriptions of the tags listed in Tag Descriptions and follow 
 <EOS></EOS>"""
 
 
-ai_integrator_v1_convert2template_prompt = """
+ai_integrator_v2_convert2template_prompt_A = """
 <RULE>
 You are an assistant that specializes in refactoring and formatting code.
-Your task is to transform the code enclosed within the <method_code> tag into a clean and structured format that adheres to the template provided in the <method_template> tag.
+Your task is to transform the code enclosed within the <base_method_code> tag into a clean and structured format that adheres to the template provided in the <method_template> tag.
 - Tag Descriptions
-	- <method_code>: Contains the original, unstructured, or "dirty" code extracted from a source.
+	- <base_method_code>: Contains the original, unstructured, or "dirty" code extracted from a source.
 	- <method_template>: Provides a clean and standardized template format that the transformed code must follow.
 - Task Instructions
-	- Analyze the code enclosed within the <method_code> tag to understand its functionality.
+	- Output a nicely structured method as standardized_base_method_code_A.
+	- Analyze the code enclosed within the <base_method_code> tag to understand its functionality.
 	- Use the <method_template> tag as a guideline for structuring and formatting the code.
 	- Ensure that the transformed code maintains the same functionality as the original code but adheres to the template's structure.
+	- The <standardized_base_method_code_A> tag must be executable as Python code. Therefore, you may include comment text within the tag, but please do not include any explanatory text, markdown style text, etc. Please make sure to check this box when responding.
 </RULE>
-<method_code>
-{{method_code}}
-</method_code>
+<base_method_code>
+{{base_method_code}}
+</base_method_code>
+<method_template>
+{{method_template}}
+</method_template>
+"""
+
+ai_integrator_v2_convert2template_prompt_B = """
+<RULE>
+You are an assistant that specializes in refactoring and formatting code.
+Your task is to transform the code enclosed within the <add_method_code> tag into a clean and structured format that adheres to the template provided in the <method_template> tag.
+- Tag Descriptions
+	- <add_method_code>: Contains the original, unstructured, or "dirty" code extracted from a source.
+	- <method_template>: Provides a clean and standardized template format that the transformed code must follow.
+- Task Instructions
+	- Output a nicely structured method as standardized_base_method_code_B.
+	- Analyze the code enclosed within the <add_method_code> tag to understand its functionality.
+	- Use the <method_template> tag as a guideline for structuring and formatting the code.
+	- Ensure that the transformed code maintains the same functionality as the original code but adheres to the template's structure.
+	- The <standardized_base_method_code_> tag must be executable as Python code. Therefore, you may include comment text within the tag, but please do not include any explanatory text, markdown style text, etc. Please make sure to check this box when responding.
+</RULE>
+<add_method_code>
+{{add_method_code}}
+</add_method_code>
 <method_template>
 {{method_template}}
 </method_template>
