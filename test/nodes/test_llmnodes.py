@@ -5,9 +5,10 @@ from researchgraph.nodes.llmnode.structured_output.structured_llmnode import (
     StructuredLLMNode,
 )
 from researchgraph.nodes.llmnode.llmlinks.llmlinks_llmnode import LLMLinksLLMNode
-from researchgraph.nodes.llmnode.prompts.llmcreator_prompt import llmcreator_prompt
-from researchgraph.nodes.llmnode.prompts.llmcoder_prompt import llmcoder_prompt
-
+from researchgraph.graphs.ai_integrator.ai_integrator_v3.refiner_subgraph.llmnode_prompt import (
+    ai_integrator_v3_llmcreator_prompt, 
+    ai_integrator_v3_llmcoder_prompt, 
+)
 
 class State(BaseModel):
     week: str = Field(default="")
@@ -20,12 +21,11 @@ class State(BaseModel):
 
     base_method_text: str = Field(default="")
     base_method_code: str = Field(default="")
-    num_ideas: int = Field(default=3)
-    generated_ideas: list = Field(default_factory=list)
+    num_ideas: int = Field(default=1)
+    generated_ideas: str = Field(default="")
 
-    selected_idea: str = Field(default="")
-    improved_method_text: str = Field(default="")
-    improved_method_code: str = Field(default="")
+    refined_method_text: str = Field(default="")
+    refined_method_code: str = Field(default="")
 
 
 def test_structured_llmnode():
@@ -93,7 +93,7 @@ def test_structured_llmnode():
 
 def test_llmcreator():
     llm_model_name = "gpt-4o-2024-08-06"
-    prompt_template = llmcreator_prompt
+    prompt_template = ai_integrator_v3_llmcreator_prompt
 
     graph_builder = StateGraph(State)
     graph_builder.add_node(
@@ -112,38 +112,22 @@ def test_llmcreator():
     state = {
         "base_method_text": "This is the description of Method A.",
         "base_method_code": "def method_a(): pass",
-        "num_ideas": 3,
     }
 
     result = graph.invoke(state, debug=True)
     assert "generated_ideas" in result, "Output 'generated_ideas' is missing."
-
-    try:
-        generated_ideas = json.loads(result["generated_ideas"])
-    except json.JSONDecodeError as e:
-        assert False, f"Failed to decode 'generated_ideas': {e}"
-    assert isinstance(generated_ideas, list), "'generated_ideas' should be a list."
-
-    for idea in generated_ideas:
-        assert isinstance(idea, dict), "Each generated idea should be a dictionary."
-        assert "idea" in idea, "'idea' key is missing in the generated idea."
-        assert "description" in idea, "'description' key is missing in the generated idea."
-        assert "score" in idea, "'score' key is missing in the generated idea."
-        assert isinstance(idea["score"], (int, float)), "'score' should be a number."
-
-    assert len(generated_ideas) >= 3, "The number of generated ideas should be at least 3."
-
+    assert isinstance(result["generated_ideas"], str), "'generated_ideas' should be a str."
 
 def test_llmcoder():
     llm_model_name = "gpt-4o-2024-08-06"
-    prompt_template = llmcoder_prompt
+    prompt_template = ai_integrator_v3_llmcoder_prompt
 
     graph_builder = StateGraph(State)
     graph_builder.add_node(
         "llmcoder",
         StructuredLLMNode(
-            input_key=["base_method_text", "base_method_code", "selected_idea"],
-            output_key=["improved_method_text", "improved_method_code"],
+            input_key=["base_method_text", "base_method_code", "generated_ideas"],
+            output_key=["refined_method_text", "refined_method_code"],
             llm_name=llm_model_name,
             prompt_template=prompt_template,
         ),
@@ -155,15 +139,15 @@ def test_llmcoder():
     state = {
         "base_method_text": "This is the description of Method A.",
         "base_method_code": "def method_a(): pass",
-        "selected_idea": "Integrate transfer learning to improve accuracy.",
+        "generatedd_ideas": "Integrate transfer learning to improve accuracy.",
     }
 
     result = graph.invoke(state, debug=True)
 
-    assert "improved_method_text" in result, "Output 'improved_method_text' is missing."
-    assert isinstance(result["improved_method_text"], str), "'improved_method_text' should be a string."
-    assert len(result["improved_method_text"]) > 0, "'improved_method_text' should not be empty."
+    assert "refined_method_text" in result, "Output 'refined_method_text' is missing."
+    assert isinstance(result["refined_method_text"], str), "'refined_method_text' should be a string."
+    assert len(result["refined_method_text"]) > 0, "'refined_method_text' should not be empty."
 
-    assert "improved_method_code" in result, "Output 'improved_method_code' is missing."
-    assert isinstance(result["improved_method_code"], str), "'improved_method_code' should be a string."
-    assert len(result["improved_method_code"]) > 0, "'improved_method_code' should not be empty."
+    assert "refined_method_code" in result, "Output 'refined_method_code' is missing."
+    assert isinstance(result["refined_method_code"], str), "'refined_method_code' should be a string."
+    assert len(result["refined_method_code"]) > 0, "'refined_method_code' should not be empty."
