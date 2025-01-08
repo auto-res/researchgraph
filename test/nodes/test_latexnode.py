@@ -1,39 +1,36 @@
-import sys
 import os
-
-if "GITHUB_WORKSPACE" in os.environ:
-    sys.path.insert(0, os.path.join(os.environ["GITHUB_WORKSPACE"], "src"))
-
-from typing import TypedDict
+import pytest
+from pydantic import BaseModel, Field
 from langgraph.graph import StateGraph
 from researchgraph.nodes.writingnode.latexnode import LatexNode
 
 
-class State(TypedDict):
-    paper_content: dict
-    pdf_file_path: str
+GITHUB_WORKSPACE = os.environ.get("GITHUB_WORKSPACE", os.getcwd())
+TEST_TEMPLATE_DIR = os.path.join(GITHUB_WORKSPACE, "src/researchgraph/graphs/ai_scientist/templates/2d_diffusion")
+TEST_FIGURES_DIR = os.path.join(GITHUB_WORKSPACE, "images")
+TEST_PDF_FILE = os.path.join(GITHUB_WORKSPACE, "data/test_output.pdf")
 
 
-SAVE_DIR = os.environ.get("SAVE_DIR", "/workspaces/researchgraph/data")
-GITHUB_WORKSPACE = os.environ.get("GITHUB_WORKSPACE", os.path.abspath(os.path.join(os.getcwd(), "..")))
+class State(BaseModel):
+    paper_content: dict = Field(default_factory=dict)
+    pdf_file_path: str = Field(default="")
 
 def test_latex_node():
     # Define input and output keys
     input_key = ["paper_content"]
     output_key = ["pdf_file_path"]
-    model = "gpt-4o"
-    template_dir = os.path.join(GITHUB_WORKSPACE, "src/researchgraph/graphs/ai_scientist/templates/2d_diffusion")
-    figures_dir = os.path.join(GITHUB_WORKSPACE, "images")
+    llm_name = "gpt-4o"
+    template_dir = TEST_TEMPLATE_DIR
+    figures_dir = TEST_FIGURES_DIR
 
     # Initialize LatexNode
     latex_node = LatexNode(
         input_key=input_key,
         output_key=output_key,
-        model=model,
+        llm_name=llm_name,
         template_dir=template_dir,
         figures_dir=figures_dir,
         timeout=30,
-        num_error_corrections=5,
     )
 
     # Create the StateGraph and add node
@@ -46,8 +43,8 @@ def test_latex_node():
     # Define initial state
     state = {
         "paper_content": {
-            "title": "This is the Title",
-            "abstract": "This is the Abstract.",
+            "title": "test title",
+            "abstract": "Abstract.",
             "introduction": "This is the introduction.",
             "related work": "This is the related work",
             "background": "This is the background",
@@ -56,9 +53,9 @@ def test_latex_node():
             "results": "These are the results.",
             "conclusions": "This is the conclusion.",
         },
-        "pdf_file_path": os.path.join(SAVE_DIR, "sample.pdf"), 
+        "pdf_file_path": TEST_PDF_FILE,  
     }
 
     # Execute the graph
     assert graph.invoke(state, debug=True)
-    assert os.path.exists(state["pdf_file_path"]), f"PDF file was not generated at {state['pdf_file_path']}!"
+

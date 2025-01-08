@@ -47,7 +47,7 @@ class StructuredLLMNode(Node):
         return output_dict
 
     def execute(self, state) -> dict:
-        data = {key: state[key] for key in self.input_key}
+        data = {key: getattr(state,key) for key in self.input_key}
 
         env = Environment()
         template = env.from_string(self.prompt_template)

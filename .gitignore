@@ -165,5 +165,6 @@ cython_debug/
 .DS_Store
 !.gitkeep
 data/*
+!data/gsm8k_answer.csv
 src/researchgraph.egg-info
 .gitmessage.txt

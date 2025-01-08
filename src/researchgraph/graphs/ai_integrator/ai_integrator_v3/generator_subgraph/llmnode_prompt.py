@@ -1,4 +1,4 @@
-ai_integrator_v1_extractor_prompt = """
+ai_integrator_v3_extractor_prompt = """
 You are a researcher working on machine learning.
 The following <paper_text> tags enclose the full text data of the paper.
 Please extract the explanation of the method introduced in the given paper.
@@ -7,7 +7,7 @@ Please extract the explanation of the method introduced in the given paper.
 </paper_text>
 """
 
-ai_integrator_v1_codeextractor_prompt = """
+ai_integrator_v3_codeextractor_prompt = """
 <RULE>
 You are a researcher working on machine learning.
 - Tag Descriptions
@@ -32,7 +32,7 @@ You are a researcher working on machine learning.
 <EOS></EOS>"""
 
 
-ai_integrator_v1_creator_prompt = """
+ai_integrator_v3_creator_prompt = """
 You are a researcher working on machine learning.
 Please check the descriptions of the tags listed in Tag Descriptions and follow the instructions.
 - Tag Descriptions
@@ -69,24 +69,3 @@ Please check the descriptions of the tags listed in Tag Descriptions and follow 
 {{method_template}}
 </method_template>
 <EOS></EOS>"""
-
-
-ai_integrator_v1_convert2template_prompt = """
-<RULE>
-You are an assistant that specializes in refactoring and formatting code.
-Your task is to transform the code enclosed within the <method_code> tag into a clean and structured format that adheres to the template provided in the <method_template> tag.
-- Tag Descriptions
-	- <method_code>: Contains the original, unstructured, or "dirty" code extracted from a source.
-	- <method_template>: Provides a clean and standardized template format that the transformed code must follow.
-- Task Instructions
-	- Analyze the code enclosed within the <method_code> tag to understand its functionality.
-	- Use the <method_template> tag as a guideline for structuring and formatting the code.
-	- Ensure that the transformed code maintains the same functionality as the original code but adheres to the template's structure.
-</RULE>
-<method_code>
-{{method_code}}
-</method_code>
-<method_template>
-{{method_template}}
-</method_template>
-"""

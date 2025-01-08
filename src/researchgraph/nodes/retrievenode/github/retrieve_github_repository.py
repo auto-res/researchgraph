@@ -15,7 +15,7 @@ class RetrieveGithubRepositoryNode(Node):
 
     def _format_url(self, state) -> str:
         pattern = r"(https://github\.com/[^/]+/[^/?#]+)"
-        url = re.search(pattern, state[self.input_key[0]]).group(1)
+        url = re.search(pattern, getattr(state,self.input_key[0])).group(1)
         return url
 
     def _get_repository(self, url: str, repo_name: str):
