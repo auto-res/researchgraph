@@ -9,7 +9,7 @@ class State(TypedDict):
     keywords: list[str]
     paper_results: dict
 
-
+# NOTE：It is executed by Github actions.
 @patch("pyalex.Works.filter")
 def test_openalex(mock_filter):
     mock_filter.return_value.search.return_value.get.return_value = [
