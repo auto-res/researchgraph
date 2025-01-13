@@ -7,8 +7,6 @@ if "GITHUB_WORKSPACE" in os.environ:
 from pydantic import BaseModel, Field
 from langgraph.graph import StateGraph
 from researchgraph.nodes.writingnode.writeup_node import WriteupNode
-from researchgraph.nodes.writingnode.latexnode import LatexNode
-# from researchgraph.core.factory import NodeFactory
 
 
 class State(BaseModel):
@@ -28,6 +26,7 @@ class State(BaseModel):
     pdf_file_path: str = Field(default="")
 
 
+# NOTE：It is executed by Github actions.
 def test_writeup_node():
     # Define input and output keys
     input_key = []

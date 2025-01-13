@@ -11,7 +11,7 @@ class State(TypedDict):
     keywords: str
     paper_results: dict
 
-
+# NOTE：It is executed by Github actions.
 @patch("semanticscholar.SemanticScholar.search_paper")
 def test_semantic_scholar_node(mock_search_paper):
     mock_search_paper.return_value = [

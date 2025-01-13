@@ -17,7 +17,8 @@
                 "mhutchie.git-graph",
                 "eamodio.gitlens",
                 "gruntfuggly.todo-tree",
-                "ms-python.vscode-pylance"
+                "ms-python.vscode-pylance",
+                "oderwat.indent-rainbow"
 			]
 		}
 	}
