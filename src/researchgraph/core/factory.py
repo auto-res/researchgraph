@@ -19,6 +19,7 @@ from researchgraph.nodes.experimentnode.llm import (
 from researchgraph.nodes.retrievenode import (
     RetrievearXivTextNode,
     RetrieveGithubRepositoryNode,
+    RetrieveCodeWithDevinNode,
 )
 
 
@@ -42,6 +43,8 @@ class NodeFactory:
             return RetrievearXivTextNode(**kwargs)
         elif node_name == "retrieve_github_repository_node":
             return RetrieveGithubRepositoryNode(**kwargs)
+        elif node_name == "retrieve_code_with_devin_node":
+            return RetrieveCodeWithDevinNode(**kwargs)
 
         # WritingNode
         elif node_name == "text2script_node":

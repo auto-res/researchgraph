@@ -82,7 +82,7 @@ class AIIntegratorv2:
                 num_inference_data=self.num_inference_data,
             )
         )
-   
+
         # make edges
         self.graph_builder.add_edge(START, "executor")
         self.graph_builder.add_edge("generator", "executor")

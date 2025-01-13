@@ -5,8 +5,8 @@ on:
     types: [opened, reopened, synchronize]
     paths: [
       'src/researchgraph/nodes/**', 
-      'test/**',
-      '.github/workflows/pytest.yml'
+      'test/nodes/**',
+      '.github/workflows/pytest-nodes.yml'
       ]
 
 defaults:
@@ -271,72 +271,6 @@ jobs:
         
       - name: Run pytest
         run: uv run pytest test/nodes/test_text2scriptnode.py
-
-      - name: Ensure pip cache folder exists
-        run: mkdir -p /home/runner/.cache/pip
-
-  test-refiner-subgraph:
-    name: Test of RefinerSubgraph
-    runs-on: ubuntu-latest
-    env:
-      SAVE_DIR: ${{ github.workspace }}/save_dir
-      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v4
-        with:
-          python-version: "3.10"
-          cache: "pip"
-
-      - name: Install uv
-        run: curl -LsSf https://astral.sh/uv/0.5.5/install.sh | bash || exit 1
-
-      - name: Verify uv installation
-        run: uv --version
-
-      - name: Set PYTHONPATH
-        run: echo "PYTHONPATH=$PYTHONPATH:$GITHUB_WORKSPACE/src" >> $GITHUB_ENV
-
-      - name: Create Directory
-        run: mkdir -p $SAVE_DIR
-        
-      - name: Run pytest
-        run: uv run pytest -s test/subgraphs/ai_integrator_v2/test_refiner_subgraph.py
-
-      - name: Ensure pip cache folder exists
-        run: mkdir -p /home/runner/.cache/pip
-
-  test-generator-subgraph:
-    name: Test of GeneratorSubgraph
-    runs-on: ubuntu-latest
-    env:
-      SAVE_DIR: ${{ github.workspace }}/save_dir
-      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v4
-        with:
-          python-version: "3.10"
-          cache: "pip"
-
-      - name: Install uv
-        run: curl -LsSf https://astral.sh/uv/0.5.5/install.sh | bash || exit 1
-
-      - name: Verify uv installation
-        run: uv --version
-
-      - name: Set PYTHONPATH
-        run: echo "PYTHONPATH=$PYTHONPATH:$GITHUB_WORKSPACE/src" >> $GITHUB_ENV
-
-      - name: Create Directory
-        run: mkdir -p $SAVE_DIR
-        
-      - name: Run pytest
-        run: uv run pytest test/subgraphs/ai_integrator_v2/test_generator_subgraph.py
 
       - name: Ensure pip cache folder exists
         run: mkdir -p /home/runner/.cache/pip
