@@ -5,7 +5,7 @@ import glob
 
 from researchgraph.core.node import Node
 
-
+# NOTE:Currently, we recommend using “retrieve_code_with_devin” to extract code from Github.
 class RetrieveGithubRepositoryNode(Node):
     def __init__(
         self, input_key: list[str], output_key: list[str], save_dir: str

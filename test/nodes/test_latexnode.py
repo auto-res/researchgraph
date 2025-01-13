@@ -15,6 +15,7 @@ class State(BaseModel):
     paper_content: dict = Field(default_factory=dict)
     pdf_file_path: str = Field(default="")
 
+# NOTE：It is executed by Github actions.
 def test_latex_node():
     # Define input and output keys
     input_key = ["paper_content"]

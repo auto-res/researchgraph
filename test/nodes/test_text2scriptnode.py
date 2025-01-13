@@ -13,7 +13,7 @@ class State(BaseModel):
 
 SAVE_DIR = os.environ.get("SAVE_DIR", "/workspaces/researchgraph/data")
 
-
+# NOTE：It is executed by Github actions.
 def test_ext2script_node():
     filename = "test.py"
     graph_builder = StateGraph(State)
