@@ -23,18 +23,13 @@ class RefinerSubgraph:
     def __init__(
         self,
         llm_name: str,
-        save_dir: str,
         ai_integrator_v3_llmcreator_prompt: str,
         ai_integrator_v3_llmcoder_prompt: str,
     ):
         self.llm_name = llm_name
-        self.save_dir = save_dir
         self.ai_integrator_v3_llmcreator_prompt = ai_integrator_v3_llmcreator_prompt
         self.ai_integrator_v3_llmcoder_prompt = ai_integrator_v3_llmcoder_prompt
 
-
-        if not os.path.exists(self.save_dir):
-            os.makedirs(self.save_dir)
         self.graph_builder = StateGraph(RefinerState)
 
         self.graph_builder.add_node(
@@ -75,17 +70,15 @@ class RefinerSubgraph:
 
 if __name__ == "__main__":
     llm_name = "gpt-4o-2024-08-06"
-    save_dir = "/workspaces/researchgraph/data"
-    generator_subgraph = RefinerSubgraph(
+    refiner_subgraph = RefinerSubgraph(
         llm_name=llm_name,
-        save_dir=save_dir,
         ai_integrator_v3_llmcreator_prompt=ai_integrator_v3_llmcreator_prompt,
         ai_integrator_v3_llmcoder_prompt=ai_integrator_v3_llmcoder_prompt,
     )
     
-    generator_subgraph(
+    refiner_subgraph(
         state = refiner_subgraph_input_data, 
         )
 
     image_dir = "/workspaces/researchgraph/images/"
-    generator_subgraph.make_image(image_dir)
+    refiner_subgraph.make_image(image_dir)
