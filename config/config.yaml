@@ -1,0 +1,21 @@
+# Model Configuration
+model_class: null  # To be set based on specific model architecture
+dataset_class: null  # To be set based on specific dataset
+
+# Data Configuration
+data_config:
+  batch_size: 32
+  val_split: 0.2
+
+# Training Configuration
+training_config:
+  learning_rate: 0.001
+  epochs: 100
+  log_interval: 100
+  
+  # Optimizer Parameters
+  beta1: 0.9
+  beta2: 0.999
+  epsilon: 1e-8
+  betas_aggmo: [0.0, 0.9, 0.99]
+  weight_decay: 0.0
