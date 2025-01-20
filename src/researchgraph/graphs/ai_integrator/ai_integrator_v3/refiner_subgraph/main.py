@@ -1,4 +1,3 @@
-import os
 from IPython.display import Image
 from langgraph.graph import START, END, StateGraph
 from pydantic import BaseModel, Field
