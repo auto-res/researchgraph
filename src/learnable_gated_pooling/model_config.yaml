@@ -1,0 +1,22 @@
+# Configuration for Learnable Gated Pooling experiments
+
+# Model parameters
+model:
+  input_dim: 768  # Example: BERT embedding dimension
+  seq_len: 10     # Length of input sequence
+
+# Training parameters
+training:
+  batch_size: 32
+  learning_rate: 0.001
+  num_epochs: 100
+  optimizer: "adam"
+  beta1: 0.9
+  beta2: 0.999
+  epsilon: 1e-8
+
+# Data parameters
+data:
+  train_data_path: "data/train.pt"
+  val_data_path: "data/val.pt"
+  test_data_path: "data/test.pt"
