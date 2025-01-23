@@ -1,9 +1,9 @@
 {
 	"name": "researchgraph",
 	"dockerComposeFile": "docker-compose.yaml",
-	// "service": "researchgraph",
+	"service": "researchgraph",
     // To run in a gpu environment, comment out the above code and use the code below
-    "service": "researchgraph-gpu",
+    // "service": "researchgraph-gpu",
 	"workspaceFolder": "/workspaces/researchgraph",
 	"overrideCommand": true,
 	"customizations": {
@@ -19,7 +19,11 @@
                 "gruntfuggly.todo-tree",
                 "ms-python.vscode-pylance",
                 "oderwat.indent-rainbow"
-			]
+			],
+            "settings": {
+                "python.analysis.inlayHints.variableTypes": true,
+                "python.analysis.inlayHints.functionReturnTypes": true
+            }
 		}
 	}
 }
