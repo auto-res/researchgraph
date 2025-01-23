@@ -76,8 +76,18 @@ error_list = """
 """
 
 write_template = """
-We've provided the `latex/template.tex` file to the project. We will be filling it in section by section.
-Please fiil in the {{ section }} of the paper. Some tips are provided below:
+You are tasked with filling in the '{{ section }}' section of a research paper.
+Your response MUST be a valid JSON object with a single key, "paper_text".
+The value of "paper_text" should be the content of the '{{ section }}' section in LaTeX format.
+
+Example JSON output:
+```json
+{
+  "paper_text": "Content of the '{{ section }}' section, formatted in LaTeX, including subsections as needed."
+}
+```
+
+Some tips are provided below:
 {{ tips }}
 
 Here is the context of the entire paper:
@@ -88,9 +98,8 @@ Here is the context of the entire paper:
    -**DO NOT add any assumptions, invented data, or details that are not explicitly mentioned in the context.
 - Avoid placeholders, speculative text, or comments like "details are missing."
 - Do not include section headings such as \section{...}. 
-   -**Convert all headings into subsections using \subsection{...}, except for the "Title" section. 
+   -**Use \subsection{Subsection Title} for any subsections within this section.** The titles of the subsections should be derived from the content you are generating. The "Title" section should not have any subsections.
    - Ensure that identical or similar {{ section }} sections are completely removed. Subsection names should be derived from the content of the section.
-   - Avoid creating too many subsections. If the content of a subsection is brief or overlaps significantly with other subsections, merge them to streamline the document. Focus on clarity and brevity over excessive structural division.
 - Be sure to use \cite or \citet where relevant, referring to the works provided in the file.
    -**Do not cite anything that is not already in `references.bib`. Do not add any new entries to this.
 - Keep the experimental results (figures and tables) only in the Results section, and make sure that any captions are filled in.
@@ -99,7 +108,7 @@ Here is the context of the entire paper:
   - These phrases are found at the beginning of sections, introducing edits or refinements. Carefully review the start of each section for such instructions and ensure they are eliminated while preserving the actual content.
 
    
-Before every paragraph, please include a brief description of what you plan to write in that paragraph in a comment.
+Before every paragraph, please include a brief description of what you plan to write in that paragraph in a LaTeX comment (% ...).
 
 Be sure to first name the file and use *SEARCH/REPLACE* blocks to perform these edits.
 
@@ -114,8 +123,20 @@ def generate_write_prompt(section: str, note: str) -> str:
 
 # Generate refinement prompt template
 refinement_template = """
-Great job! Now criticize and refine only the {{ section }} that you just wrote:
+Great job! Now criticize and refine only the {{ section }} that you just wrote. Return the refined content as a JSON object with the key "paper_text".
+
+Your response MUST be a valid JSON object with a single key, "paper_text".
+The value of "paper_text" should be the refined content of the '{{ section }}' section in LaTeX format.
+
+Here is the content that needs refinement:
 {{ content }}
+
+Example JSON output:
+```json
+{
+  "paper_text": "Refined content of the '{{ section }}' section, formatted in LaTeX, including subsections as needed."
+}
+```
 
 Some tips are provided below:
 {{ tips }}
@@ -129,9 +150,8 @@ Here is the context of the entire paper:
 - Avoid placeholders, speculative text, or comments like "details are missing."
 - Do not include section headings such as \section{...}. 
    -**Convert all headings into subsections using \subsection{...}, except for the "Title" section. 
-   - Ensure that identical or similar sections are completely removed. Subsection names should be derived from the content of the section.
+   - Ensure that identical or similar sections are completely removed. The titles of the subsections should be derived from the content you are generating.
    - Avoid creating too many subsections. If the content of a subsection is brief or overlaps significantly with other subsections, merge them to streamline the document. Focus on clarity and brevity over excessive structural division.
-- Pay attention to how it fits in with the rest of the paper.
 - Identify any redundancies (e.g. repeated figures or repeated text), if there are any, decide where in the paper things should be cut.
 - Identify where we can save space, and be more concise without weakening the message of the text.
 - Ensure that editor instructions are completely removed:
