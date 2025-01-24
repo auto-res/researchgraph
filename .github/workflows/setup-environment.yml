@@ -1,0 +1,38 @@
+name: Setup LaTeX Environment
+
+on:
+  workflow_call:
+
+jobs:
+  latex-setup:
+    runs-on: ubuntu-latest
+    outputs:
+      latex_env_setup: /usr/share/texlive
+    steps:
+      - name: Cache LaTeX dependencies
+        uses: actions/cache@v3
+        with:
+          path: /usr/share/texlive
+          key: ${{ runner.os }}-texlive
+          restore-keys: |
+            ${{ runner.os }}-texlive
+
+      - name: Install LaTeX dependencies
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          sudo apt-get update
+          DEBIAN_FRONTEND=noninteractive sudo apt-get install -y \
+          texlive-base \
+          texlive-latex-recommended \
+          texlive-fonts-recommended \
+          texlive-latex-extra \
+          texlive-science \
+          chktex
+
+      - name: Check cache status
+        run: |
+          if [ "${{ steps.cache.outputs.cache-hit }}" == "true" ]; then
+            echo "Cache hit: Using cached LaTeX environment."
+          else
+            echo "Cache miss: Installed LaTeX dependencies."
+          fi
