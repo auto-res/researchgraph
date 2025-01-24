@@ -81,15 +81,9 @@ jobs:
   #     - name: Ensure pip cache folder exists
   #       run: mkdir -p /home/runner/.cache/pip
 
-  latex-setup:
-    name: Setup LaTex environment
-    runs-on: ubuntu-latest
-    uses: ./.github/workflows/setup-environment.yml
-
   test-writer-subgraph:
     name: Test of WriterSubgraph
     runs-on: ubuntu-latest
-    needs: latex-setup
     env:
       GITHUB_WORKSPACE: ${{ github.workspace }}
       SAVE_DIR: ${{ github.workspace }}/save_dir
@@ -102,6 +96,11 @@ jobs:
         with:
           python-version: "3.10"
           cache: "pip"
+
+      - name: Install LaTeX dependencies
+        run: |
+          sudo apt-get update
+          DEBIAN_FRONTEND=noninteractive sudo apt-get install -y texlive-base texlive-latex-recommended texlive-fonts-recommended texlive-latex-extra texlive-science chktex
 
       - name: Install uv
         run: curl -LsSf https://astral.sh/uv/0.5.5/install.sh | bash || exit 1
