@@ -6,8 +6,6 @@ on:
 jobs:
   latex-setup:
     runs-on: ubuntu-latest
-    outputs:
-      latex_env_setup: /usr/share/texlive
     steps:
       - name: Cache LaTeX dependencies
         uses: actions/cache@v3
