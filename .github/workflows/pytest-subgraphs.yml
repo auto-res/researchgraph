@@ -81,7 +81,6 @@ jobs:
   #     - name: Ensure pip cache folder exists
   #       run: mkdir -p /home/runner/.cache/pip
 
-
   test-writer-subgraph:
     name: Test of WriterSubgraph
     runs-on: ubuntu-latest
