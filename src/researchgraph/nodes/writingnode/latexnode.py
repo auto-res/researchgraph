@@ -235,7 +235,7 @@ class LatexNode(Node):
             self._copy_template()
             tex_text = self._fill_template(paper_content)
 
-            max_iterations = 10
+            max_iterations = 5
             iteration_count = 0
 
             while iteration_count < max_iterations:
