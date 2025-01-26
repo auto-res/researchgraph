@@ -6,27 +6,31 @@ from langgraph.graph import START, END, StateGraph
 from researchgraph.core.node import Node
 
 
-API_KEY = os.getenv("DEVIN_API_KEY")
+DEVIN_API_KEY = os.getenv("DEVIN_API_KEY")
+
 
 class State(BaseModel):
-    repository_url: str = Field(default="")
+    github_owner: str = Field(default="")
+    repository_name: str = Field(default="")
     new_method_text: str = Field(default="")
     new_method_code: str = Field(default="")
+    session_id: str = Field(default="")
     branch_name: str = Field(default="")
+    devin_url: str = Field(default="")
 
 
 class GenerateCodeWithDevinNode(Node):
     def __init__(
-        self, 
-        input_key: list[str], 
+        self,
+        input_key: list[str],
         output_key: list[str],
     ):
         super().__init__(input_key, output_key)
         self.headers = {
-            "Authorization": f"Bearer {API_KEY}",
-            "Content-Type": "application/json"
-            }
-        
+            "Authorization": f"Bearer {DEVIN_API_KEY}",
+            "Content-Type": "application/json",
+        }
+
     def _create_session(self, repository_url, new_method_text, new_method_code):
         url = "https://api.devin.ai/v1/sessions"
         data = {
@@ -39,8 +43,8 @@ Also, please make sure that you can output the file according to the “Output F
 - The roles of directories and scripts are listed below. Follow the roles to complete your implementation.
     - config...If you want to set parameters for running the experiment, place the file that completes the parameters under this directory.
     - data...This directory is used to store data used for model training and evaluation.
-    - logs...This directory is used to output the logs of the experimental scripts. Logs should be written to a file named logs.txt for output.
     - models...This directory is used to store pre-trained and trained models.
+    - output...Do not change anything in this directory.
     - src
         - train.py...Scripts for training models. Implement the code to train the models.
         - evaluate.py...Script to evaluate the model. Implement the code to evaluate the model.
@@ -56,17 +60,18 @@ Also, please make sure that you can output the file according to the “Output F
 # Output Format
 the name of the new branch created when creating the experimental script should be able to be output as "branch_name".
 """,
-            "idempotent": True
+            "idempotent": True,
         }
         response = requests.post(url, headers=self.headers, json=data)
         if response.status_code == 200:
-            print("Success:", response.json())
+            session_data = response.json()
+            session_id = session_data["session_id"]
+            devin_url = session_data["url"]
+            return session_id, devin_url
         else:
             print("Failed:", response.status_code, response.text)
-        session_data = response.json()
-        session_id = session_data["session_id"]
-        return session_id
-        
+            return None, None
+
     def _get_devin_response(self, session_id):
         get_url = f"https://api.devin.ai/v1/session/{session_id}"
         backoff = 1
@@ -76,7 +81,9 @@ the name of the new branch created when creating the experimental script should 
             print(f"Attempt {attempts + 1}")
             response = requests.get(get_url, headers=self.headers)
             if response.status_code != 200:
-                print(f"Failed to fetch session status: {response.status_code}, {response.text}")
+                print(
+                    f"Failed to fetch session status: {response.status_code}, {response.text}"
+                )
                 return ""
             response_json = response.json()
             if response_json["status_enum"] in ["blocked", "stopped"]:
@@ -86,34 +93,44 @@ the name of the new branch created when creating the experimental script should 
             attempts += 1
 
     def execute(self, state: State) -> dict:
-        repository_url = getattr(state, self.input_key[0])
-        new_method_text = getattr(state, self.input_key[1])
-        new_method_code = getattr(state, self.input_key[2])
-        session_id = self._create_session(
-            repository_url, 
-            new_method_text, 
-            new_method_code
-            )
-        time.sleep(300)
-        branch_name = self._get_devin_response(session_id)
-        return {
-            self.output_key[0]: branch_name
-        }
+        github_owner = getattr(state, self.input_key[0])
+        repository_name = getattr(state, self.input_key[1])
+        repository_url = f"https://github.com/{github_owner}/{repository_name}"
+        new_method_text = getattr(state, self.input_key[2])
+        new_method_code = getattr(state, self.input_key[3])
+        session_id, devin_url = self._create_session(
+            repository_url, new_method_text, new_method_code
+        )
+        if session_id is not None:
+            time.sleep(120)
+            branch_name = self._get_devin_response(session_id)
+            return {
+                self.output_key[0]: session_id,
+                self.output_key[1]: branch_name,
+                self.output_key[2]: devin_url,
+            }
+
 
 if __name__ == "__main__":
     graph_builder = StateGraph(State)
     graph_builder.add_node(
         "codegenerator",
         GenerateCodeWithDevinNode(
-            input_key = ["repository_url", "new_method_text", "new_method_code"],
-            output_key=["branch_name"],
-            )
+            input_key=[
+                "github_owner",
+                "repository_name",
+                "new_method_text",
+                "new_method_code",
+            ],
+            output_key=["session_id", "branch_name", "devin_url"],
+        ),
     )
     graph_builder.add_edge(START, "codegenerator")
     graph_builder.add_edge("codegenerator", END)
     graph = graph_builder.compile()
     state = {
-        "repository_url": "https://github.com/auto-res/experimental-script",
+        "github_owner": "fuyu-quant",
+        "repository_name": "experimental-script",
         "new_method_text": """
 Learnable Gated Pooling: A New Approach
 This approach combines the benefits of learnable weights (as discussed in the previous responses) with a gating mechanism. The gating mechanism allows the model to dynamically decide how much of each element in the input sequence should contribute to the final pooled vector. This adds another layer of flexibility and expressiveness compared to simple learnable weights.
