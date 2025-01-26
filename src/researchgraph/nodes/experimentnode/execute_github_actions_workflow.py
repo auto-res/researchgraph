@@ -25,22 +25,22 @@ class ExecuteGithubActionsWorkflowNode(Node):
         output_key: list[str],
     ):
         super().__init__(input_key, output_key)
+        self.headers = {
+            "Accept": "application/vnd.github+json",
+            "Authorization": f"Bearer {GITHUB_PERSONAL_ACCESS_TOKEN}",
+            "X-GitHub-Api-Version": "2022-11-28",
+        }
 
     def _execute_github_actions_workflow(
         self, github_owner: str, repository_name: str, branch_name: str
     ):
         workflow_file_name = "run_experiment.yml"
         url = f"https://api.github.com/repos/{github_owner}/{repository_name}/actions/workflows/{workflow_file_name}/dispatches"
-        headers = {
-            "Accept": "application/vnd.github+json",
-            "Authorization": f"Bearer {GITHUB_PERSONAL_ACCESS_TOKEN}",
-            "X-GitHub-Api-Version": "2022-11-28",
-        }
         data = {
             "ref": f"{branch_name}",
         }
         try:
-            response = requests.post(url, headers=headers, json=data)
+            response = requests.post(url, headers=self.headers, json=data)
             response.raise_for_status()
             print(
                 f"Workflow dispatch triggered successfully. Response: {response.status_code}"
@@ -61,11 +61,6 @@ class ExecuteGithubActionsWorkflowNode(Node):
         self, github_owner: str, repository_name: str, branch_name: str
     ):
         url = f"https://api.github.com/repos/{github_owner}/{repository_name}/actions/runs"
-        headers = {
-            "Accept": "application/vnd.github+json",
-            "Authorization": f"Bearer {GITHUB_PERSONAL_ACCESS_TOKEN}",
-            "X-GitHub-Api-Version": "2022-11-28",
-        }
         params = {
             "branch": f"{branch_name}",
             "event": "workflow_dispatch",
@@ -73,7 +68,9 @@ class ExecuteGithubActionsWorkflowNode(Node):
             # "status": "in_progress",
         }
         try:
-            response = requests.get(url, headers=headers, params=params, timeout=10)
+            response = requests.get(
+                url, headers=self.headers, params=params, timeout=10
+            )
             response.raise_for_status()
             return response.json()
         except HTTPError as http_err:
@@ -105,7 +102,6 @@ class ExecuteGithubActionsWorkflowNode(Node):
         status_list = []
         for res in response["workflow_runs"]:
             status_list.append(res["status"])
-        print(status_list)
         return all(item == "completed" for item in status_list)
 
     def execute(self, state):
@@ -129,12 +125,11 @@ class ExecuteGithubActionsWorkflowNode(Node):
         self._execute_github_actions_workflow(
             github_owner, repository_name, branch_name
         )
-        time.sleep(10)
+        time.sleep(60)
 
         # NOTE:The number of runs is increased by one to confirm that execution is complete.
         num_workflow_runs_after_execution = num_workflow_runs_before_execution
         while True:
-            print(num_workflow_runs_after_execution)
             response_after_execution = self._get_github_actions_workflow_info(
                 github_owner, repository_name, branch_name
             )
@@ -148,7 +143,7 @@ class ExecuteGithubActionsWorkflowNode(Node):
                 response_after_execution
             ):
                 break
-            time.sleep(3)
+            time.sleep(10)
         workflow_run_id = self._parse_workflow_run_id(response_after_execution)
 
         return {self.output_key[0]: workflow_run_id}
@@ -169,6 +164,6 @@ if __name__ == "__main__":
     state = {
         "github_owner": "fuyu-quant",
         "repository_name": "experimental-script",
-        "branch_name": "main",
+        "branch_name": "devin/1737913235-learnable-gated-pooling",
     }
     graph.invoke(state, debug=True)

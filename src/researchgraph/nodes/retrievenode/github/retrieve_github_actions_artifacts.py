@@ -29,16 +29,17 @@ class RetrieveGithubActionsArtifactsNode(Node):
         output_key: list[str],
     ):
         super().__init__(input_key, output_key)
+        self.headers = {
+            "Accept": "application/vnd.github+json",
+            "Authorization": f"Bearer {GITHUB_PERSONAL_ACCESS_TOKEN}",
+            "X-GitHub-Api-Version": "2022-11-28",
+        }
 
     # artifactsの情報を取得
     def _get_github_actions_artifacts(self, github_owner: str, repository_name: str):
         url = f"https://api.github.com/repos/{github_owner}/{repository_name}/actions/artifacts"
-        headers = {
-            "Accept": "application/vnd.github+json",
-            "X-GitHub-Api-Version": "2022-11-28",
-        }
         try:
-            response = requests.get(url, headers=headers, timeout=10)
+            response = requests.get(url, headers=self.headers, timeout=10)
             response.raise_for_status()
             return response.json()
         except HTTPError as http_err:
@@ -68,13 +69,8 @@ class RetrieveGithubActionsArtifactsNode(Node):
         self, artifacts_redirect_url_dict: dict, iteration_save_dir: str
     ):
         for key, value in artifacts_redirect_url_dict.items():
-            headers = {
-                "Accept": "application/vnd.github+json",
-                "Authorization": f"Bearer {GITHUB_PERSONAL_ACCESS_TOKEN}",
-                "X-GitHub-Api-Version": "2022-11-28",
-            }
             try:
-                response = requests.get(value, headers=headers)
+                response = requests.get(value, headers=self.headers)
                 response.raise_for_status()
                 if response.status_code == 200:
                     self._zip_to_txt(response, iteration_save_dir, key)
@@ -111,7 +107,7 @@ class RetrieveGithubActionsArtifactsNode(Node):
         workflow_run_id = getattr(state, self.input_key[2])
         save_dir = getattr(state, self.input_key[3])
         num_iterations = getattr(state, self.input_key[4])
-        iteration_save_dir = save_dir + f"iteration_{num_iterations}"
+        iteration_save_dir = save_dir + f"/iteration_{num_iterations}"
         os.makedirs(iteration_save_dir, exist_ok=True)
         artifacts_infos = self._get_github_actions_artifacts(
             github_owner, repository_name
@@ -147,7 +143,7 @@ if __name__ == "__main__":
     state = {
         "github_owner": "fuyu-quant",
         "repository_name": "experimental-script",
-        "workflow_run_id": 12975375976,
+        "workflow_run_id": 12977165790,
         "save_dir": "/workspaces/researchgraph/data",
         "num_iterations": 1,
     }
