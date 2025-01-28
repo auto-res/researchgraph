@@ -21,7 +21,7 @@ class RetrievearXivTextNode(Node):
 
     def execute(self, state) -> dict:
         arxiv_url = getattr(state, self.input_key[0])
-        arxiv_id = re.sub(r"^https://arxiv\.org/abs/", "", arxiv_url)
+        arxiv_id = re.sub(r"^https?://arxiv\.org/abs/", "", arxiv_url)
 
         text_path = os.path.join(self.save_dir, f"{arxiv_id}.txt")
         pdf_path = os.path.join(self.save_dir, f"{arxiv_id}.pdf")

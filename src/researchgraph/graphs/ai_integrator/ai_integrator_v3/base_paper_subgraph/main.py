@@ -16,7 +16,7 @@ class BasePaperState(BaseModel):
     base_github_urls: Optional[list[str]] = None
     base_paper_text: Optional[str] = None
     base_arxiv_url: Optional[str] = None
-    base_github_url: Optional[str] = None
+    base_github_url: Optional[list] = None
     base_selected_paper: Optional[dict] = None
     
 
@@ -43,7 +43,7 @@ class ArxivRetrieverLoopNode(Runnable):
         
         base_candidate_papers = []
 
-        for search_result in state.base_search_results:
+        for index, search_result in enumerate(state.base_search_results):
             arxiv_url = search_result.get("arxiv_url")
             if not arxiv_url:
                 continue
@@ -57,11 +57,12 @@ class ArxivRetrieverLoopNode(Runnable):
                 state.base_github_url = github_url
 
                 base_candidate_papers.append(
-                        {
+                    {
+                        "index": index,
                         "arxiv_url": state.base_arxiv_url,
                         "title": search_result.get("title"),
                         "authors": search_result.get("authors"),
-                        "publication_date": search_result.get("publication_date"),
+                        "publication_date": search_result.get("published_date"),
                         "journal": search_result.get("journal"),
                         "doi": search_result.get("doi"),
                         "paper_text": state.base_paper_text,
@@ -79,12 +80,14 @@ class BasePaperSubgraph:
         num_retrieve_paper: int,
         period_days: int, 
         save_dir: str,
+        api_type: str,
         ai_integrator_v3_select_paper_prompt: str,
     ):
         self.llm_name= llm_name
         self.num_retrieve_paper = num_retrieve_paper
         self.period_days = period_days
         self.save_dir = save_dir
+        self.api_type = api_type
         self.ai_integrator_v3_select_paper_prompt = ai_integrator_v3_select_paper_prompt
 
         if not os.path.exists(self.save_dir):
@@ -99,6 +102,7 @@ class BasePaperSubgraph:
                 output_key=["base_search_results"],
                 num_retrieve_paper=self.num_retrieve_paper, 
                 period_days=self.period_days, 
+                api_type="arxiv",
             ),
         )
         self.graph_builder.add_node(

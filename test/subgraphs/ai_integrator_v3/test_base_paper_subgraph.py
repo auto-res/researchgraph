@@ -13,11 +13,13 @@ def test_base_paper_subgraph():
     num_retrieve_paper = 3
     period_days = 30
     save_dir = SAVE_DIR
+    api_type = "arxiv"
     base_paper_subgraph = BasePaperSubgraph(
         llm_name=llm_name,
         num_retrieve_paper=num_retrieve_paper, 
         period_days=period_days, 
         save_dir=save_dir, 
+        api_type=api_type,
         ai_integrator_v3_select_paper_prompt=ai_integrator_v3_select_paper_prompt,
     )
     

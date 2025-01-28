@@ -13,7 +13,7 @@ class RetrieveGithubUrlNode(Node):
 
     def _extract_github_url_from_text(self, content: str) -> list[str]:
         try:
-            matches = re.findall(r"github\.com[\w\d\/\-\.]*", content)
+            matches = re.findall(r"https?://github\.com/[\w\-\_]+/[\w\-\_]+", content)
             return [f"https://{url}" if not url.startswith("http") else url for url in matches]
         except Exception as e:
             print(f"Error extracting GitHub URL: {e}")
