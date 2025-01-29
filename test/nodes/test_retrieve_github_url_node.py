@@ -26,7 +26,7 @@ def test_retrieve_github_url_node():
 
     graph = graph_builder.compile()
     state = {
-        "paper_text": "This is a sample text with a GitHub URL: github.com/user/repo and another one: https://github.com/another/repo",
+        "paper_text": "This is a sample text with a GitHub URL: http://github.com/user/repo and another one: https://github.com/another/repo",
     }
     result = graph.invoke(state, debug=True)
     assert "github_url" in result

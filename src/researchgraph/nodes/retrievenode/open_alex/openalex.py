@@ -32,9 +32,6 @@ class OpenAlexNode(Node, PaperSearch):
         self.num_retrieve_paper = num_retrieve_paper
 
     def search_paper(self, keywords: str | list[str], num_retrieve_paper: int) -> list[dict]:
-        # Normalize keywords to ensure it's always a list
-        keywords = self.normalize_keywords(keywords)
-
         """Search papers using OpenAlex API."""
         works = pyalex.Works().filter(publication_year=">2011", is_oa=True)
         search_results = []
