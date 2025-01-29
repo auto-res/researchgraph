@@ -5,7 +5,7 @@ ai_integrator_v3_select_paper_prompt = """
     Below is a list of papers with their details:
 
     {% for paper in base_candidate_papers %}
-    **Paper {{ loop.index }}:**
+    **Paper {{ paper.index }}:**
     - **Title:** {{ paper.title }}
     - **Authors:** {{ paper.authors | join(', ') }}
     - **Publication Date:** {{ paper.publication_date }}

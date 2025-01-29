@@ -1,4 +1,5 @@
-import json
+import requests
+import unittest.mock
 from pydantic import BaseModel, Field
 from langgraph.graph import StateGraph
 from researchgraph.nodes.retrievenode.github.retrieve_github_url import RetrieveGithubUrlNode
@@ -28,8 +29,26 @@ def test_retrieve_github_url_node():
     state = {
         "paper_text": "This is a sample text with a GitHub URL: http://github.com/user/repo and another one: https://github.com/another/repo",
     }
-    result = graph.invoke(state, debug=True)
-    assert "github_url" in result
-    assert len(result["github_url"]) == 2
-    assert "https://github.com/user/repo" in result["github_url"]
-    assert "https://github.com/another/repo" in result["github_url"]
+    with unittest.mock.patch("requests.get") as mock_get:
+        mock_response = unittest.mock.Mock()
+        mock_response.status_code = 200
+        mock_response.raise_for_status.return_value = None
+        mock_get.return_value = mock_response
+        result = graph.invoke(state, debug=True)
+        mock_get.assert_called()
+
+        assert "github_url" in result
+        assert len(result["github_url"]) == 2
+        assert "https://github.com/user/repo" in result["github_url"]
+        assert "https://github.com/another/repo" in result["github_url"]
+
+        assert mock_get.call_count == 2
+
+    with unittest.mock.patch("requests.get") as mock_get:
+        mock_response = unittest.mock.Mock()
+        mock_response.status_code = 404
+        mock_response.raise_for_status.side_effect = requests.exceptions.HTTPError("404 Client Error: Not Found")
+        mock_get.return_value = mock_response
+        result = graph.invoke(state, debug=True)
+        assert "github_url" in result
+        assert len(result["github_url"]) == 0 
