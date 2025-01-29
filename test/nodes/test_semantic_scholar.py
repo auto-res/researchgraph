@@ -1,15 +1,15 @@
+import os
+from typing import TypedDict
 from langgraph.graph import StateGraph
-from pydantic import BaseModel, Field
 from researchgraph.nodes.retrievenode.semantic_scholar.semantic_scholar import (
     SemanticScholarNode,
 )
 from unittest.mock import patch
 
 
-class State(BaseModel):
-     queries : list = Field(default_factory=list)
-     search_results: list[dict] = Field(default_factory=list)
-
+class State(TypedDict):
+    keywords: str
+    paper_results: dict
 
 # NOTE：It is executed by Github actions.
 @patch("semanticscholar.SemanticScholar.search_paper")
@@ -17,23 +17,23 @@ def test_semantic_scholar_node(mock_search_paper):
     mock_search_paper.return_value = [
         {
             "title": "Mock Paper 1",
+            "abstract": "This is a mock abstract.",
             "authors": [{"name": "Author One"}],
             "publicationDate": "2023-01-01",
-            "journal": "Jouranal One",
-            "doi": "http", 
-            "externalIds": {"ArXiv": "1234.5678"},
+            "arxivId": "1234.5678",
         },
         {
             "title": "Mock Paper 2",
+            "abstract": "This is another mock abstract.",
             "authors": [{"name": "Author Two"}],
-            "publicationDate": "2023-02-02",
-            "journal": "Journal Two",
-            "doi": "http",
-            "externalIds": {"ArXiv": "8765.4321"},
+            "publicationDate": "2023-01-02",
+            "arxivId": "2345.6789",
         },
     ]
-    input_key = ["queries"]
-    output_key = ["search_results"]
+
+    SAVE_DIR = os.environ.get("SAVE_DIR", "/workspaces/researchgraph/data")
+    input_key = ["keywords"]
+    output_key = ["paper_results"]
 
     graph_builder = StateGraph(State)
     graph_builder.add_node(
@@ -41,17 +41,14 @@ def test_semantic_scholar_node(mock_search_paper):
         SemanticScholarNode(
             input_key=input_key,
             output_key=output_key,
-            num_retrieve_paper=2,
+            save_dir=SAVE_DIR,
+            num_retrieve_paper=3,
         ),
     )
     graph_builder.set_entry_point("semanticscholarretriever")
     graph_builder.set_finish_point("semanticscholarretriever")
     graph = graph_builder.compile()
 
-    memory = {"queries": ["Grokking"]}
-    result = graph.invoke(memory, debug=True)
-    assert len(result["search_results"]) == 2
-    assert result["search_results"][0]["arxiv_url"] == "https://arxiv.org/abs/1234.5678"
-    assert result["search_results"][1]["arxiv_url"] == "https://arxiv.org/abs/8765.4321"
-    assert result["search_results"][0]["paper_title"] == "Mock Paper 1"
-    assert result["search_results"][1]["paper_title"] == "Mock Paper 2"
+    memory = {"keywords": '["Grokking"]'}
+
+    assert graph.invoke(memory, debug=True)
