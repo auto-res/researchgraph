@@ -1,5 +1,5 @@
 executor_subgraph_input_data = {
-    "github_owner": "fuyu-quant",
+    "github_owner": "auto-res",
     "repository_name": "experimental-script",
     "save_dir": "/workspaces/researchgraph/data",
     "num_iterations": 1,
