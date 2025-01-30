@@ -2,7 +2,9 @@ import os
 from IPython.display import Image
 from langgraph.graph import START, END, StateGraph
 from pydantic import BaseModel, Field
-from researchgraph.graphs.ai_integrator.ai_integrator_v3.writer_subgraph.input_data import writer_subgraph_input_data
+from researchgraph.graphs.ai_integrator.ai_integrator_v3.writer_subgraph.input_data import (
+    writer_subgraph_input_data,
+)
 from researchgraph.core.factory import NodeFactory
 
 
@@ -27,9 +29,9 @@ class WriterSubgraph:
     def __init__(
         self,
         llm_name: str,
-        template_dir: str, 
-        figures_dir: str, 
-        refine_round: int = 2, 
+        template_dir: str,
+        figures_dir: str,
+        refine_round: int = 2,
     ):
         self.llm_name = llm_name
         self.refine_round = refine_round
@@ -45,7 +47,7 @@ class WriterSubgraph:
                 input_key=[],
                 output_key=["paper_content"],
                 llm_name=self.llm_name,
-                refine_round=refine_round,  
+                refine_round=refine_round,
             ),
         )
         self.graph_builder.add_node(
@@ -55,8 +57,8 @@ class WriterSubgraph:
                 input_key=["paper_content"],
                 output_key=["pdf_file_path"],
                 llm_name=self.llm_name,
-                template_dir=template_dir, 
-                figures_dir=figures_dir, 
+                template_dir=template_dir,
+                figures_dir=figures_dir,
             ),
         )
         # make edges
@@ -75,20 +77,22 @@ class WriterSubgraph:
         with open(path + "ai_integrator_v3_refiner_subgraph.png", "wb") as f:
             f.write(image.data)
 
+
 if __name__ == "__main__":
     GITHUB_WORKSPACE = os.environ.get("GITHUB_WORKSPACE", os.getcwd())
-    TEST_TEMPLATE_DIR = os.path.join(GITHUB_WORKSPACE, "src/researchgraph/graphs/ai_scientist/templates/2d_diffusion")
+    TEST_TEMPLATE_DIR = os.path.join(
+        GITHUB_WORKSPACE, "src/researchgraph/graphs/ai_scientist/templates/2d_diffusion"
+    )
     TEST_FIGURES_DIR = os.path.join(GITHUB_WORKSPACE, "images")
 
     llm_name = "gpt-4o-2024-08-06"
     writer_subgraph = WriterSubgraph(
         llm_name=llm_name,
-        template_dir = TEST_TEMPLATE_DIR, 
-        figures_dir = TEST_FIGURES_DIR, 
-   
+        template_dir=TEST_TEMPLATE_DIR,
+        figures_dir=TEST_FIGURES_DIR,
     )
     writer_subgraph(
-        state = writer_subgraph_input_data, 
+        state=writer_subgraph_input_data,
     )
-    image_dir = "/workspaces/researchgraph/images/"
-    writer_subgraph.make_image(image_dir)
+    # image_dir = "/workspaces/researchgraph/images/"
+    # writer_subgraph.make_image(image_dir)

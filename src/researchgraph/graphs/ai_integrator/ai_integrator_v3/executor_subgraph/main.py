@@ -17,7 +17,7 @@ class ExecutorState(BaseModel):
     branch_name: str = Field(default="")
     workflow_run_id: int = Field(default=0)
     save_dir: str = Field(default="")
-    num_iterations: int = Field(default=1)
+    fix_iterations: int = Field(default=1)
     output_file_path: str = Field(default="")
     error_file_path: str = Field(default="")
     session_id: str = Field(default="")
@@ -29,11 +29,9 @@ class ExecutorState(BaseModel):
 class ExecutorSubgraph:
     def __init__(
         self,
-        iteration: int = 3,
+        max_fix_iteration: int = 3,
     ):
-        self.iteration = iteration
-        # if not os.path.exists(self.save_dir):
-        #     os.makedirs(self.save_dir)
+        self.max_fix_iteration = max_fix_iteration
         self.graph_builder = StateGraph(ExecutorState)
 
         self.graph_builder.add_node(
@@ -66,7 +64,7 @@ class ExecutorSubgraph:
                     "repository_name",
                     "workflow_run_id",
                     "save_dir",
-                    "num_iterations",
+                    "fix_iterations",
                 ],
                 output_key=["output_file_path", "error_file_path"],
             ),
@@ -75,8 +73,13 @@ class ExecutorSubgraph:
             "fix_code_with_devin_node",
             NodeFactory.create_node(
                 node_name="fix_code_with_devin_node",
-                input_key=["session_id", "output_file_path", "error_file_path"],
-                output_key=["num_iterations"],
+                input_key=[
+                    "session_id",
+                    "output_file_path",
+                    "error_file_path",
+                    "fix_iterations",
+                ],
+                output_key=["fix_iterations"],
             ),
         )
 
@@ -104,7 +107,7 @@ class ExecutorSubgraph:
         self.graph = self.graph_builder.compile()
 
     def iteration_function(self, state: ExecutorState):
-        if state.num_iterations <= self.iteration:
+        if state.fix_iterations <= self.max_fix_iteration:
             return "correction"
         else:
             return "finish"
