@@ -7,6 +7,7 @@ from pydantic import BaseModel, ValidationError, Field
 from researchgraph.core.node import Node
 
 class ArxivResponse(BaseModel):
+    arxiv_id: str
     arxiv_url: str
     title: str
     authors: list[str]
@@ -39,14 +40,11 @@ class ArxivNode(Node):
 
     def _validate_and_convert(self, entry) -> Optional[ArxivResponse]:
         try:
-            authors = []
-            if hasattr(entry, "authors"):
-                authors = [a.name for a in entry.authors]
-
             paper = ArxivResponse(
-                arxiv_url=entry.link,
+                arxiv_id = entry.id.split("/")[-1], 
+                arxiv_url=entry.id,
                 title=entry.title or "No Title",
-                authors=authors,
+                authors = [a.name for a in entry.authors] if hasattr(entry, "authors") else [], 
                 published_date=entry.published if hasattr(entry, "published") else "Unknown date",
                 summary=entry.summary if hasattr(entry, "summary") else "No summary"
             )

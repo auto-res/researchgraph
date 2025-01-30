@@ -2,7 +2,7 @@ from researchgraph.core.node import Node
 from researchgraph.nodes.retrievenode.arxiv_api.arxiv_api_node import ArxivNode
 from researchgraph.nodes.retrievenode.semantic_scholar.semantic_scholar import SemanticScholarNode
 
-class RetrievePaperNode(Node):
+class SearchPapersNode(Node):
     def __init__(
         self,
         input_key: list[str],

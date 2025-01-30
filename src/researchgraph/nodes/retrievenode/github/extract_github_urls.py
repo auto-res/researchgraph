@@ -3,7 +3,7 @@ import requests
 from researchgraph.core.node import Node
 
 
-class RetrieveGithubUrlNode(Node):
+class ExtractGithubUrlsNode(Node):
     def __init__(
         self,
         input_key: list[str],

@@ -4,76 +4,85 @@ from pydantic import BaseModel, Field
 from langgraph.graph import START,END, StateGraph
 from typing import Optional
 from researchgraph.graphs.ai_integrator.ai_integrator_v3.base_paper_subgraph.llmnode_prompt import ai_integrator_v3_select_paper_prompt
+from researchgraph.graphs.ai_integrator.ai_integrator_v3.base_paper_subgraph.input_data import base_paper_subgraph_input_data
 from researchgraph.core.factory import NodeFactory
-from langgraph.utils.runnable import Runnable
 
 
 class BasePaperState(BaseModel):
     base_queries: list = Field(default_factory=list)
     base_search_results: Optional[list[dict]] = None
-    base_candidate_papers: Optional[list[dict]] = None
-    base_selected_paper: Optional[dict] = None
-
-class ArxivTextRetrieveState(BaseModel):
-    base_arxiv_url: Optional[str]
+    base_arxiv_url: Optional[str] = None
     base_paper_text: Optional[str] = None
-class GitHubRetrieveState(BaseModel):
-    base_paper_text: Optional[str] 
-    base_github_url: Optional[list] = None
+    base_github_urls: Optional[list] = None
+    base_candidate_papers: Optional[list[dict]] = None
+    base_selected_arxiv_id: Optional[str] = None
+    base_selected_paper: Optional[dict] = None
+    process_index: int = 0
     
-
-class ArxivRetrieverLoopNode(Runnable):
-    def __init__(self, save_dir, num_retrieve_paper=1, **kwargs):
-        self.save_dir = save_dir
-        self.num_retrieve_paper = num_retrieve_paper
-
-        self.arxiv_retriever = NodeFactory.create_node(
-            node_name="retrieve_arxiv_text_node",
-            save_dir=self.save_dir,
-            input_key=["base_arxiv_url"],
-            output_key=["base_paper_text"],
-        )
-        self.github_retriever = NodeFactory.create_node(
-            node_name="retrieve_github_url_node",
-            input_key=["base_paper_text"],
-            output_key=["base_github_url"]
-        )
-
-    def invoke(self, state: BasePaperState, config=None):
-        if not hasattr(state, "base_search_results") or not state.base_search_results:
-            return state
-        
-        base_candidate_papers = []
-
-        for index, search_result in enumerate(state.base_search_results):
-            arxiv_url = search_result.get("arxiv_url")
-            if not arxiv_url:
-                continue
-
-            arxiv_state = ArxivTextRetrieveState(base_arxiv_url=arxiv_url)
-            arxiv_result = self.arxiv_retriever.execute(arxiv_state)
-            paper_text = arxiv_result.get("base_paper_text")
-            
-            github_state = GitHubRetrieveState(base_paper_text=paper_text)
-            github_result = self.github_retriever.execute(github_state)
-            github_url = github_result.get("base_github_url")
-            if github_url:
-                base_candidate_papers.append(
-                    {
-                        "index": index,
-                        "arxiv_url": arxiv_url,
-                        "title": search_result.get("title"),
-                        "authors": search_result.get("authors"),
-                        "publication_date": search_result.get("published_date"),
-                        "journal": search_result.get("journal"),
-                        "doi": search_result.get("doi"),
-                        "paper_text": paper_text[:500],
-                        "github_url": github_url
-                    }
-                )
-        state.base_candidate_papers = base_candidate_papers
-
+def retrieve_arxiv_text_node(state: BasePaperState, save_dir: str) -> BasePaperState:
+    if not state.base_search_results or state.process_index >= len(state.base_search_results):
         return state
+
+    state.base_arxiv_url = state.base_search_results[state.process_index].get("arxiv_url")
+
+    if not state.base_arxiv_url:
+        return state
+
+    arxiv_result = NodeFactory.create_node(
+        node_name="retrieve_arxiv_text_node",
+        input_key=["base_arxiv_url"],
+        output_key=["base_paper_text"],
+        save_dir=save_dir,
+    ).execute(state)
+
+    state.base_paper_text = arxiv_result.get("base_paper_text")
+    return state
+
+def extract_github_urls_node(state: BasePaperState) -> BasePaperState:
+    if not state.base_paper_text:
+        return state
+
+    github_result = NodeFactory.create_node(
+        node_name="extract_github_urls_node",
+        input_key=["base_paper_text"],
+        output_key=["base_github_urls"]
+    ).execute(state)
+
+    state.base_github_urls = github_result.get("base_github_urls")
+
+    if state.base_github_urls:
+        search_result = state.base_search_results[state.process_index]
+        state.base_candidate_papers = state.base_candidate_papers or []
+        state.base_candidate_papers.append(
+            {
+                "arxiv_id": search_result.get("arxiv_id"),
+                "arxiv_url": state.base_arxiv_url,
+                "title": search_result.get("title"),
+                "authors": search_result.get("authors"),
+                "publication_date": search_result.get("published_date"),
+                "journal": search_result.get("journal"),
+                "doi": search_result.get("doi"),
+                "paper_text": state.base_paper_text[:500],  #NOTE: デバッグ用に500文字に制限
+                "github_urls": state.base_github_urls
+            }
+        )
+    state.process_index += 1 
+    state.base_paper_text = None
+    return state
+
+def convert_paper_id_to_dict_node(state: BasePaperState) -> BasePaperState:
+    if state.base_selected_arxiv_id is None:
+        return state
+
+    if state.base_candidate_papers:
+        state.base_selected_paper = next(
+            (paper for paper in state.base_candidate_papers if paper["arxiv_id"] == state.base_selected_arxiv_id),
+            None
+        )
+    else:
+        state.base_selected_paper = None
+
+    return state
 
 class BasePaperSubgraph:
     def __init__(
@@ -98,9 +107,9 @@ class BasePaperSubgraph:
 
         #TODO: 取得した全ての論文がgithub_urlを持っていないか、アクセス不可能な場合の処理を追加する
         self.graph_builder.add_node(
-            "retrieve_paper_node",
+            "search_papers_node",
             NodeFactory.create_node(
-                node_name="retrieve_paper_node",
+                node_name="search_papers_node",
                 input_key=["base_queries"],
                 output_key=["base_search_results"],
                 num_retrieve_paper=self.num_retrieve_paper, 
@@ -108,34 +117,35 @@ class BasePaperSubgraph:
                 api_type="arxiv",
             ),
         )
+        self.graph_builder.add_node("retrieve_arxiv_text_node", lambda state: retrieve_arxiv_text_node(state, self.save_dir))
+        self.graph_builder.add_node("extract_github_urls_node", extract_github_urls_node)
         self.graph_builder.add_node(
-            "arxiv_retriever_loop",
-            ArxivRetrieverLoopNode(
-                save_dir=self.save_dir,
-                num_retrieve_paper = self.num_retrieve_paper
-            ),
-        )
-        self.graph_builder.add_node(
-            "select_paper_node",
+            "select_best_paper_id_node",
             NodeFactory.create_node(
                 node_name="structuredoutput_llmnode",
                 input_key=["base_candidate_papers"], 
-                output_key=["base_selected_paper"],
+                output_key=["base_selected_arxiv_id"],
                 llm_name=self.llm_name,
                 prompt_template=self.ai_integrator_v3_select_paper_prompt,
             ),
         )
+        self.graph_builder.add_node("convert_paper_id_to_dict_node", convert_paper_id_to_dict_node)
         # make edges
-        self.graph_builder.add_edge(START, "retrieve_paper_node")
-        self.graph_builder.add_edge("retrieve_paper_node", "arxiv_retriever_loop")
-        self.graph_builder.add_edge("arxiv_retriever_loop", "select_paper_node")
-        self.graph_builder.add_edge("select_paper_node", END)
+        self.graph_builder.add_edge(START, "search_papers_node")
+        self.graph_builder.add_edge("search_papers_node", "retrieve_arxiv_text_node")
+        self.graph_builder.add_edge("retrieve_arxiv_text_node", "extract_github_urls_node")
+        self.graph_builder.add_conditional_edges(
+            "extract_github_urls_node",
+            path = self._check_loop_condition,
+            path_map={"retrieve_arxiv_text_node": "retrieve_arxiv_text_node", "select_best_paper_id_node": "select_best_paper_id_node"},
+        )
+        self.graph_builder.add_edge("select_best_paper_id_node", "convert_paper_id_to_dict_node")
+        self.graph_builder.add_edge("convert_paper_id_to_dict_node", END)
 
         self.graph = self.graph_builder.compile()
 
     def __call__(self, state: BasePaperState) -> dict:
         result = self.graph.invoke(state, debug=True)
-        self._convert_selected_paper(result)
         self._cleanup_result(result)
         print(f'result: {result}')
         return result
@@ -145,24 +155,46 @@ class BasePaperSubgraph:
         with open(path + "ai_integrator_v3_base_paper_subgraph.png", "wb") as f:
             f.write(image.data)
 
-    def _convert_selected_paper(self, result: dict) -> None:
-        if "base_selected_paper" in result and result["base_selected_paper"] is not None:
-            selected_index = result["base_selected_paper"]
-            if isinstance(selected_index, str):
-                try:
-                    selected_index = int(selected_index)
-                except ValueError:
-                    result["base_selected_paper"] = None
-            if "base_candidate_papers" in result and isinstance(result["base_candidate_papers"], list):
-                if 0 <= selected_index < len(result["base_candidate_papers"]):
-                    result["base_selected_paper"] = result["base_candidate_papers"][selected_index]
-                else:
-                    result["base_selected_paper"] = None
-            else:
-                result["base_selected_paper"] = None
+    def _check_loop_condition(self, state: BasePaperState) -> str:
+        if state.process_index < len(state.base_search_results):
+            return "retrieve_arxiv_text_node"
+        else:
+            return "select_best_paper_id_node"
 
     def _cleanup_result(self, result: dict) -> None:
+        if "process_index" in result:
+            del result["process_index"]
         if "base_search_results" in result:
             del result["base_search_results"]
+        if "base_paper_text" in result:
+            del result["base_paper_text"]
+        if "base_arxiv_url" in result:
+            del result["base_arxiv_url"]
+        if "base_github_urls" in result:
+            del result["base_github_urls"]
         if "base_candidate_papers" in result:
             del result["base_candidate_papers"]
+        if "base_selected_arxiv_id" in result:
+            del result["base_selected_arxiv_id"]
+
+if __name__ == "__main__":
+    llm_name = "gpt-4o-2024-08-06"
+    num_retrieve_paper = 3
+    period_days = 30
+    save_dir = "/workspaces/researchgraph/data"
+    api_type = "arxiv"
+    base_paper_subgraph = BasePaperSubgraph(
+        llm_name=llm_name,
+        num_retrieve_paper=num_retrieve_paper,
+        period_days=period_days,
+        save_dir=save_dir,
+        api_type=api_type,
+        ai_integrator_v3_select_paper_prompt=ai_integrator_v3_select_paper_prompt,
+    )
+    
+    base_paper_subgraph(
+        state = base_paper_subgraph_input_data, 
+        )
+
+    image_dir = "/workspaces/researchgraph/images/"
+    base_paper_subgraph.make_image(image_dir)

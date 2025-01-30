@@ -1,15 +1,15 @@
 from .github import RetrieveGithubRepositoryNode
 from .github import RetrieveCodeWithDevinNode
-from .github import RetrieveGithubUrlNode
+from .github import ExtractGithubUrlsNode
 from .github import RetrieveGithubActionsArtifactsNode
 from .arxiv_api import RetrievearXivTextNode
-from .retrieve_paper_node import RetrievePaperNode
+from .search_papers_node import SearchPapersNode
 
 __all__ = [
     "RetrievearXivTextNode",
     "RetrieveGithubRepositoryNode",
     "RetrieveCodeWithDevinNode",
-    "RetrieveGithubUrlNode", 
-    "RetrievePaperNode",
+    "ExtractGithubUrlsNode", 
+    "SearchPapersNode",
     "RetrieveGithubActionsArtifactsNode",
 ]

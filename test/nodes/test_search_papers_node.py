@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 from langgraph.graph import StateGraph
-from researchgraph.nodes.retrievenode.retrieve_paper_node import RetrievePaperNode
+from researchgraph.nodes.retrievenode.search_papers_node import SearchPapersNode
 from unittest.mock import patch, MagicMock
 
 
@@ -9,7 +9,7 @@ class State(BaseModel):
     search_results: list[dict] = Field(default_factory=list)
 
 # NOTE：It is executed by Github actions.
-def test_retrieve_paper_node():
+def test_search_paper_node():
     input_key = ["queries"]
     output_key = ["search_results"]
     period_days = 30
@@ -18,8 +18,8 @@ def test_retrieve_paper_node():
     graph_builder = StateGraph(State)
 
     graph_builder.add_node(
-        "retrieve_paper_node",
-        RetrievePaperNode(
+        "search_papers_node",
+        SearchPapersNode(
             input_key=input_key,
             output_key=output_key,
             period_days=period_days,
@@ -27,8 +27,8 @@ def test_retrieve_paper_node():
             api_type=api_type, 
         ),
     )
-    graph_builder.set_entry_point("retrieve_paper_node")
-    graph_builder.set_finish_point("retrieve_paper_node")
+    graph_builder.set_entry_point("search_papers_node")
+    graph_builder.set_finish_point("search_papers_node")
     graph = graph_builder.compile()
     state = {
         "queries": ["deep learning"],
@@ -36,6 +36,7 @@ def test_retrieve_paper_node():
     with patch("researchgraph.nodes.retrievenode.arxiv_api.arxiv_api_node.ArxivNode.search_paper") as mock_search_paper:
         mock_search_paper.return_value = [
             {
+                "arxiv_id": "1234.5678",
                 "arxiv_url": "https://arxiv.org/abs/1234.5678",
                 "title": "Paper 1",
                 "authors": [{"name": "Author 1"}, {"name": "Author 2"}],
@@ -44,6 +45,7 @@ def test_retrieve_paper_node():
                 "externalIds": {"ArXiv": "1234.5678"},
             },
             {
+                "arxiv_id": "2345.6789",
                 "arxiv_url": "https://arxiv.org/abs/2345.6789",
                 "title": "Paper 2",
                 "authors": [{"name": "Author 3"}, {"name": "Author 4"}],
@@ -57,6 +59,7 @@ def test_retrieve_paper_node():
             "queries": ["deep learning"], 
             "search_results": [
                 {
+                    "arxiv_id": "1234.5678",
                     "arxiv_url": "https://arxiv.org/abs/1234.5678",
                     "title": "Paper 1",
                     "authors": [{"name": "Author 1"}, {"name": "Author 2"}],
@@ -65,6 +68,7 @@ def test_retrieve_paper_node():
                     "externalIds": {"ArXiv": "1234.5678"},
                 },
                 {
+                    "arxiv_id": "2345.6789",
                     "arxiv_url": "https://arxiv.org/abs/2345.6789",
                     "title": "Paper 2",
                     "authors": [{"name": "Author 3"}, {"name": "Author 4"}],

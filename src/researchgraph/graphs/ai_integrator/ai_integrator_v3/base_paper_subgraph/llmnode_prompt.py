@@ -5,7 +5,7 @@ ai_integrator_v3_select_paper_prompt = """
     Below is a list of papers with their details:
 
     {% for paper in base_candidate_papers %}
-    **Paper {{ paper.index }}:**
+    **Paper (ID: {{ paper.arxiv_id }})**
     - **Title:** {{ paper.title }}
     - **Authors:** {{ paper.authors | join(', ') }}
     - **Publication Date:** {{ paper.publication_date }}
@@ -26,10 +26,11 @@ ai_integrator_v3_select_paper_prompt = """
     1. Carefully review the details of each paper.
     2. Evaluate each paper based on the selection criteria above.
     3. Select the **single most relevant and high-quality paper** that best serves as a foundational base for further research.
-    4. Return the **index number** of the selected paper from the list above, using the format "{index number}". For instance, if you choose the first paper, return "1".
-    5. Provide your response in the following JSON format, which includes a key called `base_selected_paper`:
+    4. Return the **arxiv_id** of the selected paper.
+    5. Provide your response in the following JSON format:
     ```json
     {
-    "base_selected_paper": "{index number}"
+    "base_selected_arxiv_id": "{arxiv_id}"
     }
+    ```
 """
