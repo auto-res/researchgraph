@@ -275,8 +275,8 @@ jobs:
       - name: Ensure pip cache folder exists
         run: mkdir -p /home/runner/.cache/pip
 
-  test-retrieve_paper_node:
-    name: Test of RetrievePaperNode
+  test-search_papers_node:
+    name: Test of SearchPapersNode
     runs-on: ubuntu-latest
     env:
       SAVE_DIR: ${{ github.workspace }}/save_dir
@@ -306,13 +306,13 @@ jobs:
         run: mkdir -p $SAVE_DIR
         
       - name: Run pytest
-        run: uv run pytest test/nodes/test_retrieve_paper_node.py
+        run: uv run pytest test/nodes/test_search_papers_node.py
 
       - name: Ensure pip cache folder exists
         run: mkdir -p /home/runner/.cache/pip
 
-  test-retrieve_github_url_node:
-    name: Test of RetrieveGithubUrlNode
+  test-extract_github_urls_node:
+    name: Test of ExtractGithubUrlsNode
     runs-on: ubuntu-latest
     env:
       SAVE_DIR: ${{ github.workspace }}/save_dir
@@ -341,7 +341,7 @@ jobs:
         run: mkdir -p $SAVE_DIR
         
       - name: Run pytest
-        run: uv run pytest test/nodes/test_retrieve_github_url_node.py
+        run: uv run pytest test/nodes/test_extract_github_urls_node.py
 
       - name: Ensure pip cache folder exists
         run: mkdir -p /home/runner/.cache/pip
