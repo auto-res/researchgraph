@@ -25,6 +25,7 @@ class ArxivNode(Node):
         super().__init__(input_key, output_key)
         self.num_retrieve_paper = num_retrieve_paper
         self.period_days = period_days
+        self.start_indices: dict[str, int] = {} #TODO: stateに持たせる？
 
     def _build_arxiv_query(self, query: str) -> str:
         now_utc = datetime.now(pytz.utc)
@@ -35,7 +36,6 @@ class ArxivNode(Node):
         from_date = now_utc - timedelta(days=self.period_days)
         from_str = from_date.strftime("%Y-%m-%d")
         to_str = now_utc.strftime("%Y-%m-%d")
-
         return f"(all:{query}) AND submittedDate:[{from_str} TO {to_str}]"
 
     def _validate_and_convert(self, entry) -> Optional[ArxivResponse]:
@@ -56,10 +56,11 @@ class ArxivNode(Node):
     def search_paper(self, query: str) -> list[ArxivResponse]:
         base_url = "http://export.arxiv.org/api/query"
         search_query = self._build_arxiv_query(query)
+        start_index = self.start_indices.get(query, 0)
 
         params = {
             "search_query": search_query,
-            "start": 0,
+            "start": start_index,
             "max_results": self.num_retrieve_paper,
             "sortBy": "submittedDate",
             "sortOrder": "descending",
@@ -79,6 +80,12 @@ class ArxivNode(Node):
             paper = self._validate_and_convert(entry)
             if paper:
                 validated_list.append(paper.model_dump())
+
+        if len(validated_list) == self.num_retrieve_paper:
+            if query not in self.start_indices:
+                self.start_indices[query] = 0
+            self.start_indices[query] += self.num_retrieve_paper
+
         return validated_list
 
     def execute(self, state) -> list[dict]:
@@ -91,7 +98,6 @@ class ArxivNode(Node):
         for q in queries:
             results = self.search_paper(q)
             all_papers.extend(results)
-
         return {
             self.output_key[0]: all_papers, 
         }
