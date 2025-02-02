@@ -16,6 +16,10 @@ writer_subgraph_input_data = {
     "new_method_results": ["Accuracy: 0.92"],
     "arxiv_url": "https://arxiv.org/abs/1234.5678",
     "github_url": "https://github.com/example/repo",
-    "paper_content": {}, 
-    "pdf_file_path": TEST_PDF_FILE,  
+    "paper_content": {},
+    # "pdf_file_path": TEST_PDF_FILE,
+    "pdf_file_path": "/workspaces/researchgraph/data/test_output.pdf",
+    "github_owner": "auto-res",
+    "repository_name": "experimental-script",
+    "branch_name": "devin/1738251222-learnable-gated-pooling",
 }

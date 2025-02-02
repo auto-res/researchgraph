@@ -23,19 +23,23 @@ class WriterState(BaseModel):
     github_url: str = Field(default="")
     paper_content: dict = Field(default_factory=dict)
     pdf_file_path: str = Field(default="")
+    github_owner: str = Field(default="")
+    repository_name: str = Field(default="")
+    branch_name: str = Field(default="")
+    completion: bool = Field(default=False)
 
 
 class WriterSubgraph:
     def __init__(
         self,
         llm_name: str,
-        template_dir: str,
+        template_file_path: str,
         figures_dir: str,
         refine_round: int = 2,
     ):
         self.llm_name = llm_name
         self.refine_round = refine_round
-        self.template_dir = template_dir
+        self.template_file_path = template_file_path
         self.figures_dir = figures_dir
 
         self.graph_builder = StateGraph(WriterState)
@@ -57,14 +61,28 @@ class WriterSubgraph:
                 input_key=["paper_content"],
                 output_key=["pdf_file_path"],
                 llm_name=self.llm_name,
-                template_dir=template_dir,
+                template_file_path=template_file_path,
                 figures_dir=figures_dir,
+            ),
+        )
+        self.graph_builder.add_node(
+            "github_upload_node",
+            NodeFactory.create_node(
+                node_name="github_upload_node",
+                input_key=[
+                    "pdf_file_path",
+                    "github_owner",
+                    "repository_name",
+                    "branch_name",
+                ],
+                output_key=["completion"],
             ),
         )
         # make edges
         self.graph_builder.add_edge(START, "writeup_node")
         self.graph_builder.add_edge("writeup_node", "latex_node")
-        self.graph_builder.add_edge("latex_node", END)
+        self.graph_builder.add_edge("latex_node", "github_upload_node")
+        self.graph_builder.add_edge("github_upload_node", END)
 
         self.graph = self.graph_builder.compile()
 
@@ -74,22 +92,24 @@ class WriterSubgraph:
 
     def make_image(self, path: str):
         image = Image(self.graph.get_graph().draw_mermaid_png())
-        with open(path + "ai_integrator_v3_refiner_subgraph.png", "wb") as f:
+        with open(path + "ai_integrator_v3_writer_subgraph.png", "wb") as f:
             f.write(image.data)
 
 
 if __name__ == "__main__":
     GITHUB_WORKSPACE = os.environ.get("GITHUB_WORKSPACE", os.getcwd())
-    TEST_TEMPLATE_DIR = os.path.join(
-        GITHUB_WORKSPACE, "src/researchgraph/graphs/ai_scientist/templates/2d_diffusion"
-    )
-    TEST_FIGURES_DIR = os.path.join(GITHUB_WORKSPACE, "images")
+    # TEST_TEMPLATE_DIR = os.path.join(
+    #     GITHUB_WORKSPACE, "src/researchgraph/graphs/ai_scientist/templates/2d_diffusion"
+    # )
+    template_file_path = "/workspaces/researchgraph/data/latex/template.tex"
+    figures_dir = "/workspaces/researchgraph/images"
+    # TEST_FIGURES_DIR = os.path.join(GITHUB_WORKSPACE, "images")
 
     llm_name = "gpt-4o-2024-08-06"
     writer_subgraph = WriterSubgraph(
         llm_name=llm_name,
-        template_dir=TEST_TEMPLATE_DIR,
-        figures_dir=TEST_FIGURES_DIR,
+        template_file_path=template_file_path,
+        figures_dir=figures_dir,
     )
     writer_subgraph(
         state=writer_subgraph_input_data,

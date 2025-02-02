@@ -6,6 +6,20 @@ import shutil
 from litellm import completion
 from researchgraph.core.node import Node
 
+from pydantic import BaseModel, Field
+from langgraph.graph import START, END, StateGraph
+
+import ast
+
+
+class State(BaseModel):
+    paper_content: dict = Field(default_factory=dict)
+    pdf_file_path: str = Field(default="")
+
+
+class LLMOutput(BaseModel):
+    latex_full_text: str
+
 
 class LatexNode(Node):
     def __init__(
@@ -13,7 +27,7 @@ class LatexNode(Node):
         input_key: list[str],
         output_key: list[str],
         llm_name: str,
-        template_dir: str,
+        template_file_path: str,
         figures_dir: str,
         timeout: int = 30,
     ):
@@ -21,19 +35,21 @@ class LatexNode(Node):
         self.llm_name = llm_name
         self.timeout = timeout
         self.figures_dir = figures_dir
-        self.template_file = osp.join(osp.abspath(template_dir), "latex", "template.tex")
-        self.template_copy_file = osp.join(osp.abspath(template_dir), "latex", "template_copy.tex")
+        self.template_file_path = template_file_path
+        self.template_copy_file = osp.join(
+            "/workspaces/researchgraph/data/latex", "template_copy.tex"
+        )
 
     def _call_llm(self, prompt: str) -> str:
         try:
             response = completion(
-                model=self.llm_name, 
-                messages=[
-                    {"role": "user", "content": prompt}
-                ], 
+                model=self.llm_name,
+                messages=[{"role": "user", "content": prompt}],
                 temperature=0,
+                response_format=LLMOutput,
             )
             output = response.choices[0].message.content
+            output = ast.literal_eval(output)["latex_full_text"]
             return output
         except Exception as e:
             print("Error calling LLM: {e}")
@@ -41,9 +57,11 @@ class LatexNode(Node):
 
     def _copy_template(self):
         # Copy the LaTeX template to a working copy for modifications
-        if not osp.exists(self.template_file):
-            raise FileNotFoundError(f"Template file not found: {self.template_file}")
-        shutil.copyfile(self.template_file, self.template_copy_file)
+        if not osp.exists(self.template_file_path):
+            raise FileNotFoundError(
+                f"Template file not found: {self.template_file_path}"
+            )
+        shutil.copyfile(self.template_file_path, self.template_copy_file)
 
     def _fill_template(self, content: dict) -> str:
         # Read the copied template, replace placeholders with content, and save the updated file
@@ -69,12 +87,12 @@ class LatexNode(Node):
         )
         if references_bib is None:
             raise FileNotFoundError("references.bib not found in template_copy.tex")
-        
+
         bib_text = references_bib.group(1)
         missing_cites = [cite for cite in cites if cite.strip() not in bib_text]
         if not missing_cites:
             print("No missing references found.")
-            return  tex_text
+            return tex_text
 
         print(f"Missing references found: {missing_cites}")
         prompt = f""""
@@ -91,9 +109,12 @@ class LatexNode(Node):
         
         Return the complete LaTeX document, including any bibtex changes.
         """
+        print("LLMの実行")
         llm_response = self._call_llm(prompt)
         if not llm_response:
-            raise RuntimeError(f"LLM failed to respond for missing references: {missing_cites}")
+            raise RuntimeError(
+                f"LLM failed to respond for missing references: {missing_cites}"
+            )
         return llm_response
 
     def _check_figures(
@@ -103,29 +124,31 @@ class LatexNode(Node):
         pattern: str = r"\\includegraphics.*?{(.*?)}",
     ) -> str:
         # Verify all referenced figures in the LaTeX content exist in the figures directory
-        referenced_figs = re.findall(pattern, tex_text)
         all_figs = [f for f in os.listdir(figures_dir) if f.endswith(".png")]
-
-        missing_figs = [fig for fig in referenced_figs if fig not in all_figs]
-        if not missing_figs:
-            print("No missing figures found.")
+        if not all_figs:
+            print("論文生成に使える図がありません")
             return tex_text
 
-        print(f"Missin figures found: {missing_figs}")
+        referenced_figs = re.findall(pattern, tex_text)
+        fig_to_use = [fig for fig in referenced_figs if fig in all_figs]
+        if not fig_to_use:
+            print("論文内で利用している図はありません")
+            return tex_text
+
         prompt = f"""
-        LaTeX text:
+        LaTeX Text:
         {tex_text}
-
-
-        The following images were not found in the directory {figures_dir}: {', '.join(missing_figs)}.
-        Available images are: {all_figs}.
-        Please provide the complete corrected LaTeX text, ensuring the figure issue is fixed.
-
-        Return the complete LaTeX document.
-        """
+        Available Images:
+        {fig_to_use}
+        Please modify and output the above Latex text based on the following instructions.
+        - Only “Available Images” are available. 
+        - If a figure is mentioned on Latex Text, please rewrite the content of Latex Text to cite it.
+        - Do not use diagrams that do not exist in “Availabel Images”.
+        - Return the complete LaTeX text."""
+        print("LLMの実行")
         llm_response = self._call_llm(prompt)
-        if not llm_response:
-            raise RuntimeError(f"LLM failed to respond for missing figures: {missing_figs}")
+        # if not llm_response:
+        #     raise RuntimeError(f"LLM failed to respond for missing figures: {missing_figs}")
         return llm_response
 
     def _check_duplicates(self, tex_text: str, patterns: dict) -> str:
@@ -143,28 +166,27 @@ class LatexNode(Node):
                 Duplicate {element_type} found: {', '.join(duplicates)}. Ensure any {element_type} is only included once. 
                 If duplicated, identify the best location for the {element_type} and remove any other.
                 
-               Return the complete corrected LaTeX text with the duplicates fixed.
+                Return the complete corrected LaTeX text with the duplicates fixed.
                 """
+                print("LLMの実行")
+
                 llm_response = self._call_llm(prompt)
                 if not llm_response:
-                    raise RuntimeError(f"LLM failed to respond for missing figures: {duplicates}")
+                    raise RuntimeError(
+                        f"LLM failed to respond for missing figures: {duplicates}"
+                    )
                 tex_text = llm_response
             return tex_text
-
 
     def _fix_latex_errors(self, writeup_file: str) -> str:
         # Fix LaTeX errors iteratively using chktex and automated suggestions
         with open(writeup_file, "r") as f:
             tex_text = f.read()
-        check_output = os.popen(
-            f"chktex {writeup_file} -q -n2 -n24 -n13 -n1"
-        ).read()
-        
+        check_output = os.popen(f"chktex {writeup_file} -q -n2 -n24 -n13 -n1").read()
+
         if check_output:
             error_messages = check_output.strip().split("\n")
-            formatted_errors = "\n".join(
-                f"- {msg}" for msg in error_messages if msg
-            )
+            formatted_errors = "\n".join(f"- {msg}" for msg in error_messages if msg)
             prompt = f"""
             LaTeX text:
             {tex_text}
@@ -176,6 +198,8 @@ class LatexNode(Node):
 
             Return the complete corrected LaTeX text.
             """
+            print("LLMの実行")
+
             llm_response = self._call_llm(prompt)
 
             if not llm_response:
@@ -204,9 +228,9 @@ class LatexNode(Node):
                     cwd=cwd,
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE,
-                    text=True, 
+                    text=True,
                     timeout=timeout,
-                    check=True
+                    check=True,
                 )
                 print("Standard Output:\n", result.stdout)
                 print("Standard Error:\n", result.stderr)
@@ -225,57 +249,62 @@ class LatexNode(Node):
             print("Failed to rename PDF.")
 
     def execute(self, state) -> dict:
+        paper_content = getattr(state, self.input_key[0])
+        pdf_file_path = osp.expanduser(getattr(state, self.output_key[0]))
+        if not paper_content or not pdf_file_path:
+            raise ValueError(
+                "Input paper content or output file path not found in state."
+            )
+        self._copy_template()
+        tex_text = self._fill_template(paper_content)
+        max_iterations = 5
+        iteration_count = 0
+
+        while iteration_count < max_iterations:
+            print(f"Start iteration: {iteration_count}")
+            print("Check references")
+            original_tex_text = tex_text
+            tex_text = self._check_references(tex_text)
+            if tex_text != original_tex_text:
+                iteration_count += 1
+                continue
+
+            print("Check figures")
+            original_tex_text = tex_text
+            tex_text = self._check_figures(tex_text, self.figures_dir)
+            if tex_text != original_tex_text:
+                iteration_count += 1
+                continue
+
+            print("Check duplicates")
+            original_tex_text = tex_text
+            tex_text = self._check_duplicates(
+                tex_text,
+                {
+                    "figure": r"\\includegraphics.*?{(.*?)}",
+                    "section header": r"\\section{([^}]*)}",
+                },
+            )
+            if tex_text != original_tex_text:
+                iteration_count += 1
+                continue
+
+            print("Fix latex errors")
+            original_tex_text = tex_text
+            tex_text = self._fix_latex_errors(self.template_copy_file)
+            if tex_text != original_tex_text:
+                iteration_count += 1
+                continue
+
+            print("No changes detected, exiting loop.")
+            break
+
+        if iteration_count == max_iterations:
+            print(f"Maximum iterations reached ({max_iterations}), exiting loop.")
+
+        with open(self.template_copy_file, "w") as f:
+            f.write(tex_text)
         try:
-            paper_content = getattr(state, self.input_key[0])
-            pdf_file_path = osp.expanduser(getattr(state, self.output_key[0]))
-
-            if not paper_content or not pdf_file_path:
-                raise ValueError("Input paper content or output file path not found in state.")
-            
-            self._copy_template()
-            tex_text = self._fill_template(paper_content)
-
-            max_iterations = 5
-            iteration_count = 0
-
-            while iteration_count < max_iterations:
-                print(f"Start iteration: {iteration_count}")
-                original_tex_text = tex_text
-                tex_text = self._check_references(tex_text)
-                if tex_text != original_tex_text:
-                    iteration_count += 1
-                    continue
-
-                original_tex_text = tex_text
-                tex_text = self._check_figures(tex_text, self.figures_dir)
-                if tex_text != original_tex_text:
-                    iteration_count += 1
-                    continue
-
-                original_tex_text = tex_text
-                tex_text = self._check_duplicates(tex_text, {
-                "figure": r"\\includegraphics.*?{(.*?)}",
-                "section header": r"\\section{([^}]*)}",
-                })
-                if tex_text != original_tex_text:
-                    iteration_count += 1
-                    continue
-
-                original_tex_text = tex_text
-                tex_text = self._fix_latex_errors(self.template_copy_file)
-                if tex_text != original_tex_text:
-                    iteration_count += 1
-                    continue
-
-                print("No changes detected, exiting loop.")
-                break
-
-            if iteration_count == max_iterations:
-                print(f"Maximum iterations reached ({max_iterations}), exiting loop.")
-
-            with open(self.template_copy_file, "w") as f:
-                f.write(tex_text)
-
             self._compile_latex(
                 osp.dirname(self.template_copy_file),
                 self.template_copy_file,
@@ -287,3 +316,45 @@ class LatexNode(Node):
         except Exception as e:
             print(f"Error occurred: {e}")
             return None
+
+
+if __name__ == "__main__":
+    graph_builder = StateGraph(State)
+
+    input_key = ["paper_content"]
+    output_key = ["pdf_file_path"]
+    llm_name = "gpt-4o"
+    template_file_path = "/workspaces/researchgraph/data/latex/template.tex"
+    figures_dir = "data/figures"
+    graph_builder.add_node(
+        "latexnode",
+        LatexNode(
+            input_key=input_key,
+            output_key=output_key,
+            llm_name=llm_name,
+            template_file_path=template_file_path,
+            figures_dir=figures_dir,
+            timeout=30,
+        ),
+    )
+    graph_builder.add_edge(START, "latexnode")
+    graph_builder.add_edge("latexnode", END)
+    graph = graph_builder.compile()
+
+    # Define initial state
+    state = {
+        "paper_content": {
+            "title": "test title",
+            "abstract": "Abstract.",
+            "introduction": "This is the introduction.",
+            "related work": "This is the related work",
+            "background": "This is the background",
+            "method": "This is the method section.",
+            "experimental setup": "This is the experimental setup",
+            "results": "These are the results.",
+            "conclusions": "This is the conclusion.",
+        },
+        "pdf_file_path": "data/test_output.pdf",
+    }
+    # graph.invoke(state, debug=True)
+    graph.invoke(state)
