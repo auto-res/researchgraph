@@ -5,7 +5,9 @@ from researchgraph.graphs.ai_integrator.ai_integrator_v3.refiner_subgraph.llmnod
     ai_integrator_v3_llmcreator_prompt,
     ai_integrator_v3_llmcoder_prompt,
 )
-from researchgraph.graphs.ai_integrator.ai_integrator_v3.refiner_subgraph.input_data import refiner_subgraph_input_data
+from researchgraph.graphs.ai_integrator.ai_integrator_v3.refiner_subgraph.input_data import (
+    refiner_subgraph_input_data,
+)
 from researchgraph.core.factory import NodeFactory
 
 
@@ -37,8 +39,8 @@ class RefinerSubgraph:
                 node_name="structuredoutput_llmnode",
                 input_key=["base_method_text", "base_method_code", "num_ideas"],
                 output_key=["generated_ideas"],
-                llm_name=self.llm_name, 
-                prompt_template=self.ai_integrator_v3_llmcreator_prompt, 
+                llm_name=self.llm_name,
+                prompt_template=self.ai_integrator_v3_llmcreator_prompt,
             ),
         )
         self.graph_builder.add_node(
@@ -67,6 +69,7 @@ class RefinerSubgraph:
         with open(path + "ai_integrator_v3_refiner_subgraph.png", "wb") as f:
             f.write(image.data)
 
+
 if __name__ == "__main__":
     llm_name = "gpt-4o-2024-08-06"
     refiner_subgraph = RefinerSubgraph(
@@ -74,10 +77,10 @@ if __name__ == "__main__":
         ai_integrator_v3_llmcreator_prompt=ai_integrator_v3_llmcreator_prompt,
         ai_integrator_v3_llmcoder_prompt=ai_integrator_v3_llmcoder_prompt,
     )
-    
+
     refiner_subgraph(
-        state = refiner_subgraph_input_data, 
-        )
+        state=refiner_subgraph_input_data,
+    )
 
     image_dir = "/workspaces/researchgraph/images/"
     refiner_subgraph.make_image(image_dir)

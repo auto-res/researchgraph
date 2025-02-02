@@ -3,39 +3,36 @@ import os.path as osp
 import re
 import subprocess
 import shutil
-from litellm import completion
-from researchgraph.core.node import Node
+from typing import TypedDict
+from pydantic import BaseModel
 
-from pydantic import BaseModel, Field
-from langgraph.graph import START, END, StateGraph
+from litellm import completion
+
 
 import ast
 
 
-class State(BaseModel):
-    paper_content: dict = Field(default_factory=dict)
-    pdf_file_path: str = Field(default="")
+class State(TypedDict):
+    paper_content: dict
+    pdf_file_path: str
 
 
 class LLMOutput(BaseModel):
     latex_full_text: str
 
 
-class LatexNode(Node):
+class LatexNode:
     def __init__(
         self,
-        input_key: list[str],
-        output_key: list[str],
         llm_name: str,
-        template_file_path: str,
+        latex_template_file_path: str,
         figures_dir: str,
         timeout: int = 30,
     ):
-        super().__init__(input_key, output_key)
         self.llm_name = llm_name
         self.timeout = timeout
         self.figures_dir = figures_dir
-        self.template_file_path = template_file_path
+        self.latex_template_file_path = latex_template_file_path
         self.template_copy_file = osp.join(
             "/workspaces/researchgraph/data/latex", "template_copy.tex"
         )
@@ -57,11 +54,11 @@ class LatexNode(Node):
 
     def _copy_template(self):
         # Copy the LaTeX template to a working copy for modifications
-        if not osp.exists(self.template_file_path):
+        if not osp.exists(self.latex_template_file_path):
             raise FileNotFoundError(
-                f"Template file not found: {self.template_file_path}"
+                f"Template file not found: {self.latex_template_file_path}"
             )
-        shutil.copyfile(self.template_file_path, self.template_copy_file)
+        shutil.copyfile(self.latex_template_file_path, self.template_copy_file)
 
     def _fill_template(self, content: dict) -> str:
         # Read the copied template, replace placeholders with content, and save the updated file
@@ -248,13 +245,7 @@ class LatexNode(Node):
         except FileNotFoundError:
             print("Failed to rename PDF.")
 
-    def execute(self, state) -> dict:
-        paper_content = getattr(state, self.input_key[0])
-        pdf_file_path = osp.expanduser(getattr(state, self.output_key[0]))
-        if not paper_content or not pdf_file_path:
-            raise ValueError(
-                "Input paper content or output file path not found in state."
-            )
+    def execute(self, paper_content: dict, pdf_file_path) -> str:
         self._copy_template()
         tex_text = self._fill_template(paper_content)
         max_iterations = 5
@@ -311,50 +302,50 @@ class LatexNode(Node):
                 pdf_file_path,
                 timeout=self.timeout,
             )
-            return {self.output_key[0]: pdf_file_path}
+            return pdf_file_path
 
         except Exception as e:
             print(f"Error occurred: {e}")
             return None
 
 
-if __name__ == "__main__":
-    graph_builder = StateGraph(State)
+# if __name__ == "__main__":
+#     graph_builder = StateGraph(State)
 
-    input_key = ["paper_content"]
-    output_key = ["pdf_file_path"]
-    llm_name = "gpt-4o"
-    template_file_path = "/workspaces/researchgraph/data/latex/template.tex"
-    figures_dir = "data/figures"
-    graph_builder.add_node(
-        "latexnode",
-        LatexNode(
-            input_key=input_key,
-            output_key=output_key,
-            llm_name=llm_name,
-            template_file_path=template_file_path,
-            figures_dir=figures_dir,
-            timeout=30,
-        ),
-    )
-    graph_builder.add_edge(START, "latexnode")
-    graph_builder.add_edge("latexnode", END)
-    graph = graph_builder.compile()
+#     input_key = ["paper_content"]
+#     output_key = ["pdf_file_path"]
+#     llm_name = "gpt-4o"
+#     template_file_path = "/workspaces/researchgraph/data/latex/template.tex"
+#     figures_dir = "data/figures"
+#     graph_builder.add_node(
+#         "latexnode",
+#         LatexNode(
+#             input_key=input_key,
+#             output_key=output_key,
+#             llm_name=llm_name,
+#             template_file_path=template_file_path,
+#             figures_dir=figures_dir,
+#             timeout=30,
+#         ),
+#     )
+#     graph_builder.add_edge(START, "latexnode")
+#     graph_builder.add_edge("latexnode", END)
+#     graph = graph_builder.compile()
 
-    # Define initial state
-    state = {
-        "paper_content": {
-            "title": "test title",
-            "abstract": "Abstract.",
-            "introduction": "This is the introduction.",
-            "related work": "This is the related work",
-            "background": "This is the background",
-            "method": "This is the method section.",
-            "experimental setup": "This is the experimental setup",
-            "results": "These are the results.",
-            "conclusions": "This is the conclusion.",
-        },
-        "pdf_file_path": "data/test_output.pdf",
-    }
-    # graph.invoke(state, debug=True)
-    graph.invoke(state)
+#     # Define initial state
+#     state = {
+#         "paper_content": {
+#             "title": "test title",
+#             "abstract": "Abstract.",
+#             "introduction": "This is the introduction.",
+#             "related work": "This is the related work",
+#             "background": "This is the background",
+#             "method": "This is the method section.",
+#             "experimental setup": "This is the experimental setup",
+#             "results": "These are the results.",
+#             "conclusions": "This is the conclusion.",
+#         },
+#         "pdf_file_path": "data/test_output.pdf",
+#     }
+#     # graph.invoke(state, debug=True)
+#     graph.invoke(state)

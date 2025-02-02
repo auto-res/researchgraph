@@ -92,6 +92,8 @@ def retry_request(
                 print(
                     f"Condition not met, retrying in {wait_time} seconds... (Attempt {retry_count + 1})"
                 )
+            elif response is None:
+                print(f"API request failed on attempt {retry_count + 1}.")
             else:
                 print(f"API request successful on attempt {retry_count + 1}.")
                 return response

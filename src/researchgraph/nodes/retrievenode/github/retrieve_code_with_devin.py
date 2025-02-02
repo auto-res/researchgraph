@@ -3,7 +3,6 @@ import time
 from pydantic import BaseModel, Field
 from langgraph.graph import START, END, StateGraph
 
-from researchgraph.core.node import Node
 
 from researchgraph.nodes.utils.api_request_handler import fetch_api_data, retry_request
 
@@ -17,13 +16,13 @@ class State(BaseModel):
     extracted_code: str = Field(default="")
 
 
-class RetrieveCodeWithDevinNode(Node):
+class RetrieveCodeWithDevinNode:
     def __init__(
         self,
-        input_key: list[str],
-        output_key: list[str],
+        # input_key: list[str],
+        # output_key: list[str],
     ):
-        super().__init__(input_key, output_key)
+        # super().__init__(input_key, output_key)
         self.headers = {
             "Authorization": f"Bearer {API_KEY}",
             "Content-Type": "application/json",
@@ -34,12 +33,12 @@ class RetrieveCodeWithDevinNode(Node):
         data = {
             "prompt": f"""
 Extract the code related to the contents of the “Description of Methodology” given below from the repository at the “GitHub Repository URL”.
-The extracted code and description should be output as “extracted_code”.
+Be sure to make the extracted code available as “extracted_code”.
 If there is no code, output “No applicable code”.
-            # Description of Methodology
-            {add_method_text}
-            # GitHub Repository url
-            {github_url}""",
+# Description of Methodology
+{add_method_text}
+# GitHub Repository URL
+{github_url}""",
             "idempotent": True,
         }
         return retry_request(
@@ -61,9 +60,9 @@ If there is no code, output “No applicable code”.
             check_condition=should_retry,
         )
 
-    def execute(self, state: State) -> dict:
-        github_url = getattr(state, self.input_key[0])
-        add_method_text = getattr(state, self.input_key[1])
+    def execute(self, github_url: str, add_method_text: str) -> str:
+        # github_url = getattr(state, self.input_key[0])
+        # add_method_text = getattr(state, self.input_key[1])
         create_session_response = self._request_create_session(
             github_url, add_method_text
         )
@@ -76,14 +75,15 @@ If there is no code, output “No applicable code”.
         time.sleep(120)
         devin_output_response = self._request_devin_output(session_id)
         print(devin_output_response)
-        if devin_output_response:
-            print("Successfully retrieved Devin output.")
-            extracted_code = devin_output_response["structured_output"].get(
-                "extracted_code", ""
-            )
-        else:
-            print("Failed to retrieve Devin output.")
-        return {self.output_key[0]: extracted_code}
+        if devin_output_response["structured_output"] is None:
+            print("Failed to retrieve Devin output. Response is None.")
+            return ""
+
+        print("Successfully retrieved Devin output.")
+        extracted_code = devin_output_response["structured_output"].get(
+            "extracted_code", ""
+        )
+        return extracted_code
 
 
 if __name__ == "__main__":
@@ -130,4 +130,4 @@ To tackle these oscillations without sacrificing high terminal velocity, the aut
 Aggregated Momentum elegantly balances speed and stability in gradient-based optimization by averaging velocity vectors governed by diverse damping coefficients. This method curtails oscillatory behavior, facilitating rapid convergence and demonstrating robustness across multiple machine learning frameworks.
 """,
     }
-    assert graph.invoke(state, debug=True)
+    graph.invoke(state, debug=True)
