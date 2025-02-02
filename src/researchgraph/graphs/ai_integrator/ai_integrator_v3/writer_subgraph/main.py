@@ -23,6 +23,10 @@ class WriterState(BaseModel):
     github_url: str = Field(default="")
     paper_content: dict = Field(default_factory=dict)
     pdf_file_path: str = Field(default="")
+    github_owner: str = Field(default="")
+    repository_name: str = Field(default="")
+    branch_name: str = Field(default="")
+    completion: bool = Field(default=False)
 
 
 class WriterSubgraph:
@@ -61,10 +65,24 @@ class WriterSubgraph:
                 figures_dir=figures_dir,
             ),
         )
+        self.graph_builder.add_node(
+            "github_upload_node",
+            NodeFactory.create_node(
+                node_name="github_upload_node",
+                input_key=[
+                    "pdf_file_path",
+                    "github_owner",
+                    "repository_name",
+                    "branch_name",
+                ],
+                output_key=["completion"],
+            ),
+        )
         # make edges
         self.graph_builder.add_edge(START, "writeup_node")
         self.graph_builder.add_edge("writeup_node", "latex_node")
-        self.graph_builder.add_edge("latex_node", END)
+        self.graph_builder.add_edge("latex_node", "github_upload_node")
+        self.graph_builder.add_edge("github_upload_node", END)
 
         self.graph = self.graph_builder.compile()
 
@@ -74,7 +92,7 @@ class WriterSubgraph:
 
     def make_image(self, path: str):
         image = Image(self.graph.get_graph().draw_mermaid_png())
-        with open(path + "ai_integrator_v3_refiner_subgraph.png", "wb") as f:
+        with open(path + "ai_integrator_v3_writer_subgraph.png", "wb") as f:
             f.write(image.data)
 
 

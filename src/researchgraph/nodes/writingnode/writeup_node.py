@@ -70,7 +70,7 @@ class WriteupNode(Node):
                         ", ".join(value) if isinstance(value, list) else value
                     )
             sections[section] = matched_items
-        print(f"note: {template.render(sections=sections)}")
+        # print(f"note: {template.render(sections=sections)}")
         return template.render(sections=sections)
 
     def _call_llm(self, prompt: str) -> str:

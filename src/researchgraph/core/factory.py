@@ -9,6 +9,7 @@ from researchgraph.nodes.writingnode import (
     LatexNode,
     Text2ScriptNode,
     WriteupNode,
+    GithubUploadNode,
 )
 
 # from researchgraph.nodes.experimentnode.llm import (
@@ -65,6 +66,8 @@ class NodeFactory:
             return LatexNode(**kwargs)
         elif node_name == "writeup_node":
             return WriteupNode(**kwargs)
+        elif node_name == "github_upload_node":
+            return GithubUploadNode(**kwargs)
 
         # ExperimentNode
         # elif node_name == "llmsfttrain_node":
