@@ -1,8 +1,5 @@
 import os
-
-from pydantic import BaseModel, Field
-from langgraph.graph import START, END, StateGraph
-from researchgraph.core.node import Node
+from typing import TypedDict
 
 from datetime import datetime, timezone
 
@@ -11,20 +8,17 @@ from researchgraph.nodes.utils.api_request_handler import fetch_api_data, retry_
 GITHUB_PERSONAL_ACCESS_TOKEN = os.getenv("GITHUB_PERSONAL_ACCESS_TOKEN")
 
 
-class State(BaseModel):
-    github_owner: str = Field(default="")
-    repository_name: str = Field(default="")
-    branch_name: str = Field(default="")
-    workflow_run_id: int = Field(default=0)
+class State(TypedDict):
+    github_owner: str
+    repository_name: str
+    branch_name: str
+    workflow_run_id: int
 
 
-class ExecuteGithubActionsWorkflowNode(Node):
+class ExecuteGithubActionsWorkflowNode:
     def __init__(
         self,
-        input_key: list[str],
-        output_key: list[str],
     ):
-        super().__init__(input_key, output_key)
         self.headers = {
             "Accept": "application/vnd.github+json",
             "Authorization": f"Bearer {GITHUB_PERSONAL_ACCESS_TOKEN}",
@@ -113,11 +107,7 @@ class ExecuteGithubActionsWorkflowNode(Node):
             status_list.append(res["status"])
         return all(item == "completed" for item in status_list)
 
-    def execute(self, state):
-        github_owner = getattr(state, "github_owner")
-        repository_name = getattr(state, "repository_name")
-        branch_name = getattr(state, "branch_name")
-
+    def execute(self, github_owner: str, repository_name: str, branch_name: str) -> int:
         # Check the number of runs before executing workflow
         response_before_execution = (
             self._request_github_actions_workflow_info_before_execution(
@@ -164,24 +154,24 @@ class ExecuteGithubActionsWorkflowNode(Node):
 
         workflow_run_id = self._parse_workflow_run_id(response_after_execution)
 
-        return {self.output_key[0]: workflow_run_id}
+        return workflow_run_id
 
 
-if __name__ == "__main__":
-    graph_builder = StateGraph(State)
-    graph_builder.add_node(
-        "retrieve_github_actions_artifacts",
-        ExecuteGithubActionsWorkflowNode(
-            input_key=["github_owner", "repository_name", "branch_name"],
-            output_key=["workflow_run_id"],
-        ),
-    )
-    graph_builder.add_edge(START, "retrieve_github_actions_artifacts")
-    graph_builder.add_edge("retrieve_github_actions_artifacts", END)
-    graph = graph_builder.compile()
-    state = {
-        "github_owner": "auto-res",
-        "repository_name": "experimental-script",
-        "branch_name": "devin/1738251222-learnable-gated-pooling",
-    }
-    graph.invoke(state, debug=True)
+# if __name__ == "__main__":
+#     graph_builder = StateGraph(State)
+#     graph_builder.add_node(
+#         "retrieve_github_actions_artifacts",
+#         ExecuteGithubActionsWorkflowNode(
+#             input_key=["github_owner", "repository_name", "branch_name"],
+#             output_key=["workflow_run_id"],
+#         ),
+#     )
+#     graph_builder.add_edge(START, "retrieve_github_actions_artifacts")
+#     graph_builder.add_edge("retrieve_github_actions_artifacts", END)
+#     graph = graph_builder.compile()
+#     state = {
+#         "github_owner": "auto-res",
+#         "repository_name": "experimental-script",
+#         "branch_name": "devin/1738251222-learnable-gated-pooling",
+#     }
+#     graph.invoke(state, debug=True)

@@ -1,7 +1,7 @@
 import os
 import zipfile
+from typing import TypedDict
 
-from pydantic import BaseModel, Field
 from langgraph.graph import START, END, StateGraph
 from researchgraph.core.node import Node
 
@@ -11,23 +11,20 @@ from researchgraph.nodes.utils.api_request_handler import fetch_api_data, retry_
 GITHUB_PERSONAL_ACCESS_TOKEN = os.getenv("GITHUB_PERSONAL_ACCESS_TOKEN")
 
 
-class State(BaseModel):
-    github_owner: str = Field(default="")
-    repository_name: str = Field(default="")
+class State(TypedDict):
+    github_owner: str
+    repository_name: str
     workflow_run_id: int
-    save_dir: str = Field(default="")
-    num_iterations: int
-    output_file_path: str = Field(default="")
-    error_file_path: str = Field(default="")
+    save_dir: str
+    fix_iteration_count: int
+    output_text_data: str
+    error_text_data: str
 
 
 class RetrieveGithubActionsArtifactsNode(Node):
     def __init__(
         self,
-        input_key: list[str],
-        output_key: list[str],
     ):
-        super().__init__(input_key, output_key)
         self.headers = {
             "Accept": "application/vnd.github+json",
             "Authorization": f"Bearer {GITHUB_PERSONAL_ACCESS_TOKEN}",
@@ -70,13 +67,15 @@ class RetrieveGithubActionsArtifactsNode(Node):
             os.remove(zip_file_path)
             print(f"ZIP file deleted: {zip_file_path}")
 
-    def execute(self, state: State) -> dict:
-        github_owner = getattr(state, self.input_key[0])
-        repository_name = getattr(state, self.input_key[1])
-        workflow_run_id = getattr(state, self.input_key[2])
-        save_dir = getattr(state, self.input_key[3])
-        num_iterations = getattr(state, self.input_key[4])
-        iteration_save_dir = save_dir + f"/iteration_{num_iterations}"
+    def execute(
+        self,
+        github_owner,
+        repository_name,
+        workflow_run_id,
+        save_dir,
+        fix_iteration_count,
+    ) -> dict:
+        iteration_save_dir = save_dir + f"/iteration_{fix_iteration_count}"
         os.makedirs(iteration_save_dir, exist_ok=True)
         response_artifacts_infos = self._request_github_actions_artifacts(
             github_owner, repository_name
@@ -91,10 +90,14 @@ class RetrieveGithubActionsArtifactsNode(Node):
         self._request_download_artifacts(
             get_artifacts_redirect_url_dict, iteration_save_dir
         )
-        return {
-            self.output_key[0]: os.path.join(iteration_save_dir, "output.txt"),
-            self.output_key[1]: os.path.join(iteration_save_dir, "error.txt"),
-        }
+        with open(os.path.join(iteration_save_dir, "output.txt"), "r") as f:
+            output_text_data = f.read()
+        with open(os.path.join(iteration_save_dir, "error.txt"), "r") as f:
+            error_text_data = f.read()
+        return (
+            output_text_data,
+            error_text_data,
+        )
 
 
 if __name__ == "__main__":

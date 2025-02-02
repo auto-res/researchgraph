@@ -33,12 +33,12 @@ class RetrieveCodeWithDevinNode:
         data = {
             "prompt": f"""
 Extract the code related to the contents of the “Description of Methodology” given below from the repository at the “GitHub Repository URL”.
-The extracted code and description should be output as “extracted_code”.
+Be sure to make the extracted code available as “extracted_code”.
 If there is no code, output “No applicable code”.
-            # Description of Methodology
-            {add_method_text}
-            # GitHub Repository url
-            {github_url}""",
+# Description of Methodology
+{add_method_text}
+# GitHub Repository URL
+{github_url}""",
             "idempotent": True,
         }
         return retry_request(
@@ -75,15 +75,15 @@ If there is no code, output “No applicable code”.
         time.sleep(120)
         devin_output_response = self._request_devin_output(session_id)
         print(devin_output_response)
-        if devin_output_response is not None:
-            print("Successfully retrieved Devin output.")
-            extracted_code = devin_output_response.get("structured_output", {}).get(
-                "extracted_code", ""
-            )
-            return extracted_code
-        else:
-            print("Failed to retrieve Devin output.")
+        if devin_output_response["structured_output"] is None:
+            print("Failed to retrieve Devin output. Response is None.")
             return ""
+
+        print("Successfully retrieved Devin output.")
+        extracted_code = devin_output_response["structured_output"].get(
+            "extracted_code", ""
+        )
+        return extracted_code
 
 
 if __name__ == "__main__":

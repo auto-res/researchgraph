@@ -2,13 +2,11 @@ from IPython.display import Image
 from langgraph.graph import START, END, StateGraph
 from typing import TypedDict
 from researchgraph.graphs.ai_integrator.ai_integrator_v3.integrate_generator_subgraph.llmnode_prompt import (
-    # ai_integrator_v3_extractor_prompt,
     ai_integrator_v3_creator_prompt,
 )
 from researchgraph.graphs.ai_integrator.ai_integrator_v3.integrate_generator_subgraph.input_data import (
     generator_subgraph_input_data,
 )
-# from researchgraph.core.factory import NodeFactory
 
 from researchgraph.nodes.retrievenode.github.retrieve_code_with_devin import (
     RetrieveCodeWithDevinNode,
@@ -73,28 +71,21 @@ class IntegrateGeneratorSubgraph:
         return {"new_method_text": new_method_text, "new_method_code": new_method_code}
 
     def build_graph(self):
-        self.graph_builder = StateGraph(IntegrateGeneratorState)
+        graph_builder = StateGraph(IntegrateGeneratorState)
         # make nodes
-        self.graph_builder.add_node(
-            "githubretriever_1", self._retrieve_code_with_devin_1
-        )
-        self.graph_builder.add_node(
-            "githubretriever_2", self._retrieve_code_with_devin_2
-        )
-        self.graph_builder.add_node("creator", self._creator_node)
+        graph_builder.add_node("githubretriever_1", self._retrieve_code_with_devin_1)
+        graph_builder.add_node("githubretriever_2", self._retrieve_code_with_devin_2)
+        graph_builder.add_node("creator", self._creator_node)
         # make edges
-        self.graph_builder.add_edge(START, "githubretriever_1")
-        self.graph_builder.add_edge(START, "githubretriever_2")
-        self.graph_builder.add_edge(
-            ["githubretriever_1", "githubretriever_2"], "creator"
-        )
-        self.graph_builder.add_edge("creator", END)
+        graph_builder.add_edge(START, "githubretriever_1")
+        graph_builder.add_edge(START, "githubretriever_2")
+        graph_builder.add_edge(["githubretriever_1", "githubretriever_2"], "creator")
+        graph_builder.add_edge("creator", END)
 
-        return self.graph_builder.compile()
+        return graph_builder.compile()
 
-    def __call__(self, state: IntegrateGeneratorState) -> dict:
-        self.graph = self.build_graph()
-        return self.graph.invoke(state, debug=True)
+    def __call__(self):
+        return self.build_graph()
 
     def make_image(self, path: str):
         image = Image(self.graph.get_graph().draw_mermaid_png())

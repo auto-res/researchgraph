@@ -1,29 +1,38 @@
 from IPython.display import Image
-from pydantic import BaseModel, Field
+from typing import TypedDict
 from langgraph.graph import START, END, StateGraph
+
+from researchgraph.nodes.codingnode.generate_code_with_devin import (
+    GenerateCodeWithDevinNode,
+)
+from researchgraph.nodes.experimentnode.execute_github_actions_workflow import (
+    ExecuteGithubActionsWorkflowNode,
+)
+from researchgraph.nodes.retrievenode.github.retrieve_github_actions_artifacts import (
+    RetrieveGithubActionsArtifactsNode,
+)
+from researchgraph.nodes.codingnode.fix_code_with_devin import FixCodeWithDevinNode
 
 from researchgraph.graphs.ai_integrator.ai_integrator_v3.executor_subgraph.input_data import (
     executor_subgraph_input_data,
 )
-from researchgraph.core.factory import NodeFactory
+
+from pprint import pprint
 
 
-class ExecutorState(BaseModel):
-    new_method_text: str = Field(default="")
-    new_method_code: str = Field(default="")
-    branch_name: str = Field(default="")
-    github_owner: str = Field(default="")
-    repository_name: str = Field(default="")
-    branch_name: str = Field(default="")
-    workflow_run_id: int = Field(default=0)
-    save_dir: str = Field(default="")
-    fix_iterations: int = Field(default=1)
-    output_file_path: str = Field(default="")
-    error_file_path: str = Field(default="")
-    session_id: str = Field(default="")
-    output_file_path: str = Field(default="")
-    error_file_path: str = Field(default="")
-    devin_url: str = Field(default="")
+class ExecutorState(TypedDict):
+    new_method_text: str
+    new_method_code: str
+    branch_name: str
+    github_owner: str
+    repository_name: str
+    workflow_run_id: int
+    save_dir: str
+    fix_iteration_count: int
+    session_id: str
+    output_text_data: str
+    error_text_data: str
+    devin_url: str
 
 
 class ExecutorSubgraph:
@@ -32,67 +41,104 @@ class ExecutorSubgraph:
         max_fix_iteration: int = 3,
     ):
         self.max_fix_iteration = max_fix_iteration
-        self.graph_builder = StateGraph(ExecutorState)
 
-        self.graph_builder.add_node(
-            "generate_code_with_devin_node",
-            NodeFactory.create_node(
-                node_name="generate_code_with_devin_node",
-                input_key=[
-                    "github_owner",
-                    "repository_name",
-                    "new_method_text",
-                    "new_method_code",
-                ],
-                output_key=["session_id", "branch_name", "devin_url"],
-            ),
+    def _generate_code_with_devin_node(self, state: ExecutorState) -> dict:
+        print("generate_code_with_devin_node")
+        github_owner = state["github_owner"]
+        repository_name = state["repository_name"]
+        new_method_text = state["new_method_text"]
+        new_method_code = state["new_method_code"]
+        session_id, branch_name, devin_url = GenerateCodeWithDevinNode().execute(
+            github_owner, repository_name, new_method_text, new_method_code
         )
-        self.graph_builder.add_node(
+
+        return {
+            "session_id": session_id,
+            "branch_name": branch_name,
+            "devin_url": devin_url,
+        }
+
+    def _execute_github_actions_workflow_node(self, state: ExecutorState) -> dict:
+        print("execute_github_actions_workflow_node")
+        github_owner = state["github_owner"]
+        repository_name = state["repository_name"]
+        branch_name = state["branch_name"]
+        workflow_run_id = ExecuteGithubActionsWorkflowNode().execute(
+            github_owner=github_owner,
+            repository_name=repository_name,
+            branch_name=branch_name,
+        )
+        return {
+            "workflow_run_id": workflow_run_id,
+        }
+
+    def _retrieve_github_actions_artifacts_node(self, state: ExecutorState) -> dict:
+        print("retrieve_github_actions_artifacts_node")
+        github_owner = state["github_owner"]
+        repository_name = state["repository_name"]
+        workflow_run_id = state["workflow_run_id"]
+        save_dir = state["save_dir"]
+        fix_iteration_count = state["fix_iteration_count"]
+        output_text_data, error_text_data = (
+            RetrieveGithubActionsArtifactsNode().execute(github_owner=github_owner, repository_name=repository_name, workflow_run_id=workflow_run_id, save_dir=save_dir, fix_iteration_count=fix_iteration_count)
+        )
+        return {
+            "output_text_data": output_text_data,
+            "error_text_data": error_text_data,
+        }
+
+    def _fix_code_with_devin_node(self, state: ExecutorState) -> dict:
+        print("fix_code_with_devin_node")
+        session_id = state["session_id"]
+        output_text_data = state["output_text_data"]
+        error_text_data = state["error_text_data"]
+        fix_iteration_count = state["fix_iteration_count"]
+        fix_iteration_count = FixCodeWithDevinNode().execute(
+            session_id=session_id,
+            output_text_data=output_text_data,
+            error_text_data=error_text_data,
+            fix_iteration_count=fix_iteration_count,
+        )
+        return {
+            "fix_iteration_count": fix_iteration_count,
+        }
+
+    def iteration_function(self, state: ExecutorState):
+        if state["error_text_data"] == "":
+            return "finish"
+        if state["fix_iteration_count"] <= self.max_fix_iteration:
+            return "correction"
+        else:
+            return "finish"
+
+    def build_graph(self):
+        graph_builder = StateGraph(ExecutorState)
+        # make nodes
+        graph_builder.add_node(
+            "generate_code_with_devin_node", self._generate_code_with_devin_node
+        )
+        graph_builder.add_node(
             "execute_github_actions_workflow_node",
-            NodeFactory.create_node(
-                node_name="execute_github_actions_workflow_node",
-                input_key=["github_owner", "repository_name", "branch_name"],
-                output_key=["workflow_run_id"],
-            ),
+            self._execute_github_actions_workflow_node,
         )
-        self.graph_builder.add_node(
+        graph_builder.add_node(
             "retrieve_github_actions_artifacts_node",
-            NodeFactory.create_node(
-                node_name="retrieve_github_actions_artifacts_node",
-                input_key=[
-                    "github_owner",
-                    "repository_name",
-                    "workflow_run_id",
-                    "save_dir",
-                    "fix_iterations",
-                ],
-                output_key=["output_file_path", "error_file_path"],
-            ),
+            self._retrieve_github_actions_artifacts_node,
         )
-        self.graph_builder.add_node(
-            "fix_code_with_devin_node",
-            NodeFactory.create_node(
-                node_name="fix_code_with_devin_node",
-                input_key=[
-                    "session_id",
-                    "output_file_path",
-                    "error_file_path",
-                    "fix_iterations",
-                ],
-                output_key=["fix_iterations"],
-            ),
+        graph_builder.add_node(
+            "fix_code_with_devin_node", self._fix_code_with_devin_node
         )
 
         # make edges
-        self.graph_builder.add_edge(START, "generate_code_with_devin_node")
-        self.graph_builder.add_edge(
+        graph_builder.add_edge(START, "generate_code_with_devin_node")
+        graph_builder.add_edge(
             "generate_code_with_devin_node", "execute_github_actions_workflow_node"
         )
-        self.graph_builder.add_edge(
+        graph_builder.add_edge(
             "execute_github_actions_workflow_node",
             "retrieve_github_actions_artifacts_node",
         )
-        self.graph_builder.add_conditional_edges(
+        graph_builder.add_conditional_edges(
             "retrieve_github_actions_artifacts_node",
             self.iteration_function,
             {
@@ -100,21 +146,13 @@ class ExecutorSubgraph:
                 "finish": END,
             },
         )
-        self.graph_builder.add_edge(
+        graph_builder.add_edge(
             "fix_code_with_devin_node", "execute_github_actions_workflow_node"
         )
+        return graph_builder.compile()
 
-        self.graph = self.graph_builder.compile()
-
-    def iteration_function(self, state: ExecutorState):
-        if state.fix_iterations <= self.max_fix_iteration:
-            return "correction"
-        else:
-            return "finish"
-
-    def __call__(self, state: ExecutorState) -> dict:
-        result = self.graph.invoke(state, debug=True)
-        return result
+    def __call__(self):
+        return self.build_graph()
 
     def make_image(self, path: str):
         image = Image(self.graph.get_graph().draw_mermaid_png())
@@ -123,11 +161,12 @@ class ExecutorSubgraph:
 
 
 if __name__ == "__main__":
-    executor_subgraph = ExecutorSubgraph()
-
-    executor_subgraph(
-        state=executor_subgraph_input_data,
+    executor_subgraph = ExecutorSubgraph(
+        max_fix_iteration=3,
     )
 
+    result = executor_subgraph().invoke(executor_subgraph_input_data)
+
+    pprint(result)
     # image_dir = "/workspaces/researchgraph/images/"
     # executor_subgraph.make_image(image_dir)
