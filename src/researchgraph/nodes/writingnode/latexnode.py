@@ -35,7 +35,7 @@ class LatexNode(Node):
         self.llm_name = llm_name
         self.timeout = timeout
         self.figures_dir = figures_dir
-        self.template_file = template_file_path
+        self.template_file_path = template_file_path
         self.template_copy_file = osp.join(
             "/workspaces/researchgraph/data/latex", "template_copy.tex"
         )
@@ -57,9 +57,11 @@ class LatexNode(Node):
 
     def _copy_template(self):
         # Copy the LaTeX template to a working copy for modifications
-        if not osp.exists(self.template_file):
-            raise FileNotFoundError(f"Template file not found: {self.template_file}")
-        shutil.copyfile(self.template_file, self.template_copy_file)
+        if not osp.exists(self.template_file_path):
+            raise FileNotFoundError(
+                f"Template file not found: {self.template_file_path}"
+            )
+        shutil.copyfile(self.template_file_path, self.template_copy_file)
 
     def _fill_template(self, content: dict) -> str:
         # Read the copied template, replace placeholders with content, and save the updated file
