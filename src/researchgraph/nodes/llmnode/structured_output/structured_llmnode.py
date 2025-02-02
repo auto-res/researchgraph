@@ -25,6 +25,7 @@ class StructuredLLMNode(Node):
         self.dynamicmodel = self._create_dynamic_model(DynamicModel)
 
     def _create_dynamic_model(self, base_model: BaseModel):
+        # Changed data type to be dynamically changeable
         default_type = str
         default_required = ...
         fields = {field: (default_type, default_required) for field in self.output_key}
@@ -47,7 +48,7 @@ class StructuredLLMNode(Node):
         return output_dict
 
     def execute(self, state) -> dict:
-        data = {key: getattr(state,key) for key in self.input_key}
+        data = {key: getattr(state, key) for key in self.input_key}
 
         env = Environment()
         template = env.from_string(self.prompt_template)

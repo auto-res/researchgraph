@@ -17,7 +17,7 @@ class State(BaseModel):
     completion: bool = Field(default=False)
 
 
-class PaperUploadNode(Node):
+class GithubUploadNode(Node):
     def __init__(
         self,
         input_key: list[str],
@@ -58,7 +58,7 @@ class PaperUploadNode(Node):
         github_owner = getattr(state, self.input_key[1])
         repository_name = getattr(state, self.input_key[2])
         branch_name = getattr(state, self.input_key[3])
-        encoded_pdf_data = PaperUploadNode._encoded_pdf_file(pdf_file_path)
+        encoded_pdf_data = GithubUploadNode._encoded_pdf_file(pdf_file_path)
         self._request_github_file_upload(
             github_owner, repository_name, branch_name, encoded_pdf_data
         )
@@ -68,8 +68,8 @@ class PaperUploadNode(Node):
 if __name__ == "__main__":
     graph_builder = StateGraph(State)
     graph_builder.add_node(
-        "PaperUploadNode",
-        PaperUploadNode(
+        "GithubUploadNode",
+        GithubUploadNode(
             input_key=[
                 "pdf_file_path",
                 "github_owner",
@@ -79,8 +79,8 @@ if __name__ == "__main__":
             output_key=["completion"],
         ),
     )
-    graph_builder.add_edge(START, "PaperUploadNode")
-    graph_builder.add_edge("PaperUploadNode", END)
+    graph_builder.add_edge(START, "GithubUploadNode")
+    graph_builder.add_edge("GithubUploadNode", END)
     graph = graph_builder.compile()
     state = {
         "pdf_file_path": "/workspaces/researchgraph/data/test_output.pdf",
