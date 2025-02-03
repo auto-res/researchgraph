@@ -1,9 +1,6 @@
 from IPython.display import Image
 from typing import TypedDict
 from langgraph.graph import START, END, StateGraph
-from researchgraph.graphs.ai_integrator.ai_integrator_v3.writer_subgraph.input_data import (
-    writer_subgraph_input_data,
-)
 
 from researchgraph.nodes.writingnode.writeup_node import WriteupNode
 from researchgraph.nodes.writingnode.latexnode import LatexNode
@@ -117,11 +114,12 @@ if __name__ == "__main__":
     # llm_name = "gpt-4o-2024-11-20"
     llm_name = "gpt-4o-mini-2024-07-18"
 
-    writer_subgraph = WriterSubgraph(
+    subgraph = WriterSubgraph(
         llm_name=llm_name,
-        lateX_template_file_path=latex_template_file_path,
+        latex_template_file_path=latex_template_file_path,
         figures_dir=figures_dir,
-    )
-    writer_subgraph().invoke(writer_subgraph_input_data)
+    ).build_graph()
+
+    print(subgraph.get_graph().draw_mermaid())
     # image_dir = "/workspaces/researchgraph/images/"
     # writer_subgraph.make_image(image_dir)

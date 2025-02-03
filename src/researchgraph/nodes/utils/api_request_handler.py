@@ -13,6 +13,7 @@ def fetch_api_data(
     - バイナリデータ: `response.content`
     - `stream=True` の場合は `requests.Response` オブジェクトをそのまま返す
     """
+    print(f"Requests to endpoints:{url}")
     try:
         method = method.upper()
         if method == "GET":
@@ -49,7 +50,7 @@ def fetch_api_data(
             ]
         ):
             if stream:
-                return response  # ✅ `stream=True` の場合は `requests.Response` をそのまま返す
+                return response  # `stream=True` の場合は `requests.Response` をそのまま返す
             return response.content  # `stream=False` の場合は `bytes` を返す
 
         # テキストレスポンス
@@ -92,8 +93,8 @@ def retry_request(
                 print(
                     f"Condition not met, retrying in {wait_time} seconds... (Attempt {retry_count + 1})"
                 )
-            elif response is None:
-                print(f"API request failed on attempt {retry_count + 1}.")
+            # elif response is None:
+            #     print(f"API request failed on attempt {retry_count + 1}.")
             else:
                 print(f"API request successful on attempt {retry_count + 1}.")
                 return response

@@ -1,4 +1,3 @@
-from IPython.display import Image
 from typing import TypedDict
 from langgraph.graph import START, END, StateGraph
 
@@ -12,12 +11,6 @@ from researchgraph.nodes.retrievenode.github.retrieve_github_actions_artifacts i
     RetrieveGithubActionsArtifactsNode,
 )
 from researchgraph.nodes.codingnode.fix_code_with_devin import FixCodeWithDevinNode
-
-from researchgraph.graphs.ai_integrator.ai_integrator_v3.executor_subgraph.input_data import (
-    executor_subgraph_input_data,
-)
-
-from pprint import pprint
 
 
 class ExecutorState(TypedDict):
@@ -154,19 +147,21 @@ class ExecutorSubgraph:
     def __call__(self):
         return self.build_graph()
 
-    def make_image(self, path: str):
-        image = Image(self.graph.get_graph().draw_mermaid_png())
-        with open(path + "ai_integrator_v3_executor_subgraph.png", "wb") as f:
-            f.write(image.data)
+    def output_mermaid(self):
+        return self.build_graph().get_graph().draw_mermaid()
+        # image = Image(self.graph.get_graph().draw_mermaid_png())
+        # with open(path + "ai_integrator_v3_executor_subgraph.png", "wb") as f:
+        #     f.write(image.data)
 
 
 if __name__ == "__main__":
-    executor_subgraph = ExecutorSubgraph(
+    subgraph = ExecutorSubgraph(
         max_fix_iteration=3,
-    )
+    ).build_graph()
+    print(subgraph.get_graph().draw_mermaid())
+    # executor_subgraph.output_mermaid
+    # result = executor_subgraph().invoke(executor_subgraph_input_data)
 
-    result = executor_subgraph().invoke(executor_subgraph_input_data)
-
-    pprint(result)
+    # pprint(result)
     # image_dir = "/workspaces/researchgraph/images/"
     # executor_subgraph.make_image(image_dir)

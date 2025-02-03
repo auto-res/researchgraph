@@ -1,22 +1,8 @@
 import os
 import time
-from typing import TypedDict
-
-
 from researchgraph.nodes.utils.api_request_handler import fetch_api_data, retry_request
 
-
 DEVIN_API_KEY = os.getenv("DEVIN_API_KEY")
-
-
-class State(TypedDict):
-    github_owner: str
-    repository_name: str
-    new_method_text: str
-    new_method_code: str
-    session_id: str
-    branch_name: str
-    devin_url: str
 
 
 class GenerateCodeWithDevinNode:
@@ -38,7 +24,7 @@ Also, please make sure that you can output the file according to the “Output F
 # Rules
 - Create and implement a new branch in the repository given in “Repository URL”. 
 - The name of the newly created branch must exactly match the session_id starting with “devin-”.
-- The experimental scripts should be run through a simple test run to verify that they work.
+- Experimental scripts should be given a simple test run to make sure they work. The test run should not be too long.
 - Install and use the necessary python packages as needed.
 - Please also list the python packages required for the experiment in the requirements.txt file.
 - The roles of directories and scripts are listed below. Follow the roles to complete your implementation.
@@ -89,11 +75,7 @@ Also, please make sure that you can output the file according to the “Output F
         new_method_text: str,
         new_method_code: str,
     ) -> tuple[str, str, str]:
-        # github_owner = getattr(state, self.input_key[0])
-        # repository_name = getattr(state, self.input_key[1])
         repository_url = f"https://github.com/{github_owner}/{repository_name}"
-        # new_method_text = getattr(state, self.input_key[2])
-        # new_method_code = getattr(state, self.input_key[3])
         response = self._request_create_session(
             repository_url, new_method_text, new_method_code
         )

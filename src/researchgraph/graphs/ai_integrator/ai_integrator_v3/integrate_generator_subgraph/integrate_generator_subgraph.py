@@ -4,9 +4,6 @@ from typing import TypedDict
 from researchgraph.graphs.ai_integrator.ai_integrator_v3.integrate_generator_subgraph.llmnode_prompt import (
     ai_integrator_v3_creator_prompt,
 )
-from researchgraph.graphs.ai_integrator.ai_integrator_v3.integrate_generator_subgraph.input_data import (
-    generator_subgraph_input_data,
-)
 
 from researchgraph.nodes.retrievenode.github.retrieve_code_with_devin import (
     RetrieveCodeWithDevinNode,
@@ -97,17 +94,14 @@ class IntegrateGeneratorSubgraph:
 
 if __name__ == "__main__":
     llm_name = "gpt-4o-2024-11-20"
-    generator_subgraph = IntegrateGeneratorSubgraph(
+    subgraph = IntegrateGeneratorSubgraph(
         llm_name=llm_name,
         ai_integrator_v3_creator_prompt=ai_integrator_v3_creator_prompt,
-    )
+    ).build_graph()
 
-    result = generator_subgraph(
-        state=generator_subgraph_input_data,
-    )
-
-    print(result["new_method_text"])
-    print(result["new_method_code"])
+    print(subgraph.get_graph().draw_mermaid())
+    # print(result["new_method_text"])
+    # print(result["new_method_code"])
 
     # image_dir = "/workspaces/researchgraph/images/"
     # generator_subgraph.make_image(image_dir)

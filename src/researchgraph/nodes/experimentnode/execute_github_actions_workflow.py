@@ -1,18 +1,8 @@
 import os
-from typing import TypedDict
-
 from datetime import datetime, timezone
-
 from researchgraph.nodes.utils.api_request_handler import fetch_api_data, retry_request
 
 GITHUB_PERSONAL_ACCESS_TOKEN = os.getenv("GITHUB_PERSONAL_ACCESS_TOKEN")
-
-
-class State(TypedDict):
-    github_owner: str
-    repository_name: str
-    branch_name: str
-    workflow_run_id: int
 
 
 class ExecuteGithubActionsWorkflowNode:
