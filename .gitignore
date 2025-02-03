@@ -166,5 +166,6 @@ cython_debug/
 !.gitkeep
 data/*
 !data/gsm8k_answer.csv
+!data/latex
 src/researchgraph.egg-info
 .gitmessage.txt

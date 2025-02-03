@@ -1,8 +1,8 @@
 executor_subgraph_input_data = {
-    "github_owner": "fuyu-quant",
+    "github_owner": "auto-res",
     "repository_name": "experimental-script",
     "save_dir": "/workspaces/researchgraph/data",
-    "num_iterations": 1,
+    "fix_iteration_count": 1,
     "new_method_text": """
 Learnable Gated Pooling: A New Approach
 This approach combines the benefits of learnable weights (as discussed in the previous responses) with a gating mechanism. The gating mechanism allows the model to dynamically decide how much of each element in the input sequence should contribute to the final pooled vector. This adds another layer of flexibility and expressiveness compared to simple learnable weights.

@@ -18,7 +18,8 @@
                 "eamodio.gitlens",
                 "gruntfuggly.todo-tree",
                 "ms-python.vscode-pylance",
-                "oderwat.indent-rainbow"
+                "oderwat.indent-rainbow",
+                "tomoki1207.pdf"
 			],
             "settings": {
                 "python.analysis.inlayHints.variableTypes": true,
