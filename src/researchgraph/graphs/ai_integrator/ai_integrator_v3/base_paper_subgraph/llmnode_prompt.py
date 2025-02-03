@@ -24,16 +24,15 @@ Below is the full text of the research paper:
 ## **Output Format (JSON)**:
 ```json
 {
-    "technical_summary": {
-        "main_contributions": "<Concise description of the main research problem and contributions>",
-        "methodology": "<Brief explanation of the key techniques, models, or algorithms>",
-        "experimental_setup": "<Description of datasets, benchmarks, and validation methods>",
-        "limitations": "<Summary of weaknesses, constraints, or assumptions>",
-        "future_research_directions": "<Potential areas for extending this research>"
-    }
+    "main_contributions": "<Concise description of the main research problem and contributions>",
+    "methodology": "<Brief explanation of the key techniques, models, or algorithms>",
+    "experimental_setup": "<Description of datasets, benchmarks, and validation methods>",
+    "limitations": "<Summary of weaknesses, constraints, or assumptions>",
+    "future_research_directions": "<Potential areas for extending this research>"
 }
 ```
 """
+
 
 ai_integrator_v3_select_paper_prompt = """
 You are an expert research assistant tasked with selecting the most relevant and high-quality paper from a list of research papers. 

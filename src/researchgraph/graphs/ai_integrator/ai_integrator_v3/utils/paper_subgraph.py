@@ -6,8 +6,8 @@ from researchgraph.core.factory import NodeFactory
 
 
 class PaperState(BaseModel):
-    base_selected_paper: Optional[dict] = None
     queries: list = Field(default_factory=list)
+    base_selected_paper: Optional[dict] = None
     search_results: Optional[list[dict]] = None
     arxiv_url: Optional[str] = None
     paper_text: Optional[str] = None
@@ -16,8 +16,13 @@ class PaperState(BaseModel):
     selected_arxiv_id: Optional[str] = None
     selected_paper: Optional[dict] = None
     process_index: int = 0
+    # technical_summary: Optional[dict] = None
+    generated_query_1: Optional[str] = None     # NOTE: structuredoutput_llmnodeの出力がlistに対応したら"queries"にまとめます
+    generated_query_2: Optional[str] = None
+    generated_query_3: Optional[str] = None
+    generated_query_4: Optional[str] = None
+    generated_query_5: Optional[str] = None
     
-
 class PaperSubgraph:
     def __init__(
         self,
@@ -41,31 +46,18 @@ class PaperSubgraph:
 
         if not os.path.exists(self.save_dir):
             os.makedirs(self.save_dir)
-        self.graph_builder = StateGraph(PaperState)
         
-
-        self.graph_builder.add_node("search_papers_node", self._search_papers_node)
-        self.graph_builder.add_node("retrieve_arxiv_text_node", self._retrieve_arxiv_text_node)
-        self.graph_builder.add_node("extract_github_urls_node", self._extract_github_urls_node)
-        #TODO: base_candidate_papersが空の場合の処理を追加
-        self.graph_builder.add_node("summarize_paper_node", self._summarize_paper_node)    
-        self.graph_builder.add_node("select_best_paper_id_node", self._select_best_paper_id_node)
-        self.graph_builder.add_node("convert_paper_id_to_dict_node", self._convert_paper_id_to_dict_node)
-        # make edges
-        self.graph_builder.add_edge(START, "search_papers_node")
-        self.graph_builder.add_edge("search_papers_node", "retrieve_arxiv_text_node")
-        self.graph_builder.add_edge("retrieve_arxiv_text_node", "extract_github_urls_node")
-        self.graph_builder.add_conditional_edges(
-            "extract_github_urls_node",
-            path = self._check_loop_condition,
-            path_map={"retrieve_arxiv_text_node": "retrieve_arxiv_text_node", "summarize_paper_node": "summarize_paper_node"},
-        )
-        self.graph_builder.add_edge("summarize_paper_node", "select_best_paper_id_node")
-        self.graph_builder.add_edge("select_best_paper_id_node", "convert_paper_id_to_dict_node")
-        self.graph_builder.add_edge("convert_paper_id_to_dict_node", END)
-
-        self.graph = self.graph_builder.compile()
-
+    def _generate_queries_node(self, state: PaperState) -> PaperState:
+        generate_queries_result = NodeFactory.create_node(
+            node_name="structuredoutput_llmnode",
+            input_key=["base_selected_paper"],
+            output_key = [f"generated_query_{i}" for i in range(1, 6)], 
+            llm_name=self.llm_name,
+            prompt_template=self.ai_integrator_v3_generate_queries_prompt,
+        ).execute(state)
+        state.queries = [generate_queries_result[f"generated_query_{i}"] for i in range(1, 6) if f"generated_query_{i}" in generate_queries_result]
+        print(f"generated_query: {state.queries}")
+        return state
 
     def _search_papers_node(self, state: PaperState) -> PaperState:
         search_result = NodeFactory.create_node(
@@ -132,30 +124,36 @@ class PaperSubgraph:
         return state
 
     def _summarize_paper_node(self, state: PaperState) -> PaperState:
-        if not state.candidate_papers:
-            return state
-
         summaries = []
         for paper in state.candidate_papers:
             state.paper_text = paper["paper_text"]
             summary_result = NodeFactory.create_node(
                 node_name="structuredoutput_llmnode",
                 input_key=["paper_text"],
-                output_key=["technical_summary"],   #TODO: LLMの出力形式が不安定
+                output_key=[
+                    "main_contributions",
+                    "methodology",
+                    "experimental_setup",
+                    "limitations",
+                    "future_research_directions",
+                ],  
                 llm_name=self.llm_name,
                 prompt_template=self.ai_integrator_v3_summarize_paper_prompt,
             ).execute(state)
 
-            paper["technical_summary"] = summary_result.get("technical_summary", "")
+            paper["technical_summary"] = {
+                "main_contributions": summary_result.get("main_contributions", ""),
+                "methodology": summary_result.get("methodology", ""),
+                "experimental_setup": summary_result.get("experimental_setup", ""),
+                "limitations": summary_result.get("limitations", ""),
+                "future_research_directions": summary_result.get("future_research_directions", ""),
+            }
             summaries.append(paper)
 
         state.candidate_papers = summaries
         return state
 
-    def _select_best_paper_id_node(self, state: PaperState) -> PaperState:
-        if not state.candidate_papers:
-            return state
-
+    def _select_best_paper_node(self, state: PaperState) -> PaperState:
         selected_paper = NodeFactory.create_node(
             node_name="structuredoutput_llmnode",
             input_key=["candidate_papers", "base_selected_paper"],
@@ -165,24 +163,22 @@ class PaperSubgraph:
         ).execute(state)
 
         state.selected_arxiv_id = selected_paper.get("selected_arxiv_id")
-        return state
-
-    def _convert_paper_id_to_dict_node(self, state: PaperState) -> PaperState:
         if state.selected_arxiv_id is None:
             return state
 
-        if state.candidate_papers:
-            state.selected_paper = next(
-                (paper for paper in state.candidate_papers if paper["arxiv_id"] == state.selected_arxiv_id),
-                None
-            )
-        else:
-            state.selected_paper = None
-
+        state.selected_paper = next(
+            (paper for paper in state.candidate_papers if paper["arxiv_id"] == state.selected_arxiv_id),
+            None
+        )
         return state
 
-    def _check_loop_condition(self, state: PaperState) -> str:
+    def _decide_next_node(self, state: PaperState) -> str:
         if state.process_index < len(state.search_results):
             return "retrieve_arxiv_text_node"
         else:
-            return "summarize_paper_node"
+            if state.candidate_papers:
+                return "summarize_paper_node"
+            else:
+                return "search_papers_node"
+
+

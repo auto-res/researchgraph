@@ -13,24 +13,26 @@ class BasePaperSubgraph(PaperSubgraph):
         super().__init__(*args, **kwargs)
         self.graph_builder = StateGraph(PaperState)
 
-        self.graph_builder.add_node("search_papers_node", self._search_papers_node)
+        self.graph_builder.add_node("search_papers_node", self._search_papers_node) #TODO: 検索結果が空ならEND
         self.graph_builder.add_node("retrieve_arxiv_text_node", self._retrieve_arxiv_text_node)
         self.graph_builder.add_node("extract_github_urls_node", self._extract_github_urls_node)
         self.graph_builder.add_node("summarize_paper_node", self._summarize_paper_node)
-        self.graph_builder.add_node("select_best_paper_id_node", self._select_best_paper_id_node)
-        self.graph_builder.add_node("convert_paper_id_to_dict_node", self._convert_paper_id_to_dict_node)
+        self.graph_builder.add_node("select_best_paper_node", self._select_best_paper_node)
 
         self.graph_builder.add_edge(START, "search_papers_node")
         self.graph_builder.add_edge("search_papers_node", "retrieve_arxiv_text_node")
         self.graph_builder.add_edge("retrieve_arxiv_text_node", "extract_github_urls_node")
         self.graph_builder.add_conditional_edges(
-            "extract_github_urls_node", 
-            path=self._check_loop_condition,
-            path_map={"retrieve_arxiv_text_node": "retrieve_arxiv_text_node", "summarize_paper_node": "summarize_paper_node"},
+            "extract_github_urls_node",
+            path=self._decide_next_node,
+            path_map={
+                "retrieve_arxiv_text_node": "retrieve_arxiv_text_node",
+                "summarize_paper_node": "summarize_paper_node",
+                "search_papers_node": "search_papers_node",
+            },
         )
-        self.graph_builder.add_edge("summarize_paper_node", "select_best_paper_id_node")
-        self.graph_builder.add_edge("select_best_paper_id_node", "convert_paper_id_to_dict_node")
-        self.graph_builder.add_edge("convert_paper_id_to_dict_node", END)
+        self.graph_builder.add_edge("summarize_paper_node", "select_best_paper_node")
+        self.graph_builder.add_edge("select_best_paper_node", END)
 
         self.graph = self.graph_builder.compile()
 

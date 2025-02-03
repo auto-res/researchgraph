@@ -12,7 +12,7 @@ SAVE_DIR = os.path.join(GITHUB_WORKSPACE, "data")
 
 def test_add_paper_subgraph():
     llm_name = "gpt-4o-2024-08-06"
-    num_retrieve_paper = 5
+    num_retrieve_paper = 3
     period_days = 90
     save_dir = SAVE_DIR
     api_type = "arxiv"
