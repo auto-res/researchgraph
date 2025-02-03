@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import Any, Optional
 
 class PaperSearch(ABC):
     """
@@ -7,28 +7,8 @@ class PaperSearch(ABC):
     """
 
     @abstractmethod
-    def search_paper(self, keywords: list[str], num_retrieve_paper: int) -> list[dict[str, Any]]:
+    def search_paper(self, queries: list[str], num_retrieve_paper: int, period: Optional[str] = None) -> list[dict[str, Any]]:
         """
         Method to search papers with specified keywords
-        """
-        pass
-
-    def normalize_keywords(self, keywords: str | list[str]) -> list[str]:
-        """
-        Normalize keywords to always be a list of strings.
-        """
-        if isinstance(keywords, str):
-            return [keywords]
-        return keywords    
-
-    def download_from_arxiv_ids(self, arxiv_ids: list[str]) -> None:
-        """
-        Method to download a paper PDF by specified arXiv ID
-        """
-        pass
-
-    def convert_pdf_to_text(self, pdf_path: str) -> str:
-        """
-        Method to convert a PDF to text
         """
         pass

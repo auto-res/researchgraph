@@ -25,6 +25,8 @@ from researchgraph.nodes.retrievenode import (
     RetrievearXivTextNode,
     RetrieveGithubRepositoryNode,
     RetrieveCodeWithDevinNode,
+    SearchPapersNode, 
+    ExtractGithubUrlsNode, 
     RetrieveGithubActionsArtifactsNode,
 )
 
@@ -56,6 +58,10 @@ class NodeFactory:
             return RetrieveGithubRepositoryNode(**kwargs)
         elif node_name == "retrieve_code_with_devin_node":
             return RetrieveCodeWithDevinNode(**kwargs)
+        elif node_name == "extract_github_urls_node":
+            return ExtractGithubUrlsNode(**kwargs)
+        elif node_name == "search_papers_node":
+            return SearchPapersNode(**kwargs)
         elif node_name == "retrieve_github_actions_artifacts_node":
             return RetrieveGithubActionsArtifactsNode(**kwargs)
 

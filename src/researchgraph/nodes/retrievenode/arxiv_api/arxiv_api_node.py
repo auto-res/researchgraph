@@ -1,183 +1,103 @@
-import os
-import json
-import shutil
 import requests
-from langchain_community.document_loaders import PyPDFLoader
-import arxiv
-from pydantic import BaseModel, ValidationError, validate_arguments
-from typing import TypedDict
-from langgraph.graph import StateGraph
-
-
-class State(TypedDict):
-    keywords: list[str]
-    collection_of_papers: dict
-
+import feedparser
+import pytz
+from datetime import datetime, timedelta
+from typing import Optional
+from pydantic import BaseModel, ValidationError, Field
+from researchgraph.core.node import Node
 
 class ArxivResponse(BaseModel):
-    title: str
     arxiv_id: str
+    arxiv_url: str
+    title: str
     authors: list[str]
-    abstract: str
     published_date: str
+    summary: str = Field(default="No summary")
 
-
-class ArxivNode:
-    @validate_arguments
+class ArxivNode(Node):
     def __init__(
         self,
-        save_dir: str,
-        search_key: str,
-        output_key: str,
-        num_keywords: int,
-        num_retrieve_paper: int,
+        input_key: list[str],
+        output_key: list[str],
+        num_retrieve_paper: int = 5,
+        period_days: Optional[int] = 7
     ):
-        self.save_dir = save_dir
-        self.search_key = search_key
-        self.output_key = output_key
-        self.num_keywords = num_keywords
+        super().__init__(input_key, output_key)
         self.num_retrieve_paper = num_retrieve_paper
+        self.period_days = period_days
+        self.start_indices: dict[str, int] = {} #TODO: stateに持たせる？
 
-        print("ArxivNode initialized")
-        print(f"input: {search_key}")
-        print(f"output: {output_key}")
+    def _build_arxiv_query(self, query: str) -> str:
+        now_utc = datetime.now(pytz.utc)
+        if self.period_days is None:
 
-    def download_from_arxiv_id(self, arxiv_id):
-        """Download PDF file from arXiv
+            return f"all:{query}"
 
-        Args:
-            arxiv_id (str): The arXiv identifier of the paper
-        """
+        from_date = now_utc - timedelta(days=self.period_days)
+        from_str = from_date.strftime("%Y-%m-%d")
+        to_str = now_utc.strftime("%Y-%m-%d")
+        return f"(all:{query}) AND submittedDate:[{from_str} TO {to_str}]"
 
-        url = f"https://arxiv.org/pdf/{arxiv_id}.pdf"
-        response = requests.get(url, stream=True)
-
-        if response.status_code == 200:
-            with open(os.path.join(self.save_dir, f"{arxiv_id}.pdf"), "wb") as file:
-                shutil.copyfileobj(response.raw, file)
-            print(f"Downloaded {arxiv_id}.pdf to {self.save_dir}")
-        else:
-            print(f"Failed to download {arxiv_id}.pdf")
-
-    def download_from_arxiv_ids(self, arxiv_ids: list[str]):
-        """Download PDF files from arXiv
-
-        Args:
-            arxiv_ids (list): List of arXiv identifiers
-        """
-        # Create the save directory if it doesn't exist
-        if not os.path.exists(self.save_dir):
-            os.makedirs(self.save_dir)
-        else:
-            # Clear the directory if it already exists
-            shutil.rmtree(self.save_dir)
-            os.makedirs(self.save_dir)
-
-        for arxiv_id in arxiv_ids:
-            self.download_from_arxiv_id(arxiv_id)
-
-    def convert_pdf_to_text(self, pdf_path: str):
-        """Convert PDF file to text
-
-        Args:
-            pdf_path (str): Path to the PDF file
-
-        Returns:
-            str: Extracted text content from the PDF
-        """
-
-        loader = PyPDFLoader(pdf_path)
-        pages = loader.load_and_split()
-        content = ""
-        for page in pages[:20]:
-            content += page.page_content
-
-        return content
-
-    def __call__(self, state: State) -> State:
-        """Retrieve papers from arXiv based on keywords
-
-        Args:
-            state (State): The current state containing keywords
-
-        Returns:
-            State: Updated state with downloaded papers
-        """
-        keywords_list = json.loads(state[self.search_key])
-        # keywords_list = keywords_list[: self.num_keywords]
-        all_search_results = []
-
-        client = arxiv.Client(
-            num_retries=3,  # 再試行の設定
-            page_size=self.num_retrieve_paper,  # ページサイズを設定
-        )
-
-        for search_term in keywords_list:
-            search = arxiv.Search(
-                query=search_term,
-                max_results=self.num_retrieve_paper,
-                sort_by=arxiv.SortCriterion.SubmittedDate,
+    def _validate_and_convert(self, entry) -> Optional[ArxivResponse]:
+        try:
+            paper = ArxivResponse(
+                arxiv_id = entry.id.split("/")[-1], 
+                arxiv_url=entry.id,
+                title=entry.title or "No Title",
+                authors = [a.name for a in entry.authors] if hasattr(entry, "authors") else [], 
+                published_date=entry.published if hasattr(entry, "published") else "Unknown date",
+                summary=entry.summary if hasattr(entry, "summary") else "No summary"
             )
+            return paper
+        except ValidationError as e:
+            print(f"Validation error: {e}")
+            return None
 
-            results = list(client.results(search))
-            all_search_results.extend(results)
+    def search_paper(self, query: str) -> list[ArxivResponse]:
+        base_url = "http://export.arxiv.org/api/query"
+        search_query = self._build_arxiv_query(query)
+        start_index = self.start_indices.get(query, 0)
 
-        print(f"all_search_results {len(all_search_results)}")
+        params = {
+            "search_query": search_query,
+            "start": start_index,
+            "max_results": self.num_retrieve_paper,
+            "sortBy": "submittedDate",
+            "sortOrder": "descending",
+        }
 
-        # Validate each result using Pydantic
-        validated_results = []
-        for result in all_search_results:
-            try:
-                validated_result = ArxivResponse(
-                    title=result.title,
-                    arxiv_id=result.get_short_id(),
-                    authors=[author.name for author in result.authors],
-                    abstract=result.summary,
-                    published_date=str(result.published),
-                )
-                validated_results.append(validated_result)
-            except ValidationError as e:
-                print(f"Validation error for item {result}: {e}")
+        try:
+            response = requests.get(base_url, params=params, timeout=15)
+            response.raise_for_status()
+        except requests.exceptions.RequestException as exc:
+            print(f"Error fetching from arXiv API: {exc}")
+            return []
 
-        arxiv_ids = [result.arxiv_id for result in validated_results]
-        self.download_from_arxiv_ids(arxiv_ids)
+        feed = feedparser.parse(response.text)
 
-        if self.output_key not in state:
-            state[self.output_key] = {}
+        validated_list = []
+        for entry in feed.entries:
+            paper = self._validate_and_convert(entry)
+            if paper:
+                validated_list.append(paper.model_dump())
 
-        # Process downloaded PDFs
-        for idx, filename in enumerate(os.listdir(self.save_dir)):
-            if filename.endswith(".pdf"):
-                pdf_path = os.path.join(self.save_dir, filename)
-                paper_content = self.convert_pdf_to_text(pdf_path)
-                paper_key = f"paper_{idx+1}"
-                state[self.output_key][paper_key] = paper_content
-        return state
+        if len(validated_list) == self.num_retrieve_paper:
+            if query not in self.start_indices:
+                self.start_indices[query] = 0
+            self.start_indices[query] += self.num_retrieve_paper
 
+        return validated_list
 
-if __name__ == "__main__":
-    save_dir = "/workspaces/researchchain/data"
-    search_key = "keywords"
-    output_key = "collection_of_papers"
+    def execute(self, state) -> list[dict]:
+        queries = getattr(state, self.input_key[0], [])
+        if not queries or not isinstance(queries, list):
+            print(f"No valid queries found in state[{self.input_key[0]}]. Return empty.")
+            return {self.output_key[0]: []}
 
-    memory = {"keywords": '["Grokking", "Separability"]'}
-
-    graph_builder = StateGraph(State)
-    graph_builder.add_node(
-        "arxivretriever",
-        ArxivNode(
-            save_dir=save_dir,
-            search_key=search_key,
-            output_key=output_key,
-            num_keywords=2,
-            num_retrieve_paper=5,
-            # num_retrieve_paper=1,
-        ),
-    )
-    graph_builder.set_entry_point("arxivretriever")
-    graph_builder.set_finish_point("arxivretriever")
-    graph = graph_builder.compile()
-
-    memory = {"keywords": '["Grokking", "Separability"]'}
-
-    graph.invoke(memory, debug=True)
+        all_papers = []
+        for q in queries:
+            results = self.search_paper(q)
+            all_papers.extend(results)
+        return {
+            self.output_key[0]: all_papers, 
+        }

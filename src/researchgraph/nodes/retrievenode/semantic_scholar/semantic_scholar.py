@@ -32,8 +32,6 @@ class SemanticScholarNode(Node, PaperSearch):
 
     def search_paper(self, keywords: str | list[str], num_retrieve_paper: int) -> list[dict]:
         """Search papers using Semantic Scholar API."""
-        # Normalize keywords to ensure it's always a list
-        keywords = self.normalize_keywords(keywords) 
 
         sch = SemanticScholar()
         search_results = []
