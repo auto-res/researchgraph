@@ -1,27 +1,12 @@
 import os
 import zipfile
-from typing import TypedDict
-
-from langgraph.graph import START, END, StateGraph
-from researchgraph.core.node import Node
 
 from researchgraph.nodes.utils.api_request_handler import fetch_api_data, retry_request
-
 
 GITHUB_PERSONAL_ACCESS_TOKEN = os.getenv("GITHUB_PERSONAL_ACCESS_TOKEN")
 
 
-class State(TypedDict):
-    github_owner: str
-    repository_name: str
-    workflow_run_id: int
-    save_dir: str
-    fix_iteration_count: int
-    output_text_data: str
-    error_text_data: str
-
-
-class RetrieveGithubActionsArtifactsNode(Node):
+class RetrieveGithubActionsArtifactsNode:
     def __init__(
         self,
     ):
@@ -100,29 +85,29 @@ class RetrieveGithubActionsArtifactsNode(Node):
         )
 
 
-if __name__ == "__main__":
-    graph_builder = StateGraph(State)
-    graph_builder.add_node(
-        "retrieve_github_actions_artifacts",
-        RetrieveGithubActionsArtifactsNode(
-            input_key=[
-                "github_owner",
-                "repository_name",
-                "workflow_run_id",
-                "save_dir",
-                "num_iterations",
-            ],
-            output_key=["output_file_path", "error_file_path"],
-        ),
-    )
-    graph_builder.add_edge(START, "retrieve_github_actions_artifacts")
-    graph_builder.add_edge("retrieve_github_actions_artifacts", END)
-    graph = graph_builder.compile()
-    state = {
-        "github_owner": "auto-res",
-        "repository_name": "experimental-script",
-        "workflow_run_id": 13055964079,
-        "save_dir": "/workspaces/researchgraph/data",
-        "num_iterations": 1,
-    }
-    graph.invoke(state, debug=True)
+# if __name__ == "__main__":
+#     graph_builder = StateGraph(State)
+#     graph_builder.add_node(
+#         "retrieve_github_actions_artifacts",
+#         RetrieveGithubActionsArtifactsNode(
+#             input_key=[
+#                 "github_owner",
+#                 "repository_name",
+#                 "workflow_run_id",
+#                 "save_dir",
+#                 "num_iterations",
+#             ],
+#             output_key=["output_file_path", "error_file_path"],
+#         ),
+#     )
+#     graph_builder.add_edge(START, "retrieve_github_actions_artifacts")
+#     graph_builder.add_edge("retrieve_github_actions_artifacts", END)
+#     graph = graph_builder.compile()
+#     state = {
+#         "github_owner": "auto-res",
+#         "repository_name": "experimental-script",
+#         "workflow_run_id": 13055964079,
+#         "save_dir": "/workspaces/researchgraph/data",
+#         "num_iterations": 1,
+#     }
+#     graph.invoke(state, debug=True)

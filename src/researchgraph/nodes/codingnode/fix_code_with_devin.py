@@ -1,17 +1,9 @@
 import os
 import time
-from typing import TypedDict
 
 from researchgraph.nodes.utils.api_request_handler import fetch_api_data, retry_request
 
 API_KEY = os.getenv("DEVIN_API_KEY")
-
-
-class State(TypedDict):
-    session_id: str
-    output_file_path: str
-    error_file_path: str
-    fix_iterations: int
 
 
 class FixCodeWithDevinNode:
@@ -38,14 +30,20 @@ Please correct the following error output.The standard output is attached for re
 {output_text_data}
 """,
         }
-        return retry_request(
-            fetch_api_data, url, headers=self.headers, data=data, method="POST"
-        )
 
-    # def _execute_file(self, file_path):
-    #     with open(file_path, "r", encoding="utf-8") as file:
-    #         content = file.read()
-    #     return content
+        def should_retry(response):
+            # Describe the process so that it is True if you want to retry
+            return response is not None
+
+        # TODO:RUNNINGならリクエスを送らないようにする
+        return retry_request(
+            fetch_api_data,
+            url,
+            headers=self.headers,
+            data=data,
+            method="POST",
+            check_condition=should_retry,
+        )
 
     def _get_devin_response(self, session_id):
         url = f"https://api.devin.ai/v1/session/{session_id}"
@@ -69,10 +67,6 @@ Please correct the following error output.The standard output is attached for re
         error_text_data: str,
         fix_iteration_count: int,
     ) -> int:
-        # session_id = getattr(state, self.input_key[0])
-        # output_file_path = getattr(state, self.input_key[1])
-        # error_file_path = getattr(state, self.input_key[2])
-        # num_iterations = getattr(state, self.input_key[3])
         print("Execute code fixes in Devin")
         self._request_revision_to_devin(session_id, output_text_data, error_text_data)
         time.sleep(60)
@@ -81,27 +75,10 @@ Please correct the following error output.The standard output is attached for re
         return fix_iteration_count + 1
 
 
-# if __name__ == "__main__":
-#     graph_builder = StateGraph(State)
-#     graph_builder.add_node(
-#         "FixCodeWithDevinNode",
-#         FixCodeWithDevinNode(
-#             input_key=[
-#                 "session_id",
-#                 "output_file_path",
-#                 "error_file_path",
-#                 "fix_iterations",
-#             ],
-#             output_key=["num_iterations"],
-#         ),
-#     )
-#     graph_builder.add_edge(START, "FixCodeWithDevinNode")
-#     graph_builder.add_edge("FixCodeWithDevinNode", END)
-#     graph = graph_builder.compile()
-#     state = {
-#         "session_id": "devin-a3c0741bce344b93a704277a6fec63d9",
-#         "output_file_path": "/workspaces/researchgraph/data/iteration_1/output.txt",
-#         "error_file_path": "/workspaces/researchgraph/data/iteration_1/error.txt",
-#         "fix_iterations": 1,
-#     }
-#     graph.invoke(state, debug=True)
+if __name__ == "__main__":
+    node = FixCodeWithDevinNode()
+    session_id = "devin-d4ba0d7ed2c54a29bac8cfb2dc610d55"
+    output_text_data = ""
+    error_text_data = "python: can't open file '/home/runner/work/experimental-script/experimental-script/src/main.py': [Errno 2] No such file or directory"
+    fix_iteration_count = 1
+    node.execute(session_id, output_text_data, error_text_data, fix_iteration_count)

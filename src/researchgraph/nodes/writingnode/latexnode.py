@@ -3,18 +3,10 @@ import os.path as osp
 import re
 import subprocess
 import shutil
-from typing import TypedDict
+import ast
 from pydantic import BaseModel
 
 from litellm import completion
-
-
-import ast
-
-
-class State(TypedDict):
-    paper_content: dict
-    pdf_file_path: str
 
 
 class LLMOutput(BaseModel):
