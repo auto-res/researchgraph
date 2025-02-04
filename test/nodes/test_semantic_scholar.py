@@ -1,7 +1,7 @@
 import os
 from typing import TypedDict
 from langgraph.graph import StateGraph
-from researchgraph.nodes.retrievenode.semantic_scholar.semantic_scholar import (
+from researchgraph.retrieve_paper_subgraph.nodes.semantic_scholar import (
     SemanticScholarNode,
 )
 from unittest.mock import patch
@@ -10,6 +10,7 @@ from unittest.mock import patch
 class State(TypedDict):
     keywords: str
     paper_results: dict
+
 
 # NOTE：It is executed by Github actions.
 @patch("semanticscholar.SemanticScholar.search_paper")
