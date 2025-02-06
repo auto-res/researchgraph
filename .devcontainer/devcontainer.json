@@ -9,17 +9,16 @@
 	"customizations": {
 		"vscode": {
 			"extensions": [
-				"ms-python.python",
-				"charliermarsh.ruff",
-				"github.copilot",
-				"ms-toolsai.jupyter",
-				"njpwerner.autodocstring",
-                "mhutchie.git-graph",
-                "eamodio.gitlens",
-                "gruntfuggly.todo-tree",
-                "ms-python.vscode-pylance",
-                "oderwat.indent-rainbow",
-                "tomoki1207.pdf"
+        "ms-python.python", // Python
+				"charliermarsh.ruff", // Ruff
+				"github.copilot", // GitHub Copilot
+        "mhutchie.git-graph", // Git Graph
+        "eamodio.gitlens", // GitLens
+        "gruntfuggly.todo-tree", // Todo Tree
+        "ms-python.vscode-pylance", // Pylance
+        "oderwat.indent-rainbow", // Indent Rainbow
+        "tomoki1207.pdf", // PDF viewer
+        "ms-ceintl.vscode-language-pack-ja" // Japanese Language Pack
 			],
             "settings": {
                 "python.analysis.inlayHints.variableTypes": true,

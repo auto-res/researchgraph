@@ -14,11 +14,17 @@ from researchgraph.executor_subgraph.nodes.retrieve_github_actions_artifacts imp
 from researchgraph.executor_subgraph.nodes.fix_code_with_devin import (
     FixCodeWithDevinNode,
 )
+from researchgraph.executor_subgraph.input_data import (
+    executor_subgraph_input_data,
+)
 
 
 class ExecutorState(TypedDict):
-    new_method_text: str
+    new_detailed_description_of_methodology: str
+    new_novelty: str
+    new_experimental_procedure: str
     new_method_code: str
+
     branch_name: str
     github_owner: str
     repository_name: str
@@ -39,13 +45,18 @@ class ExecutorSubgraph:
         self.max_fix_iteration = max_fix_iteration
 
     def _generate_code_with_devin_node(self, state: ExecutorState) -> dict:
+        print("---ExecutorSubgraph---")
+
         print("generate_code_with_devin_node")
-        github_owner = state["github_owner"]
-        repository_name = state["repository_name"]
-        new_method_text = state["new_method_text"]
-        new_method_code = state["new_method_code"]
         session_id, branch_name, devin_url = GenerateCodeWithDevinNode().execute(
-            github_owner, repository_name, new_method_text, new_method_code
+            github_owner=state["github_owner"],
+            repository_name=state["repository_name"],
+            new_detailed_description_of_methodology=state[
+                "new_detailed_description_of_methodology"
+            ],
+            new_novelty=state["new_novelty"],
+            new_experimental_procedure=state["new_experimental_procedure"],
+            new_method_code=state["new_method_code"],
         )
 
         return {
@@ -147,14 +158,11 @@ class ExecutorSubgraph:
         )
         return graph_builder.compile()
 
-    # def __call__(self):
-    #     return self.build_graph()
-
 
 if __name__ == "__main__":
-    subgraph = ExecutorSubgraph(
+    graph = ExecutorSubgraph(
         max_fix_iteration=3,
     ).build_graph()
 
     # executor_subgraph.output_mermaid
-    # result = executor_subgraph().invoke(executor_subgraph_input_data)
+    result = graph.invoke(executor_subgraph_input_data)
