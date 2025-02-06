@@ -1,4 +1,4 @@
-generator_subgraph_input_data = {
+integrate_generator_subgraph_input_data = {
     "objective": "I am researching Optimizers for fine-tuning LLM. The aim is to find a better Optimizer.",
     "add_github_url": "https://github.com/AtheMathmo/AggMo",
     "add_method_text": """\

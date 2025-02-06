@@ -39,6 +39,7 @@ class WriterSubgraph:
         self.figures_dir = figures_dir
 
     def _writeup_node(self, state: WriterState) -> dict:
+        print("---WriterSubgraph---")
         paper_content = WriteupNode(
             llm_name=self.llm_name,
             refine_round=self.refine_round,
@@ -99,9 +100,6 @@ class WriterSubgraph:
 
         return graph_builder.compile()
 
-    def __call__(self):
-        return self.build_graph()
-
 
 if __name__ == "__main__":
     latex_template_file_path = "/workspaces/researchgraph/data/latex/template.tex"
@@ -114,7 +112,3 @@ if __name__ == "__main__":
         latex_template_file_path=latex_template_file_path,
         figures_dir=figures_dir,
     ).build_graph()
-
-    print(subgraph.get_graph().draw_mermaid())
-    # image_dir = "/workspaces/researchgraph/images/"
-    # writer_subgraph.make_image(image_dir)

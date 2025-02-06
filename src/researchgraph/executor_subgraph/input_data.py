@@ -1,6 +1,6 @@
 executor_subgraph_input_data = {
-    "github_owner": "auto-res",
-    "repository_name": "experimental-script",
+    "github_owner": "auto-res2",
+    "repository_name": "auto-research",
     "save_dir": "/workspaces/researchgraph/data",
     "fix_iteration_count": 1,
     "new_method_text": """

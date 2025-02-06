@@ -7,8 +7,8 @@ from researchgraph.retrieve_paper_subgraph.nodes.search_api.arxiv_api_node impor
 class SearchPapersNode:
     def __init__(
         self,
-        period_days: int = 40,
-        num_retrieve_paper: int = 5,
+        period_days: int = 60,
+        num_retrieve_paper: int = 8,
         api_type: str = "arxiv",
     ):
         self.period_days = period_days
@@ -35,7 +35,6 @@ class SearchPapersNode:
             search_results = paper_search.execute(queries)
             if search_results is None:
                 raise Exception("No search results found")
-            # search_results = search_results.get("search_results")
         except Exception as e:
             raise Exception(f"Error during paper search: {e}")
 
