@@ -1,0 +1,17 @@
+writer_subgraph_input_data = {
+    "objective": "Researching optimizers for fine-tuning LLMs.",
+    "base_method_text": "Baseline method description...",
+    "add_method_text": "Added method description...",
+    "new_method_text": ["New combined method description..."],
+    "base_method_code": "def base_method(): pass",
+    "add_method_code": "def add_method(): pass",
+    "new_method_code": ["def new_method(): pass"],
+    "paper_content": {},
+    "pdf_file_path": "/workspaces/researchgraph/data/test_output.pdf",
+    "github_owner": "auto-res",
+    "repository_name": "experimental-script",
+    "branch_name": "devin/1738496296-learnable-gated-pooling",
+    "add_github_url": "https://github.com/AtheMathmo/AggMo",
+    "base_github_url": "https://github.com/facebookresearch/madgrad",
+    "devin_url": "https://app.devin.ai/sessions/29ebce5ed6f247a4a5bb0d109ecb2f9b",
+}

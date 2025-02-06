@@ -1,13 +1,14 @@
 import os
 from typing import TypedDict
 from langgraph.graph import StateGraph
-from researchgraph.nodes.retrievenode.open_alex.openalex import OpenAlexNode
+from researchgraph.retrieve_paper_subgraph.nodes.openalex import OpenAlexNode
 from unittest.mock import patch
 
 
 class State(TypedDict):
     keywords: list[str]
     paper_results: dict
+
 
 # NOTE：It is executed by Github actions.
 @patch("pyalex.Works.filter")

@@ -6,7 +6,7 @@ if "GITHUB_WORKSPACE" in os.environ:
 
 from pydantic import BaseModel, Field
 from langgraph.graph import StateGraph
-from researchgraph.nodes.writingnode.writeup_node import WriteupNode
+from researchgraph.writer_subgraph.nodes.writeup_node import WriteupNode
 
 
 class State(BaseModel):
@@ -39,8 +39,8 @@ def test_writeup_node():
         input_key=input_key,
         output_key=output_key,
         llm_name=llm_name,
-        refine_round=refine_round, 
-        # refine_only=False, 
+        refine_round=refine_round,
+        # refine_only=False,
         # target_sections=Node
     )
 
@@ -64,8 +64,8 @@ def test_writeup_node():
         "new_method_results": ["Accuracy: 0.92"],
         "arxiv_url": "https://arxiv.org/abs/1234.5678",
         "github_url": "https://github.com/example/repo",
-        "paper_content": {}, 
-        # "*_analysis": 
+        "paper_content": {},
+        # "*_analysis":
     }
 
     # Execute the graph
