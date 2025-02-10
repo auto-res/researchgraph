@@ -28,6 +28,7 @@ dependencies = [
     "trl>=0.13.0",
     "transformers==4.46.2",
     "torch>=2.5.1",
+    "pytest-cov>=6.0.0",
 ]
 
 [project.urls]
