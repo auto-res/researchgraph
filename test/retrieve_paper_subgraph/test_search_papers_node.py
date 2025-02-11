@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 from langgraph.graph import StateGraph
-from researchgraph.nodes.retrievenode.search_papers_node import SearchPapersNode
+from researchgraph.retrieve_paper_subgraph.nodes.search_papers_node import SearchPapersNode
 from unittest.mock import patch, MagicMock
 
 
