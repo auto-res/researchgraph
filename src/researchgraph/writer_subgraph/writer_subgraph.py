@@ -23,6 +23,7 @@ class WriterState(TypedDict):
     add_github_url: str
     base_github_url: str
     completion: bool
+    devin_url: str
 
 
 class WriterSubgraph:
