@@ -3,7 +3,7 @@ import os.path as osp
 import re
 import subprocess
 import shutil
-import ast
+import json
 from pydantic import BaseModel
 
 from litellm import completion
@@ -25,24 +25,43 @@ class LatexNode:
         self.timeout = timeout
         self.figures_dir = figures_dir
         self.latex_template_file_path = latex_template_file_path
-        self.template_copy_file = osp.join(
-            "/workspaces/researchgraph/data/latex", "template_copy.tex"
-        )
 
-    def _call_llm(self, prompt: str) -> str:
-        try:
-            response = completion(
-                model=self.llm_name,
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0,
-                response_format=LLMOutput,
-            )
-            output = response.choices[0].message.content
-            output = ast.literal_eval(output)["latex_full_text"]
-            return output
-        except Exception as e:
-            print("Error calling LLM: {e}")
-            raise
+        template_dir = osp.dirname(latex_template_file_path)
+        self.template_copy_file = osp.join(template_dir, "template_copy.tex")
+
+    def _call_llm(self, prompt: str, max_retries: int = 3) -> str:
+        system_prompt = """
+        You are a helpful LaTeX rewriting assistant.
+        Please respond ONLY in valid JSON format with a single key "latex_full_text" and no other keys.
+        Example:
+        {
+        "latex_full_text": "..."
+        }
+        The value of "latex_full_text" must contain the complete LaTeX text.
+        Do not add extra keys or text outside the JSON.
+        """.strip()
+
+        for attempt in range(max_retries):
+            try:
+                response = completion(
+                    model=self.llm_name,
+                    messages=[
+                        {"role": "system", "content": system_prompt}, 
+                        {"role": "user", "content": prompt}, 
+                    ],
+                    temperature=0,
+                    response_format=LLMOutput,
+                )
+                structured_output = json.loads(response.choices[0].message.content)
+                validated = LLMOutput(**structured_output)
+                return validated.latex_full_text
+            except (ValueError, KeyError) as parse_e:
+                print(f"[Attempt {attempt+1}/{max_retries}] Parse/Key error: {parse_e}")
+                continue
+            except Exception as e:
+                print(f"[Attempt {attempt+1}/{max_retries}] Error calling LLM: {e}")
+                continue
+        raise RuntimeError("Exceeded maximum retries for LLM call.")
 
     def _copy_template(self):
         # Copy the LaTeX template to a working copy for modifications
@@ -50,7 +69,10 @@ class LatexNode:
             raise FileNotFoundError(
                 f"Template file not found: {self.latex_template_file_path}"
             )
-        shutil.copyfile(self.latex_template_file_path, self.template_copy_file)
+        try:
+            shutil.copyfile(self.latex_template_file_path, self.template_copy_file)
+        except OSError as e:
+            raise OSError(f"Failed to copy template: {e}")
 
     def _fill_template(self, content: dict) -> str:
         # Read the copied template, replace placeholders with content, and save the updated file
@@ -64,6 +86,7 @@ class LatexNode:
 
         with open(self.template_copy_file, "w") as f:
             f.write(tex_text)
+
         return tex_text
 
     def _check_references(self, tex_text: str) -> str:
@@ -132,7 +155,7 @@ class LatexNode:
         Please modify and output the above Latex text based on the following instructions.
         - Only “Available Images” are available. 
         - If a figure is mentioned on Latex Text, please rewrite the content of Latex Text to cite it.
-        - Do not use diagrams that do not exist in “Availabel Images”.
+        - Do not use diagrams that do not exist in “Available Images”.
         - Return the complete LaTeX text."""
         print("LLMの実行")
         llm_response = self._call_llm(prompt)
@@ -165,13 +188,18 @@ class LatexNode:
                         f"LLM failed to respond for missing figures: {duplicates}"
                     )
                 tex_text = llm_response
-            return tex_text
+        return tex_text
 
     def _fix_latex_errors(self, writeup_file: str) -> str:
         # Fix LaTeX errors iteratively using chktex and automated suggestions
         with open(writeup_file, "r") as f:
             tex_text = f.read()
-        check_output = os.popen(f"chktex {writeup_file} -q -n2 -n24 -n13 -n1").read()
+        
+        try:
+            check_output = os.popen(f"chktex {writeup_file} -q -n2 -n24 -n13 -n1").read()
+        except FileNotFoundError:
+            print("chktex command not found. Skipping latex checks.")
+            return tex_text
 
         if check_output:
             error_messages = check_output.strip().split("\n")
@@ -227,6 +255,11 @@ class LatexNode:
                 print(f"Latex command timed out: {e}")
             except subprocess.CalledProcessError as e:
                 print(f"Error running command {' '.join(command)}: {e}")
+            except FileNotFoundError:
+                print(
+                    f"Command not found: {' '.join(command)}. "
+                    "Make sure pdflatex and bibtex are installed and on your PATH."
+                )
             except Exception as e:
                 print(f"An unexpected error occurred: {e}")
 
@@ -252,12 +285,15 @@ class LatexNode:
                 iteration_count += 1
                 continue
 
-            print("Check figures")
-            original_tex_text = tex_text
-            tex_text = self._check_figures(tex_text, self.figures_dir)
-            if tex_text != original_tex_text:
-                iteration_count += 1
-                continue
+            if any(f.endswith(".png") for f in os.listdir(self.figures_dir)):
+                print("Check figures")
+                original_tex_text = tex_text
+                tex_text = self._check_figures(tex_text, self.figures_dir)
+                if tex_text != original_tex_text:
+                    iteration_count += 1
+                    continue
+            else:
+                print("Figures directory is empty or does not exist. Skipping figure check.")
 
             print("Check duplicates")
             original_tex_text = tex_text
@@ -287,6 +323,7 @@ class LatexNode:
 
         with open(self.template_copy_file, "w") as f:
             f.write(tex_text)
+
         try:
             self._compile_latex(
                 osp.dirname(self.template_copy_file),
@@ -299,45 +336,27 @@ class LatexNode:
         except Exception as e:
             print(f"Error occurred: {e}")
             return None
-
-
-# if __name__ == "__main__":
-#     graph_builder = StateGraph(State)
-
-#     input_key = ["paper_content"]
-#     output_key = ["pdf_file_path"]
-#     llm_name = "gpt-4o"
-#     template_file_path = "/workspaces/researchgraph/data/latex/template.tex"
-#     figures_dir = "data/figures"
-#     graph_builder.add_node(
-#         "latexnode",
-#         LatexNode(
-#             input_key=input_key,
-#             output_key=output_key,
-#             llm_name=llm_name,
-#             template_file_path=template_file_path,
-#             figures_dir=figures_dir,
-#             timeout=30,
-#         ),
-#     )
-#     graph_builder.add_edge(START, "latexnode")
-#     graph_builder.add_edge("latexnode", END)
-#     graph = graph_builder.compile()
-
-#     # Define initial state
-#     state = {
-#         "paper_content": {
-#             "title": "test title",
-#             "abstract": "Abstract.",
-#             "introduction": "This is the introduction.",
-#             "related work": "This is the related work",
-#             "background": "This is the background",
-#             "method": "This is the method section.",
-#             "experimental setup": "This is the experimental setup",
-#             "results": "These are the results.",
-#             "conclusions": "This is the conclusion.",
-#         },
-#         "pdf_file_path": "data/test_output.pdf",
-#     }
-#     # graph.invoke(state, debug=True)
-#     graph.invoke(state)
+        
+if __name__ == "__main__":
+    state = {
+        "paper_content": {
+            "title": "test title",
+            "abstract": "Test Abstract.",
+            "introduction": "This is the introduction.",
+        },
+        "pdf_file_path": "/workspaces/researchgraph/data/test_output.pdf", 
+    }
+    paper_content = state["paper_content"]
+    pdf_file_path = state["pdf_file_path"]
+    llm_name = "gpt-4o-mini-2024-07-18"
+    latex_template_file_path = "/workspaces/researchgraph/data/latex/template.tex"
+    figures_dir = "/workspaces/researchgraph/images"
+    pdf_file_path = LatexNode(
+        llm_name=llm_name,
+        latex_template_file_path=latex_template_file_path,
+        figures_dir=figures_dir,
+        timeout=30,
+    ).execute(
+        paper_content,
+        pdf_file_path, 
+    )

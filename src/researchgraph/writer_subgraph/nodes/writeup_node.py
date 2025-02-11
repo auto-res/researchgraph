@@ -182,15 +182,19 @@ Pay particular attention to fixing any errors such as:
         return template.render(sections=sections)
 
     def _call_llm(self, prompt: str) -> str:
-        response = completion(
-            model=self.llm_name,
-            messages=[
-                {"role": "user", "content": prompt},
-            ],
-            response_format=LLMOutput,
-        )
-        structured_output = json.loads(response.choices[0].message.content)
-        return structured_output["generated_paper_text"]
+        try:
+            response = completion(
+                model=self.llm_name,
+                messages=[
+                    {"role": "user", "content": prompt},
+                ],
+                response_format=LLMOutput,
+            )
+            structured_output = json.loads(response.choices[0].message.content)
+            validated = LLMOutput(**structured_output)
+            return validated.generated_paper_text
+        except Exception as e:
+            raise 
 
     def _write(self, note: str, section_name: str) -> str:
         prompt = self._generate_write_prompt(section_name, note)
@@ -236,12 +240,12 @@ Pay particular attention to fixing any errors such as:
         self, text: str
     ) -> str:  # TODO: Combine with prompts to more accurately remove unnecessary meta-information and artifacts.
         meta_patterns = [
-            r"Here(?: is|'s) \w+ version.*?(\.|\n)",
+            r"Here(?: is|'s)(?:.*?version.*?)(\.|\n)",
             r"This section discusses.*?(\.|\n)",
             r"Before every paragraph.*?(\.|\n)",
             r"Refinement Pass \d+.*?(\.|\n)",
             r"Do not include.*?(\.|\n)",
-            r"Certainly!*?(\.|\n)",
+            r"Certainly!.*?(\.|\n)",
             r"_.*?@cref",
             r"^\s*[-*]\s+.*?$",  # Bullet point instructions (e.g., "- Be concise.")
             r"^(```|''')[\w]*\n",  # Opening code block markers (e.g., ```latex)
@@ -284,8 +288,8 @@ Pay particular attention to fixing any errors such as:
                 # refined_content = self._refine(note, section, initial_content)
             else:
                 # refine only
-                # initial_content = paper_content.get(section, "")
-                initial_content = getattr(state, section)
+                initial_content = paper_content.get(section, "")
+                # initial_content = getattr(state, section)
                 refined_content = self._refine(note, section, initial_content)
 
             final_content = self._clean_meta_information(refined_content)
@@ -376,4 +380,4 @@ if __name__ == "__main__":
         llm_name=llm_name,
         refine_round=refine_round,
     ).execute(state)
-    print(paper_content)
+    # print(paper_content)

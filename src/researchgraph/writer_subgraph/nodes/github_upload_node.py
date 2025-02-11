@@ -89,7 +89,8 @@ class GithubUploadNode:
         )
         return encoded_markdown_data
 
-    def _encodeing_all_data(all_data):
+    @staticmethod
+    def _encoding_all_data(all_data: dict):
         json_data = json.dumps(all_data, indent=2, ensure_ascii=False)
         encoded_all_data = base64.b64encode(json_data.encode("utf-8")).decode("utf-8")
         return encoded_all_data
@@ -111,7 +112,7 @@ class GithubUploadNode:
         encoded_markdown_data = GithubUploadNode._encoded_markdown_data(
             title, abstract, add_github_url, base_github_url, devin_url
         )
-        encoded_all_logs = GithubUploadNode._encodeing_all_data(all_logs)
+        encoded_all_logs = GithubUploadNode._encoding_all_data(all_logs)
 
         print("Paper Upload")
         # response_paper = self._request_get_github_content(
