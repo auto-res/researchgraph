@@ -21,14 +21,15 @@ class FixCodeWithDevinNode:
         url = f"https://api.devin.ai/v1/session/{session_id}/message"
         data = {
             "message": f"""
-When the code was executed, the error described below occurred.
-Please correct the code and push the corrected code to the remote repository.
-Please correct the following error output.The standard output is attached for reference.
+# Instruction
+The following error occurred when executing the code in main.py. Please modify the code and push the modified code to the remote repository.
+Also, if there is no or little content in “Standard Output”, please modify main.py to make the standard output content richer.
+- "Error” contains errors that occur when main.py is run.
+- "Standard Output” contains the standard output of the main.py run.
 # Error
 {error_text_data}
 # Standard Output
-{output_text_data}
-""",
+{output_text_data}""",
         }
 
         def should_retry(response):
