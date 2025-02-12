@@ -17,7 +17,7 @@ jobs:
   test-executor-subgraph:
     name: ExecutorSubgraph Components
     runs-on: ubuntu-latest
-    timeout-minute: 10
+    timeout-minutes: 10
     strategy:
       matrix:
         test_name:
