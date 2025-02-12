@@ -13,7 +13,7 @@ defaults:
   run:
     shell: bash
 
-job:
+jobs:
   test-writeup-node:
     name: Test of WriteupNode
     runs-on: ubuntu-latest

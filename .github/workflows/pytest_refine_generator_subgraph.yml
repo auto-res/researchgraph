@@ -1,0 +1,12 @@
+name: RefineGeneratorSubgraph Test
+
+on:
+  workflow_dispatch:
+
+jobs:
+  do-nothing:
+    name: Do Nothing Job
+    runs-on: ubuntu-latest
+    steps:
+      - name: Print Message
+        run: echo "This workflow does nothing."

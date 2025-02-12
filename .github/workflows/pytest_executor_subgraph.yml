@@ -13,7 +13,7 @@ defaults:
   run:
     shell: bash
 
-job:
+jobs:
   test-generate-code-with-devin-node:
     name: Test of ExecuteGithubActionsWorkflowNode
     runs-on: ubuntu-latest
