@@ -1,16 +1,12 @@
 import os
+import json
 import pytest
 import shutil
 import subprocess
 from unittest.mock import patch, MagicMock
-from typing import TypedDict
-from langgraph.graph import StateGraph
 from researchgraph.writer_subgraph.nodes.latexnode import LatexNode
+from requests.exceptions import HTTPError
 
-
-class State(TypedDict):
-    paper_content: dict
-    pdf_file_path: str
 
 @pytest.fixture(scope="function")
 def test_environment(tmp_path_factory):
@@ -46,6 +42,13 @@ ABSTRACT HERE
         "template_copy_file": template_copy_file,
         "figures_dir": figures_dir,
         "pdf_file_path": pdf_file_path,
+        "paper_content": {
+            "Title": "Test Title",
+            "Abstract": "Test Abstract",
+            "Introduction": "This is the introduction.",
+            "Method": "Mocked method description.",
+            "Results": "Mocked results section."
+        }
     }
 
 @pytest.fixture(autouse=True)
@@ -72,35 +75,11 @@ def latex_node(test_environment):
         timeout=30,
     )
 
-def test_latex_node_execution(latex_node, test_environment):
-    """ 正常系テスト: LatexNode が正しく実行され、PDF が生成されるか """
-    def latex_node_callable(state):
-        return {"pdf_file_path": latex_node.execute(state["paper_content"], state["pdf_file_path"])}
-
-    graph_builder = StateGraph(State)
-    graph_builder.add_node("latexnode", latex_node_callable)
-    graph_builder.set_entry_point("latexnode")
-    graph_builder.set_finish_point("latexnode")
-    graph = graph_builder.compile()
-
-    state = {
-        "paper_content": {
-            "title": "test title",
-            "abstract": "Test Abstract.",
-            "introduction": "This is the introduction.",
-        },
-        "pdf_file_path": str(test_environment["pdf_file_path"]),
-    }
-    result_state = graph.invoke(state, debug=True)
-
-    assert result_state is not None
-    assert os.path.exists(test_environment["pdf_file_path"])
-
 @pytest.mark.parametrize("invalid_template_path", [
     "non_existent_file.txt", 
     "", 
 ])
-def test_latex_node_missing_template(invalid_template_path, test_environment):
+def test_missing_template(invalid_template_path, test_environment):
     """ 異常系テスト: テンプレートが無効な場合 """
     with pytest.raises(FileNotFoundError):
         node = LatexNode(
@@ -111,7 +90,7 @@ def test_latex_node_missing_template(invalid_template_path, test_environment):
         )
         node._copy_template()
 
-def test_latex_node_check_figures(latex_node, test_environment):
+def test_check_figures(latex_node, test_environment):
     """ _check_figures() が正しく画像をLaTeXに反映できるか """
     with patch("researchgraph.writer_subgraph.nodes.latexnode.completion") as mock_completion:
         mock_completion.return_value = MagicMock(
@@ -137,7 +116,7 @@ def test_latex_node_check_figures(latex_node, test_environment):
         result_text = latex_node._check_figures(tex_text, str(figures_dir))
         assert "figure1.png" in result_text, "figure1.png が LaTeX に正しく反映されていない"
 
-def test_latex_node_missing_figures(latex_node, test_environment):
+def test_missing_figures(latex_node, test_environment):
     """ 画像ディレクトリが空、もしくは存在しない画像を参照している場合の挙動を確認 """
     empty_fig_dir = test_environment["temp_dir"] / "empty_images"
     empty_fig_dir.mkdir(exist_ok=True)
@@ -152,15 +131,15 @@ def test_latex_node_missing_figures(latex_node, test_environment):
     result_text = latex_node._check_figures(tex_text, str(empty_fig_dir))
     assert result_text == tex_text
 
-def test_latex_node_invalid_content(latex_node):
+def test_invalid_content(latex_node):
     """ LLM がエラーを返した場合の挙動をテスト """
     with patch("researchgraph.writer_subgraph.nodes.latexnode.completion") as mock_completion:
         mock_completion.side_effect = Exception("Mocked LLM error")
 
-        with pytest.raises(Exception):
-            latex_node._call_llm("")
+        result = latex_node._call_llm("")
+        assert result is None
 
-def test_latex_node_fill_template(latex_node):
+def test_fill_template(latex_node):
     """ _fill_template() が未定義のプレースホルダを含む場合の挙動を確認 """
     content = {
         "title": "Test Title",
@@ -173,7 +152,7 @@ def test_latex_node_fill_template(latex_node):
     for ph in placeholders:
         assert ph not in result_text
 
-def test_latex_node_check_references(latex_node):
+def test_check_references(latex_node):
     """ _check_references() が適切に参照をチェックできるか """
     tex_text = r"""
     \documentclass{article}
@@ -187,7 +166,7 @@ def test_latex_node_check_references(latex_node):
     result_text = latex_node._check_references(tex_text)
     assert "Missing references found" not in result_text
 
-def test_latex_node_missing_references(latex_node):
+def test_missing_references(latex_node):
     """ _check_references() で references.bib が見つからない場合 """
     tex_text = r"""
 \documentclass{article}
@@ -199,7 +178,7 @@ def test_latex_node_missing_references(latex_node):
         latex_node._check_references(tex_text)
 
 @patch("researchgraph.writer_subgraph.nodes.latexnode.os.popen")
-def test_latex_node_fix_latex_no_errors(mock_popen, latex_node, test_environment):
+def test_fix_latex_no_errors(mock_popen, latex_node, test_environment):
     """ _fix_latex_errors() がエラーなしの場合に元のLaTeXを返すか """
     mock_popen.return_value.read.return_value = ""
 
@@ -217,7 +196,7 @@ def test_latex_node_fix_latex_no_errors(mock_popen, latex_node, test_environment
     assert result_text == original_tex_text
 
 @patch("researchgraph.writer_subgraph.nodes.latexnode.os.popen")
-def test_latex_node_fix_latex_errors(mock_popen, latex_node, test_environment):
+def test_fix_latex_errors(mock_popen, latex_node, test_environment):
     """ _fix_latex_errors() がエラーを修正できるか """
     mock_popen.return_value.read.return_value = "1: Undefined control sequence."
 
@@ -227,7 +206,7 @@ def test_latex_node_fix_latex_errors(mock_popen, latex_node, test_environment):
         mock_llm.assert_called_once()
 
 @patch("researchgraph.writer_subgraph.nodes.latexnode.subprocess.run")
-def test_latex_node_compile_latex(mock_subprocess, latex_node, test_environment):
+def test_compile_latex(mock_subprocess, latex_node, test_environment):
     """ _compile_latex() で subprocess.run をモックし、例外が発生しないかテスト """
     mock_subprocess.return_value = MagicMock(stdout="Success", stderr="")
 
@@ -243,7 +222,7 @@ def test_latex_node_compile_latex(mock_subprocess, latex_node, test_environment)
         pytest.fail("Latex compilation failed unexpectedly")
 
 @patch("researchgraph.writer_subgraph.nodes.latexnode.subprocess.run")
-def test_latex_node_compile_latex_failure(mock_subprocess, latex_node, test_environment):
+def test_compile_latex_failure(mock_subprocess, latex_node, test_environment):
     """ _compile_latex() の失敗時の挙動をテスト """
     mock_subprocess.side_effect = subprocess.CalledProcessError(1, "pdflatex")
 
@@ -260,15 +239,53 @@ def test_latex_node_compile_latex_failure(mock_subprocess, latex_node, test_envi
         pytest.fail("予期しない例外が発生")
 
 @patch("researchgraph.writer_subgraph.nodes.latexnode.completion")
-def test_latex_node_call_llm_invalid_response(mock_completion, latex_node):
+def test_execute(mock_completion, latex_node, test_environment):
     mock_completion.return_value = MagicMock(
         choices=[
             MagicMock(
                 message=MagicMock(
-                    content='{"latex_full_text": 123}'
+                    content=json.dumps({"latex_full_text": "MOCKED CONTENT"})
                 )
             )
         ]
     )
-    with pytest.raises(Exception):
-        latex_node._call_llm("Test prompt")
+    result_pdf_path = latex_node.execute(test_environment["paper_content"], test_environment["pdf_file_path"])
+    assert result_pdf_path == test_environment["pdf_file_path"], "生成された PDF のパスが期待値と異なる"
+    assert result_pdf_path is not None, "execute() の出力が None になっている"
+    assert os.path.exists(test_environment["pdf_file_path"]), "PDF ファイルが生成されるべき"
+
+
+@pytest.mark.parametrize(
+    "exception, expected_message",
+    [
+        (ConnectionError("Mocked Connection Error"), "ConnectionError が発生した場合 None を返すべき"),
+        (TimeoutError("Mocked Timeout Error"), "TimeoutError が発生した場合 None を返すべき"),
+        (HTTPError("Mocked Rate Limit Error (429)"), "RateLimitError が発生した場合 None を返すべき"),
+        (HTTPError("Mocked Internal Server Error (500)"), "HTTPError が発生した場合 None を返すべき"),
+    ],
+)
+@patch("researchgraph.writer_subgraph.nodes.latexnode.completion")
+def test_call_llm_api_errors(mock_completion, latex_node, exception, expected_message):
+    """ LLM API 呼び出し時に各種エラーが発生した場合のハンドリング """
+    mock_completion.side_effect = exception
+
+    result = latex_node._call_llm("Test prompt")
+    assert result is None, expected_message
+
+@pytest.mark.parametrize(
+    "mock_response, expected_message",
+    [
+        ("INVALID JSON", "JSONDecodeError が発生した場合 None を返すべき"),
+        (json.dumps({"wrong_key": "Some text"}), "KeyError が発生した場合 None を返すべき"),
+        (None, "AttributeError が発生した場合 None を返すべき"),
+    ],
+)
+@patch("researchgraph.writer_subgraph.nodes.latexnode.completion")
+def test_call_llm_response_errors(mock_completion, latex_node, mock_response, expected_message):
+    """ LLM のレスポンスが異常だった場合のハンドリング """
+    mock_completion.return_value = MagicMock(
+        choices=[MagicMock(message=MagicMock(content=mock_response))]
+    )
+
+    result = latex_node._call_llm("Test prompt")
+    assert result is None, expected_message

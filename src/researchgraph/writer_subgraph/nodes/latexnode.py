@@ -53,15 +53,11 @@ class LatexNode:
                     response_format=LLMOutput,
                 )
                 structured_output = json.loads(response.choices[0].message.content)
-                validated = LLMOutput(**structured_output)
-                return validated.latex_full_text
-            except (ValueError, KeyError) as parse_e:
-                print(f"[Attempt {attempt+1}/{max_retries}] Parse/Key error: {parse_e}")
-                continue
-            except Exception as e:
+                return structured_output["latex_full_text"]
+            except Exception as e:  
                 print(f"[Attempt {attempt+1}/{max_retries}] Error calling LLM: {e}")
-                continue
-        raise RuntimeError("Exceeded maximum retries for LLM call.")
+        print("Exceeded maximum retries for LLM call.")
+        return None
 
     def _copy_template(self):
         # Copy the LaTeX template to a working copy for modifications
@@ -71,8 +67,8 @@ class LatexNode:
             )
         try:
             shutil.copyfile(self.latex_template_file_path, self.template_copy_file)
-        except OSError as e:
-            raise OSError(f"Failed to copy template: {e}")
+        except OSError:
+            raise
 
     def _fill_template(self, content: dict) -> str:
         # Read the copied template, replace placeholders with content, and save the updated file

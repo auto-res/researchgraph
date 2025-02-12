@@ -14,12 +14,11 @@ defaults:
     shell: bash
 
 job:
-  test_writeup_node:
+  test-writeup-node:
     name: Test of WriteupNode
     runs-on: ubuntu-latest
     env:
       SAVE_DIR: ${{ github.workspace }}/save_dir
-      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
@@ -56,7 +55,6 @@ job:
     env:
       GITHUB_WORKSPACE: ${{ github.workspace }}
       SAVE_DIR: ${{ github.workspace }}/data
-      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
@@ -91,8 +89,8 @@ job:
           mkdir -p ${{ env.GITHUB_WORKSPACE }}/images
           touch ${{ env.GITHUB_WORKSPACE }}/images/generated_images.png
         
-      - name: Run pytest
-        run: uv run pytest -s test/writer_subgraph/writer_subgraph/test_latexnode.py
+      - name: Run pytest with coverage
+        run: uv run pytest --cov=src --cov-branch --cov-report=xml -s test/writer_subgraph/writer_subgraph/test_latexnode.py
 
       - name: Upload PDF Artifact
         if: always()
@@ -107,7 +105,7 @@ job:
       - name: Ensure pip cache folder exists
         run: mkdir -p /home/runner/.cache/pip
 
-  test-github_upload_node:
+  test-github-upload-node:
     name: Test of GithubUploadNode
     runs-on: ubuntu-latest
     env:
@@ -148,7 +146,6 @@ job:
     env:
       GITHUB_WORKSPACE: ${{ github.workspace }}
       SAVE_DIR: ${{ github.workspace }}/save_dir
-      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4

@@ -2,7 +2,7 @@ import requests
 import unittest.mock
 from pydantic import BaseModel, Field
 from langgraph.graph import StateGraph
-from researchgraph.retrieve_paper_subgraph.nodes.extract_github_url_node import ExtractGithubUrlNode
+from researchgraph.nodes.retrievenode.github.extract_github_urls import ExtractGithubUrlsNode
 
 
 class State(BaseModel):
@@ -16,8 +16,8 @@ def test_extract_github_url_node():
 
     graph_builder = StateGraph(State)
     graph_builder.add_node(
-        "ExtractGithubUrlNode",
-        ExtractGithubUrlNode(
+        "ExtractGithubUrlsNode",
+        ExtractGithubUrlsNode(
             input_key=input_key,
             output_key=output_key,
         ),

@@ -181,30 +181,38 @@ Pay particular attention to fixing any errors such as:
         # print(f"note: {template.render(sections=sections)}")
         return template.render(sections=sections)
 
-    def _call_llm(self, prompt: str) -> str:
-        try:
-            response = completion(
-                model=self.llm_name,
-                messages=[
-                    {"role": "user", "content": prompt},
-                ],
-                response_format=LLMOutput,
-            )
-            structured_output = json.loads(response.choices[0].message.content)
-            validated = LLMOutput(**structured_output)
-            return validated.generated_paper_text
-        except Exception as e:
-            raise 
+    def _call_llm(self, prompt: str, max_retries: int = 3) -> str:
+        for attempt in range(max_retries): 
+            try:
+                response = completion(
+                    model=self.llm_name,
+                    messages=[
+                        {"role": "user", "content": prompt},
+                    ],
+                    response_format=LLMOutput,
+                )
+                structured_output = json.loads(response.choices[0].message.content)
+                return structured_output["generated_paper_text"]
+            except Exception as e:
+                print(f"[Attempt {attempt+1}/{max_retries}] Unexpected error: {e}")
+        print("Exceeded maximum retries for LLM call.")
+        return None
 
     def _write(self, note: str, section_name: str) -> str:
         prompt = self._generate_write_prompt(section_name, note)
         content = self._call_llm(prompt)
+        if not content:
+            raise RuntimeError(f"Failed to generate content for section: {section_name}. The LLM returned None.")
         return content
 
     def _refine(self, note: str, section_name: str, content: str) -> str:
-        for _ in range(self.refine_round):
+        for round_num in range(self.refine_round):
             prompt = self._generate_refinement_prompt(section_name, note, content)
-            content = self._call_llm(prompt)
+            refine_content = self._call_llm(prompt)
+            if not refine_content:
+                print(f"Refinement failed for {section_name} at round {round_num + 1}. Keeping previous content.")
+                break
+            content = refine_content
         return content
 
     def _relate_work(
@@ -380,4 +388,4 @@ if __name__ == "__main__":
         llm_name=llm_name,
         refine_round=refine_round,
     ).execute(state)
-    # print(paper_content)
+    print(paper_content)

@@ -26,6 +26,7 @@ def llm_decide(
     output_text_data: str,
     error_text_data: str,
     prompt_template: str = llm_decide_prompt,
+    max_retries: int = 3, 
 ) -> bool:
     data = {"output_text_data": output_text_data, "error_text_data": error_text_data}
 
@@ -33,17 +34,23 @@ def llm_decide(
     template = env.from_string(prompt_template)
     prompt = template.render(data)
 
-    response = completion(
-        model=llm_name,
-        messages=[
-            {"role": "user", "content": f"{prompt}"},
-        ],
-        response_format=LLMOutput,
-    )
-    output = response.choices[0].message.content
-    output_dict = json.loads(output)
-    judgment_result = output_dict["judgment_result"]
-    return judgment_result
+    for attempt in range(max_retries):
+        try:
+            response = completion(
+                model=llm_name,
+                messages=[
+                    {"role": "user", "content": f"{prompt}"},
+                ],
+                response_format=LLMOutput,
+            )
+            output = response.choices[0].message.content
+            output_dict = json.loads(output)
+            judgment_result = output_dict["judgment_result"]
+            return judgment_result
+        except Exception as e:
+            print(f"[Attempt {attempt+1}/{max_retries}] Error calling LLM: {e}")
+    print("Exceeded maximum retries for LLM call.")
+    return None   
 
 
 if __name__ == "__main__":

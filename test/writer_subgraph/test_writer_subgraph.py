@@ -1,78 +1,90 @@
-import os
 import pytest
-from unittest.mock import patch, MagicMock
-from researchgraph.writer_subgraph.writer_subgraph import WriterSubgraph
-from researchgraph.writer_subgraph.input_data import writer_subgraph_input_data
+from unittest.mock import patch
+from researchgraph.writer_subgraph.writer_subgraph import WriterSubgraph, WriterState
 
+
+@pytest.fixture(scope="function")
+def test_state():
+    """テスト用の WriterState を作成"""
+    return WriterState(
+        objective="Mock Objective",
+        base_method_text="Base method text",
+        add_method_text="Additional method text",
+        new_method_text=[],
+        base_method_code="Base method code",
+        add_method_code="Additional method code",
+        new_method_code=[],
+        paper_content={},
+        pdf_file_path="",
+        github_owner="mock_owner",
+        repository_name="mock_repo",
+        branch_name="mock_branch",
+        add_github_url="mock_add_url",
+        base_github_url="mock_base_url",
+        completion=False,
+        devin_url="mock_devin_url"
+    )
 
 @pytest.fixture
-def mock_writeup_node():
-    """WriteupNode のモック"""
-    with patch("researchgraph.writer_subgraph.nodes.writeup_node.WriteupNode.execute") as mock_writeup:
-        mock_writeup.return_value = {
-            "Title": "Test Paper",
-            "Abstract": "This is a test abstract.",
-            "Content": "This is test content."
-        }
-        yield mock_writeup
+def mock_nodes():
+    """各ノードのモックを作成"""
+    mocks = {}
+    with patch("researchgraph.writer_subgraph.nodes.writeup_node.WriteupNode.execute", return_value={"Title": "Mock Title", "Abstract": "Mock Abstract"}) as mock_writeup, \
+        patch("researchgraph.writer_subgraph.nodes.latexnode.LatexNode.execute", return_value="/mock/path/to/pdf.pdf") as mock_latex, \
+        patch("researchgraph.writer_subgraph.nodes.github_upload_node.GithubUploadNode.execute", return_value=True) as mock_github:
 
-@pytest.fixture
-def mock_latex_node():
-    """LatexNode のモック"""
-    with patch("researchgraph.writer_subgraph.nodes.latexnode.LatexNode.execute") as mock_latex:
-        mock_latex.return_value = "/tmp/test_output.pdf"
-        yield mock_latex
-
-@pytest.fixture
-def mock_github_upload_node():
-    """GithubUploadNode のモック"""
-    with patch("researchgraph.writer_subgraph.nodes.github_upload_node.GithubUploadNode.execute") as mock_github:
-        mock_github.return_value = True
-        yield mock_github
+        mocks["writeup_node"] = mock_writeup
+        mocks["latex_node"] = mock_latex
+        mocks["github_upload_node"] = mock_github
+        
+        yield mocks
 
 @pytest.fixture
 def writer_subgraph():
-    """テスト用の WriterSubgraph インスタンス"""
+    """WriterSubgraph のテスト用インスタンスを作成"""
+    latex_template_file_path = "/mock/path/to/template.tex"
+    figures_dir = "/mock/path/to/figures"
+    llm_name = "gpt-4o-mini-mock"
+    
     return WriterSubgraph(
-        llm_name="gpt-4o-mini-2024-07-18",
-        latex_template_file_path="/tmp/template.tex",
-        figures_dir="/tmp/images"
+        llm_name=llm_name,
+        latex_template_file_path=latex_template_file_path,
+        figures_dir=figures_dir,
     ).build_graph()
 
-def test_writer_subgraph_success(
-    writer_subgraph, mock_writeup_node, mock_latex_node, mock_github_upload_node
-):
-    """正常系: 一連の処理が正しく行われるか"""
-    input_data = writer_subgraph_input_data
-    result = writer_subgraph.invoke(input_data)
+def test_writer_subgraph(mock_nodes, test_state, writer_subgraph):
+    """WriterSubgraph の統合テスト"""
+    result = writer_subgraph.invoke(test_state)
 
-    assert result is not None
-    assert "completion" in result
+    for node in ["writeup_node", "latex_node", "github_upload_node"]:
+        mock_nodes[node].assert_called_once()
+
     assert result["completion"] is True
+    assert result["pdf_file_path"] == "/mock/path/to/pdf.pdf"
+    assert result["paper_content"]["Title"] == "Mock Title"
+    assert result["paper_content"]["Abstract"] == "Mock Abstract"
 
-def test_writer_subgraph_writeup_fail(writer_subgraph):
-    """異常系: WriteupNode でエラーが発生した場合"""
-    with patch("researchgraph.writer_subgraph.nodes.writeup_node.WriteupNode.execute") as mock_writeup:
-        mock_writeup.side_effect = Exception("WriteupNode Error")
-        input_data = writer_subgraph_input_data
+def test_writeup_node(mock_nodes, test_state, writer_subgraph):
+    """LangGraphを通じた WriteupNode の統合テスト"""
+    result = writer_subgraph.invoke(test_state)
+    mock_nodes["writeup_node"].assert_called_once()
 
-        with pytest.raises(Exception, match="WriteupNode Error"):
-            writer_subgraph.invoke(input_data)
+    assert result["paper_content"]["Title"] == "Mock Title"
+    assert result["paper_content"]["Abstract"] == "Mock Abstract"
 
-def test_writer_subgraph_latex_fail(writer_subgraph, mock_writeup_node):
-    """異常系: LatexNode でエラーが発生した場合"""
-    with patch("researchgraph.writer_subgraph.nodes.latexnode.LatexNode.execute") as mock_latex:
-        mock_latex.side_effect = Exception("LatexNode Error")
-        input_data = writer_subgraph_input_data
+def test_latex_node(mock_nodes, test_state, writer_subgraph):
+    """LangGraphを通じた LatexNode の統合テスト"""
+    result = writer_subgraph.invoke(test_state)
+    mock_nodes["latex_node"].assert_called_once()
 
-        with pytest.raises(Exception, match="LatexNode Error"):
-            writer_subgraph.invoke(input_data)
+    assert result["pdf_file_path"] == "/mock/path/to/pdf.pdf"
 
-def test_writer_subgraph_github_fail(writer_subgraph, mock_writeup_node, mock_latex_node):
-    """異常系: GithubUploadNode でアップロードエラーが発生した場合"""
-    with patch("researchgraph.writer_subgraph.nodes.github_upload_node.GithubUploadNode.execute") as mock_github:
-        mock_github.side_effect = Exception("GithubUploadNode Error")
-        input_data = writer_subgraph_input_data
+def test_github_upload_node(mock_nodes, test_state, writer_subgraph):
+    """LangGraphを通じた GithubUploadNode の統合テスト"""
+    test_state["pdf_file_path"] = "/mock/path/to/pdf.pdf"
+    test_state["paper_content"] = {"Title": "Mock Title", "Abstract": "Mock Abstract"}
 
-        with pytest.raises(Exception, match="GithubUploadNode Error"):
-            writer_subgraph.invoke(input_data)
+    result = writer_subgraph.invoke(test_state)
+    mock_nodes["github_upload_node"].assert_called_once()
+
+    assert result["completion"] is True

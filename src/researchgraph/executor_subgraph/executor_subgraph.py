@@ -98,6 +98,7 @@ class ExecutorSubgraph:
         }
 
     def _llm_decide_node(self, state: ExecutorState) -> dict:
+        print("llm_decide_node")
         output_text_data = state["output_text_data"]
         error_text_data = state["error_text_data"]
         judgment_result = llm_decide(
@@ -129,7 +130,7 @@ class ExecutorSubgraph:
         if state["judgment_result"] is True:
             return "finish"
         else:
-            if state["fix_iteration_count"] <= self.max_fix_iteration:
+            if state["fix_iteration_count"] < self.max_fix_iteration:
                 return "correction"
             else:
                 return "finish"

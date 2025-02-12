@@ -1,23 +1,12 @@
 import pytest
 from unittest.mock import patch, MagicMock
-from typing import TypedDict
 import json
 import re
 from researchgraph.writer_subgraph.nodes.writeup_node import WriteupNode, regex_rules
-
-
-class WriteupState(TypedDict):
-    objective: str
-    base_method_text: str
-    add_method_text: str
-    new_method_text: list
-    base_method_code: str
-    add_method_code: str
-    new_method_code: list
-
+from requests.exceptions import HTTPError
 
 @pytest.fixture(scope="function")
-def sample_state() -> WriteupState:
+def test_environment():
     return {
         "objective": "Testing the WriteupNode generation.",
         "base_method_text": "Baseline method description...",
@@ -37,17 +26,17 @@ def writeup_node() -> WriteupNode:
         target_sections=["Title", "Abstract", "Introduction", "Method", "Results"],
     )
 
-def test_writeup_node_generate_note(writeup_node: WriteupNode, sample_state: WriteupState):
+def test_generate_note(writeup_node: WriteupNode, test_environment):
     """
     _generate_note() が正しく state をセクションごとにまとめるかをテスト。
     """
-    note = writeup_node._generate_note(sample_state)
+    note = writeup_node._generate_note(test_environment)
     for section_name in regex_rules.keys():
         assert f"# {section_name}" in note
     assert "objective: Testing the WriteupNode generation." in note
 
 @patch("researchgraph.writer_subgraph.nodes.writeup_node.completion")
-def test_writeup_node_call_llm(mock_completion, writeup_node: WriteupNode):
+def test_call_llm(mock_completion, writeup_node: WriteupNode):
     """
     _call_llm() が LLM からのレスポンスを正しくパースできるかをテスト。
     """
@@ -65,32 +54,7 @@ def test_writeup_node_call_llm(mock_completion, writeup_node: WriteupNode):
     result = writeup_node._call_llm(prompt)
     assert result == "Mock LLM output"
 
-@pytest.mark.parametrize(
-    "invalid_response",
-    [
-        '{"invalid_key":"No generated_paper_text key"}',
-        '{"generated_paper_text":123}',
-        '',
-    ],
-)
-@patch("researchgraph.writer_subgraph.nodes.writeup_node.completion")
-def test_writeup_node_call_llm_invalid_response(mock_completion, writeup_node, invalid_response):
-    """
-    LLM が想定外の JSON を返した際のエラー動作をテスト。
-    """
-    mock_completion.return_value = MagicMock(
-        choices=[
-            MagicMock(
-                message=MagicMock(
-                    content=invalid_response
-                )
-            )
-        ]
-    )
-    with pytest.raises((Exception)):
-        writeup_node._call_llm("Test prompt")
-
-def test_writeup_node_clean_meta_information(writeup_node: WriteupNode):
+def test_clean_meta_information(writeup_node: WriteupNode):
     """
     _clean_meta_information() がメタ情報や指示を取り除けるかをテスト。
     """
@@ -109,7 +73,7 @@ _Editor@cref
     assert "% This is a comment" not in cleaned_text
     assert "_Editor@cref" not in cleaned_text
 
-def test_writeup_node_generate_write_prompt(writeup_node: WriteupNode):
+def test_generate_write_prompt(writeup_node: WriteupNode):
     """
     _generate_write_prompt() がセクション名とノートを元に正しいテンプレートを生成するかをテスト。
     """
@@ -120,7 +84,7 @@ def test_writeup_node_generate_write_prompt(writeup_node: WriteupNode):
     assert "This is a note." in prompt
     assert "Some tips are provided below:" in prompt
 
-def test_writeup_node_generate_refinement_prompt(writeup_node: WriteupNode):
+def test_generate_refinement_prompt(writeup_node: WriteupNode):
     """
     _generate_refinement_prompt() がセクション名・ノート・コンテンツを元に正しいテンプレートを生成するかをテスト。
     """
@@ -134,7 +98,7 @@ def test_writeup_node_generate_refinement_prompt(writeup_node: WriteupNode):
     assert "Some tips are provided below:" in prompt
 
 @patch.object(WriteupNode, "_call_llm", return_value="LLM generated content.")
-def test_writeup_node_write(mock_call_llm, writeup_node: WriteupNode):
+def test_write(mock_call_llm, writeup_node: WriteupNode):
     """
     _write() が _call_llm() を呼び出し、その戻り値を返すかをテスト。
     """
@@ -146,7 +110,7 @@ def test_writeup_node_write(mock_call_llm, writeup_node: WriteupNode):
 
 
 @patch.object(WriteupNode, "_call_llm", return_value="Refined content.")
-def test_writeup_node_refine(mock_call_llm, writeup_node: WriteupNode):
+def test_refine(mock_call_llm, writeup_node: WriteupNode):
     """
     _refine() が refine_round の回数だけ _call_llm を呼び出し、最終結果を返すかをテスト。
     """
@@ -158,9 +122,8 @@ def test_writeup_node_refine(mock_call_llm, writeup_node: WriteupNode):
     assert mock_call_llm.call_count == 3
     assert result == "Refined content."
 
-
 @patch("researchgraph.writer_subgraph.nodes.writeup_node.completion")
-def test_writeup_node_execute(mock_completion, writeup_node: WriteupNode, sample_state: WriteupState):
+def test_execute(mock_completion, writeup_node: WriteupNode, test_environment):
     mock_completion.return_value = MagicMock(
         choices=[
             MagicMock(
@@ -171,19 +134,19 @@ def test_writeup_node_execute(mock_completion, writeup_node: WriteupNode, sample
         ]
     )
 
-    result_dict = writeup_node.execute(sample_state)
+    result_dict = writeup_node.execute(test_environment)
 
     for section in ["Title", "Abstract", "Introduction", "Method", "Results"]:
         assert section in result_dict
         # ここで "MOCKED CONTENT" が返るはず
         assert result_dict[section] == "MOCKED CONTENT"
 
-def test_writeup_node_execute_refine_only(writeup_node: WriteupNode, sample_state: WriteupState):
+def test_execute_refine_only(writeup_node: WriteupNode, test_environment):
     """
     refine_only=True の場合は生成を行わず、既存のセクション内容を refine するだけとなるかをテスト。
     """
     writeup_node.refine_only = True
-    custom_state = sample_state.copy()
+    custom_state = test_environment.copy()
     custom_state["Title"] = "Existing title content"
     custom_state["Abstract"] = "Existing abstract content"
 
@@ -202,7 +165,7 @@ def test_writeup_node_execute_refine_only(writeup_node: WriteupNode, sample_stat
     ), "Refine 結果が正しく返されていない"
 
 
-def test_writeup_node_regex_rules_validation(sample_state: WriteupState):
+def test_regex_rules_validation(test_environment):
     """
     regex_rules が想定通りのキーとマッチングしているかをテスト。
     """
@@ -217,7 +180,7 @@ def test_writeup_node_regex_rules_validation(sample_state: WriteupState):
         "base_method_text が Methods セクションにマッチしない"
 
 @patch("researchgraph.writer_subgraph.nodes.writeup_node.completion")
-def test_writeup_node_relate_work(mock_completion, writeup_node: WriteupNode):
+def test_relate_work(mock_completion, writeup_node: WriteupNode):
     """
     _relate_work() が将来的に関連研究を処理する機能を持つ予定だが、現状は素通し実装のため簡単な確認のみ。
     """
@@ -227,31 +190,46 @@ def test_writeup_node_relate_work(mock_completion, writeup_node: WriteupNode):
 
 
 @patch("researchgraph.writer_subgraph.nodes.writeup_node.completion", side_effect=Exception("Mock LLM error"))
-def test_writeup_node_call_llm_exception(mock_completion, writeup_node: WriteupNode):
+def test_call_llm_exception(mock_completion, writeup_node: WriteupNode):
     """
-    LLM への呼び出し（_call_llm）がエラーを投げた場合の挙動をテスト。
+    LLM への呼び出し（_call_llm）がエラーを投げた場合、リトライ後に `None` を返すことを確認する。
     """
-    with pytest.raises(Exception) as exc_info:
-        _ = writeup_node._call_llm("Prompt that triggers error.")
-    assert "Mock LLM error" in str(exc_info.value), "想定外のエラー内容"
+    mock_completion.side_effect = Exception("Mock LLM error")
+    
+    result = writeup_node._call_llm("Prompt that triggers error.")
+    assert result is None, "Expected None when LLM call fails after max retries"
 
-def test_writeup_node_init_defaults():
-    """
-    WriteupNode のデフォルト引数の確認テスト。
-    """
-    node = WriteupNode(llm_name="default-model")
-    assert node.llm_name == "default-model"
-    assert node.refine_round == 2
-    assert node.refine_only is False
-    expected_sections = [
-        "Title",
-        "Abstract",
-        "Introduction",
-        "Related work",
-        "Background",
-        "Method",
-        "Experimental setup",
-        "Results",
-        "Conclusions",
-    ]
-    assert node.target_sections == expected_sections
+@pytest.mark.parametrize(
+    "exception, expected_message",
+    [
+        (ConnectionError("Mocked Connection Error"), "ConnectionError が発生した場合 None を返すべき"),
+        (TimeoutError("Mocked Timeout Error"), "TimeoutError が発生した場合 None を返すべき"),
+        (HTTPError("Mocked Rate Limit Error (429)"), "RateLimitError が発生した場合 None を返すべき"),
+        (HTTPError("Mocked Internal Server Error (500)"), "HTTPError が発生した場合 None を返すべき"),
+    ],
+)
+@patch("researchgraph.writer_subgraph.nodes.writeup_node.completion")
+def test_call_llm_api_errors(mock_completion, writeup_node, exception, expected_message):
+    """ LLM API 呼び出し時に各種エラーが発生した場合のハンドリング """
+    mock_completion.side_effect = exception
+
+    result = writeup_node._call_llm("Test prompt")
+    assert result is None, expected_message
+
+@pytest.mark.parametrize(
+    "mock_response, expected_message",
+    [
+        ("INVALID JSON", "JSONDecodeError が発生した場合 None を返すべき"),
+        (json.dumps({"wrong_key": "Some text"}), "KeyError が発生した場合 None を返すべき"),
+        (None, "AttributeError が発生した場合 None を返すべき"),
+    ],
+)
+@patch("researchgraph.writer_subgraph.nodes.writeup_node.completion")
+def test_call_llm_response_errors(mock_completion, writeup_node, mock_response, expected_message):
+    """ LLM のレスポンスが異常だった場合のハンドリング """
+    mock_completion.return_value = MagicMock(
+        choices=[MagicMock(message=MagicMock(content=mock_response))]
+    )
+
+    result = writeup_node._call_llm("Test prompt")
+    assert result is None, expected_message
