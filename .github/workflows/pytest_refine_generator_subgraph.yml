@@ -1,5 +1,4 @@
-name: RefineGeneratorSubgraph Test
-
+name: RefineGeneratorSubgraph
 on:
   workflow_dispatch:
 

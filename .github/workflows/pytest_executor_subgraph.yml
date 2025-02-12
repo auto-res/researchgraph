@@ -1,4 +1,4 @@
-name: ResearchGraph ExecutorSubgraph Test
+name: ExecutorSubgraph
 
 on:
   pull_request:
@@ -15,7 +15,7 @@ defaults:
 
 jobs:
   test-generate-code-with-devin-node:
-    name: Test of ExecuteGithubActionsWorkflowNode
+    name: ExecuteGithubActionsWorkflowNode
     runs-on: ubuntu-latest
     env:
       SAVE_DIR: ${{ github.workspace }}/save_dir
@@ -50,7 +50,7 @@ jobs:
         run: mkdir -p /home/runner/.cache/pip  
 
   test-execute-github-actions-workflow-node:
-    name: Test of GenerateCodeWithDevinNode
+    name: GenerateCodeWithDevinNode
     runs-on: ubuntu-latest
     env:
       SAVE_DIR: ${{ github.workspace }}/save_dir
@@ -85,7 +85,7 @@ jobs:
         run: mkdir -p /home/runner/.cache/pip  
 
   test-retrieve-github-actions-artifacts-node:
-    name: Test of RetrieveGithubActionsArtifactsNode
+    name: RetrieveGithubActionsArtifactsNode
     runs-on: ubuntu-latest
     env:
       SAVE_DIR: ${{ github.workspace }}/save_dir
@@ -119,8 +119,8 @@ jobs:
       - name: Ensure pip cache folder exists
         run: mkdir -p /home/runner/.cache/pip  
 
-  test-llm_decide:
-    name: Test of LLM_decide
+  test-llm-decide:
+    name: llm_decide()
     runs-on: ubuntu-latest
     env:
       SAVE_DIR: ${{ github.workspace }}/save_dir
@@ -155,7 +155,7 @@ jobs:
         run: mkdir -p /home/runner/.cache/pip  
 
   test-fix-code-with-devin-node:
-    name: Test of FixCodeWithDevinNode
+    name: FixCodeWithDevinNode
     runs-on: ubuntu-latest
     env:
       SAVE_DIR: ${{ github.workspace }}/save_dir
@@ -190,7 +190,7 @@ jobs:
         run: mkdir -p /home/runner/.cache/pip  
 
   test-executor-subgraph:
-    name: Test of ExecutorSubgraph
+    name: ExecutorSubgraph
     runs-on: ubuntu-latest
     env:
       SAVE_DIR: ${{ github.workspace }}/save_dir

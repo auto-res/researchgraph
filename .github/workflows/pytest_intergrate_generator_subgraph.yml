@@ -1,4 +1,4 @@
-name: ResearchGraph IntegrateGeneratorSubgraph Test
+name: IntegrateGeneratorSubgraph
 
 on:
   workflow_dispatch:

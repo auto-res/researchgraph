@@ -1,4 +1,4 @@
-name: ResearchGraph RetrievePaperSubgraph Test
+name: RetrievePaperSubgraph
 
 on:
   workflow_dispatch:

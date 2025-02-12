@@ -1,4 +1,4 @@
-name: ResearchGraph WriterSubgraph Test
+name: WriterSubgraph
 
 on:
   pull_request:
@@ -15,7 +15,7 @@ defaults:
 
 jobs:
   test-writeup-node:
-    name: Test of WriteupNode
+    name: WriteupNode
     runs-on: ubuntu-latest
     env:
       SAVE_DIR: ${{ github.workspace }}/save_dir
@@ -44,13 +44,13 @@ jobs:
         run: mkdir -p $SAVE_DIR
         
       - name: Run pytest
-        run: uv run pytest -s test/writer_subgraph/writer_subgraph/test_writeup_node.py
+        run: uv run pytest -s test/writer_subgraph/test_writeup_node.py
 
       - name: Ensure pip cache folder exists
         run: mkdir -p /home/runner/.cache/pip  
 
   test-latexnode:
-    name: Test of LatexNode
+    name: LatexNode
     runs-on: ubuntu-latest
     env:
       GITHUB_WORKSPACE: ${{ github.workspace }}
@@ -90,7 +90,7 @@ jobs:
           touch ${{ env.GITHUB_WORKSPACE }}/images/generated_images.png
         
       - name: Run pytest with coverage
-        run: uv run pytest --cov=src --cov-branch --cov-report=xml -s test/writer_subgraph/writer_subgraph/test_latexnode.py
+        run: uv run pytest --cov=src --cov-branch --cov-report=xml -s test/writer_subgraph/test_latexnode.py
 
       - name: Upload PDF Artifact
         if: always()
@@ -106,7 +106,7 @@ jobs:
         run: mkdir -p /home/runner/.cache/pip
 
   test-github-upload-node:
-    name: Test of GithubUploadNode
+    name: GithubUploadNode
     runs-on: ubuntu-latest
     env:
       SAVE_DIR: ${{ github.workspace }}/save_dir
@@ -141,7 +141,7 @@ jobs:
         run: mkdir -p /home/runner/.cache/pip
 
   test-writer-subgraph:
-    name: Test of WriterSubgraph
+    name: WriterSubgraph
     runs-on: ubuntu-latest
     env:
       GITHUB_WORKSPACE: ${{ github.workspace }}
