@@ -14,213 +14,67 @@ defaults:
     shell: bash
 
 jobs:
-  test-generate-code-with-devin-node:
-    name: ExecuteGithubActionsWorkflowNode
-    runs-on: ubuntu-latest
-    env:
-      SAVE_DIR: ${{ github.workspace }}/save_dir
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v4
-        with:
-          python-version: "3.10"
-          cache: "pip"
-
-      - name: Install uv
-        run: curl -LsSf https://astral.sh/uv/0.5.5/install.sh | bash || exit 1
-
-      - name: Verify uv installation
-        run: uv --version
-
-      - name: Set PYTHONPATH
-        run: echo "PYTHONPATH=$PYTHONPATH:$GITHUB_WORKSPACE/src" >> $GITHUB_ENV
-
-      - name: Print PYTHONPATH
-        run: echo "PYTHONPATH=$PYTHONPATH"
-        
-      - name: Create Directory
-        run: mkdir -p $SAVE_DIR
-        
-      - name: Run pytest
-        run: uv run pytest -s test/executor_subgraph/test_generate_code_with_devin.py
-
-      - name: Ensure pip cache folder exists
-        run: mkdir -p /home/runner/.cache/pip  
-
-  test-execute-github-actions-workflow-node:
-    name: GenerateCodeWithDevinNode
-    runs-on: ubuntu-latest
-    env:
-      SAVE_DIR: ${{ github.workspace }}/save_dir
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v4
-        with:
-          python-version: "3.10"
-          cache: "pip"
-
-      - name: Install uv
-        run: curl -LsSf https://astral.sh/uv/0.5.5/install.sh | bash || exit 1
-
-      - name: Verify uv installation
-        run: uv --version
-
-      - name: Set PYTHONPATH
-        run: echo "PYTHONPATH=$PYTHONPATH:$GITHUB_WORKSPACE/src" >> $GITHUB_ENV
-
-      - name: Print PYTHONPATH
-        run: echo "PYTHONPATH=$PYTHONPATH"
-        
-      - name: Create Directory
-        run: mkdir -p $SAVE_DIR
-        
-      - name: Run pytest
-        run: uv run pytest -s test/executor_subgraph/test_execute_github_actions_workflow.py
-
-      - name: Ensure pip cache folder exists
-        run: mkdir -p /home/runner/.cache/pip  
-
-  test-retrieve-github-actions-artifacts-node:
-    name: RetrieveGithubActionsArtifactsNode
-    runs-on: ubuntu-latest
-    env:
-      SAVE_DIR: ${{ github.workspace }}/save_dir
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v4
-        with:
-          python-version: "3.10"
-          cache: "pip"
-
-      - name: Install uv
-        run: curl -LsSf https://astral.sh/uv/0.5.5/install.sh | bash || exit 1
-
-      - name: Verify uv installation
-        run: uv --version
-
-      - name: Set PYTHONPATH
-        run: echo "PYTHONPATH=$PYTHONPATH:$GITHUB_WORKSPACE/src" >> $GITHUB_ENV
-
-      - name: Print PYTHONPATH
-        run: echo "PYTHONPATH=$PYTHONPATH"
-        
-      - name: Create Directory
-        run: mkdir -p $SAVE_DIR
-        
-      - name: Run pytest
-        run: uv run pytest -s test/executor_subgraph/test_retrieve_github_actions_artifacts.py
-
-      - name: Ensure pip cache folder exists
-        run: mkdir -p /home/runner/.cache/pip  
-
-  test-llm-decide:
-    name: llm_decide()
-    runs-on: ubuntu-latest
-    env:
-      SAVE_DIR: ${{ github.workspace }}/save_dir
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v4
-        with:
-          python-version: "3.10"
-          cache: "pip"
-
-      - name: Install uv
-        run: curl -LsSf https://astral.sh/uv/0.5.5/install.sh | bash || exit 1
-
-      - name: Verify uv installation
-        run: uv --version
-
-      - name: Set PYTHONPATH
-        run: echo "PYTHONPATH=$PYTHONPATH:$GITHUB_WORKSPACE/src" >> $GITHUB_ENV
-
-      - name: Print PYTHONPATH
-        run: echo "PYTHONPATH=$PYTHONPATH"
-        
-      - name: Create Directory
-        run: mkdir -p $SAVE_DIR
-        
-      - name: Run pytest
-        run: uv run pytest -s test/executor_subgraph/test_llm_decide.py
-
-      - name: Ensure pip cache folder exists
-        run: mkdir -p /home/runner/.cache/pip  
-
-  test-fix-code-with-devin-node:
-    name: FixCodeWithDevinNode
-    runs-on: ubuntu-latest
-    env:
-      SAVE_DIR: ${{ github.workspace }}/save_dir
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v4
-        with:
-          python-version: "3.10"
-          cache: "pip"
-
-      - name: Install uv
-        run: curl -LsSf https://astral.sh/uv/0.5.5/install.sh | bash || exit 1
-
-      - name: Verify uv installation
-        run: uv --version
-
-      - name: Set PYTHONPATH
-        run: echo "PYTHONPATH=$PYTHONPATH:$GITHUB_WORKSPACE/src" >> $GITHUB_ENV
-
-      - name: Print PYTHONPATH
-        run: echo "PYTHONPATH=$PYTHONPATH"
-        
-      - name: Create Directory
-        run: mkdir -p $SAVE_DIR
-        
-      - name: Run pytest
-        run: uv run pytest -s test/executor_subgraph/test_fix_code_with_devin.py
-
-      - name: Ensure pip cache folder exists
-        run: mkdir -p /home/runner/.cache/pip  
-
   test-executor-subgraph:
-    name: ExecutorSubgraph
+    name: ExecutorSubgraph Components
     runs-on: ubuntu-latest
+    timeout-minute: 10
+    strategy:
+      matrix:
+        test_name:
+          - GenerateCodeWithDevinNode
+          - ExecuteGithubActionsWorkflowNode
+          - RetrieveGithubActionsArtifactsNode
+          - llm_decide
+          - FixCodeWithDevinNode
+          - ExecutorSubgraph
+        include:
+          - test_name: GenerateCodeWithDevinNode
+            test_file: test/executor_subgraph/test_generate_code_with_devin.py
+            save_dir: save_dir
+
+          - test_name: ExecuteGithubActionsWorkflowNode
+            test_file: test/executor_subgraph/test_execute_github_actions_workflow.py
+            save_dir: save_dir
+
+          - test_name: RetrieveGithubActionsArtifactsNode
+            test_file: test/executor_subgraph/test_retrieve_github_actions_artifacts.py
+            save_dir: save_dir
+
+          - test_name: llm_decide
+            test_file: test/executor_subgraph/test_llm_decide.py
+            save_dir: save_dir
+
+          - test_name: FixCodeWithDevinNode
+            test_file: test/executor_subgraph/test_fix_code_with_devin.py
+            save_dir: save_dir
+
+          - test_name: ExecutorSubgraph
+            test_file: test/executor_subgraph/test_executor_subgraph.py
+            save_dir: save_dir
     env:
-      SAVE_DIR: ${{ github.workspace }}/save_dir
-    timeout-minutes: 10
+      GITHUB_WORKSPACE: ${{ github.workspace }}
+      SAVE_DIR: ${{ github.workspace }}/${{ matrix.save_dir }}
+
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-python@v4
         with:
           python-version: "3.10"
           cache: "pip"
 
-      - name: Install uv
-        run: curl -LsSf https://astral.sh/uv/0.5.5/install.sh | bash || exit 1
-
-      - name: Verify uv installation
-        run: uv --version
+      - name: Install dependencies
+        run: |
+          curl -LsSf https://astral.sh/uv/0.5.5/install.sh | bash || exit 1
+          uv --version
 
       - name: Set PYTHONPATH
         run: echo "PYTHONPATH=$PYTHONPATH:$GITHUB_WORKSPACE/src" >> $GITHUB_ENV
-
-      - name: Print PYTHONPATH
-        run: echo "PYTHONPATH=$PYTHONPATH"
         
       - name: Create Directory
         run: mkdir -p $SAVE_DIR
         
-      - name: Run pytest
-        run: uv run pytest -s test/executor_subgraph/test_executor_subgraph.py
+      - name: Run pytest with coverage
+        run: uv run pytest --cov=researchgraph.executor_subgraph --cov-branch -s ${{ matrix.test_file }}
 
       - name: Ensure pip cache folder exists
         run: mkdir -p /home/runner/.cache/pip  
-
