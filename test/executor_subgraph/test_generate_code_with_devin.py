@@ -3,6 +3,7 @@ import pytest
 from unittest.mock import patch, MagicMock
 from researchgraph.executor_subgraph.nodes.generate_code_with_devin import GenerateCodeWithDevinNode
 
+
 @pytest.fixture(scope="function")
 def test_environment():
     """ テスト用の環境変数と入力データを設定 """
@@ -20,9 +21,11 @@ def test_environment():
         }
     }
 
+
 @pytest.fixture
 def generate_code_with_devin_node():
     return GenerateCodeWithDevinNode()
+
 
 @patch("researchgraph.executor_subgraph.nodes.generate_code_with_devin.fetch_api_data")
 @patch("researchgraph.executor_subgraph.nodes.generate_code_with_devin.retry_request")
@@ -45,6 +48,7 @@ def test_request_create_session(mock_retry_request, mock_fetch_api_data, generat
     assert response["session_id"] == "devin-test-session"
     assert response["url"] == "https://devin.test/sessions/devin-test-session"
 
+
 @patch("researchgraph.executor_subgraph.nodes.generate_code_with_devin.fetch_api_data")
 @patch("researchgraph.executor_subgraph.nodes.generate_code_with_devin.retry_request")
 def test_request_devin_output(mock_retry_request, mock_fetch_api_data, generate_code_with_devin_node, test_environment):
@@ -61,6 +65,7 @@ def test_request_devin_output(mock_retry_request, mock_fetch_api_data, generate_
     assert response is not None
     assert response["status_enum"] == "completed"
     assert response["structured_output"]["branch_name"] == "devin-test-branch"
+
 
 @patch("researchgraph.executor_subgraph.nodes.generate_code_with_devin.fetch_api_data")
 @patch("researchgraph.executor_subgraph.nodes.generate_code_with_devin.retry_request")

@@ -4,6 +4,7 @@ from unittest.mock import patch, MagicMock
 from requests.exceptions import HTTPError
 from researchgraph.executor_subgraph.nodes.llm_decide import llm_decide
 
+
 @pytest.fixture
 def test_environment():
     """ テスト用の環境変数と入力データを設定 """
@@ -12,6 +13,7 @@ def test_environment():
         "output_text_data": "No error",
         "error_text_data": "",
     }
+
 
 @pytest.mark.parametrize(
     "mock_response_content, expected_result",
@@ -55,6 +57,7 @@ def test_llm_decide_api_errors(mock_completion, test_environment, exception):
         test_environment["error_text_data"]
     )
     assert result is None, f"Expected None when {exception} occurs"
+
 
 @pytest.mark.parametrize(
     "mock_response_content",

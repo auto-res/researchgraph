@@ -24,6 +24,7 @@ def test_state():
         judgment_result=False,
     )
 
+
 @pytest.fixture
 def mock_nodes():
     """各ノードのモックを作成"""
@@ -53,11 +54,13 @@ def mock_nodes():
         
         yield mocks
 
+
 @pytest.fixture
 def executor_subgraph():
     return ExecutorSubgraph(
         max_fix_iteration=3,
     ).build_graph()
+
 
 def test_executor_subgraph(mock_nodes, test_state, executor_subgraph):
     """ExecutorSubgraph の統合テスト"""
@@ -73,6 +76,7 @@ def test_executor_subgraph(mock_nodes, test_state, executor_subgraph):
     expected_calls = 1 + min(3, result["fix_iteration_count"])
     assert mock_nodes["execute_github_actions_workflow"].call_count == expected_calls
 
+
 def test_generate_code_with_devin_node(mock_nodes, test_state, executor_subgraph):
     """LangGraphを通じた GenerateCodeWithDevinNode の統合テスト"""
     result = executor_subgraph.invoke(test_state)
@@ -82,12 +86,14 @@ def test_generate_code_with_devin_node(mock_nodes, test_state, executor_subgraph
     assert result["branch_name"] == "mock_branch"
     assert result["devin_url"] == "https://devin.ai/mock"
 
+
 def test_execute_github_actions_workflow_node(mock_nodes, test_state, executor_subgraph):
     """LangGraphを通じた ExecuteGithubActionsWorkflowNode の統合テスト"""
     result = executor_subgraph.invoke(test_state)
     mock_nodes["execute_github_actions_workflow"].assert_called()
 
     assert result["workflow_run_id"] == 123456
+
 
 def test_retrieve_github_actions_artifacts_node(mock_nodes, test_state, executor_subgraph):
     """LangGraphを通じた RetrieveGithubActionsArtifactsNode の統合テスト"""
@@ -97,12 +103,14 @@ def test_retrieve_github_actions_artifacts_node(mock_nodes, test_state, executor
     assert result["output_text_data"] == "Mock output"
     assert result["error_text_data"] == "Mock error"
 
+
 def test_llm_decide_node(mock_nodes, test_state, executor_subgraph):
     """LangGraphを通じた llm_decide_node の統合テスト"""
     result = executor_subgraph.invoke(test_state)
     mock_nodes["llm_decide"].assert_called()
 
     assert result["judgment_result"] is False
+
 
 def test_fix_code_with_devin_node(mock_nodes, test_state, executor_subgraph):
     """LangGraphを通じた FixCodeWithDevinNode の統合テスト"""
@@ -111,6 +119,7 @@ def test_fix_code_with_devin_node(mock_nodes, test_state, executor_subgraph):
 
     mock_nodes["fix_code_with_devin"].assert_called()
     assert result["fix_iteration_count"] == 3
+
 
 def test_iteration_function():
     """iteration_function() のテスト"""

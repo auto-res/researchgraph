@@ -35,9 +35,11 @@ def test_environment(tmp_path_factory):
         },
     }
 
+
 @pytest.fixture
 def github_upload_node():
     return GithubUploadNode()
+
 
 @patch("researchgraph.writer_subgraph.nodes.github_upload_node.fetch_api_data")
 @patch("researchgraph.writer_subgraph.nodes.github_upload_node.retry_request")
@@ -53,6 +55,7 @@ def test_request_get_github_content(mock_retry_request, mock_fetch_api_data, git
         "README.md"
     )
     assert response["sha"] == "mocked_sha"
+
 
 @patch("researchgraph.writer_subgraph.nodes.github_upload_node.fetch_api_data")
 @patch("researchgraph.writer_subgraph.nodes.github_upload_node.retry_request")
@@ -71,11 +74,13 @@ def test_request_github_file_upload(mock_retry_request, mock_fetch_api_data, git
     assert "commit" in response
     assert response["commit"]["sha"] == "mocked_commit_sha"
 
+
 def test_encoded_pdf_file(test_environment):
     """ 正常系テスト: PDF ファイルの Base64 エンコードが正しく行われるか """
     encoded_data = GithubUploadNode._encoded_pdf_file(test_environment["pdf_file_path"])
     assert isinstance(encoded_data, str)
     assert base64.b64decode(encoded_data) == b"PDF content"
+
 
 def test_encoded_markdown_data(test_environment):
     """ 正常系テスト: Markdown テキストの Base64 エンコードが正しく行われるか """
@@ -91,6 +96,7 @@ def test_encoded_markdown_data(test_environment):
     assert test_environment["paper_content"]["Title"] in decoded_text
     assert test_environment["paper_content"]["Abstract"] in decoded_text
 
+
 def test_encoding_all_data(test_environment):
     """ 正常系テスト: all_logs の JSON エンコードが正しく行われるか """
     test_environment["temp_dir"] = str(test_environment["temp_dir"]) 
@@ -98,6 +104,7 @@ def test_encoding_all_data(test_environment):
     assert isinstance(encoded_data, str)
     decoded_json = json.loads(base64.b64decode(encoded_data).decode("utf-8"))
     assert decoded_json == test_environment
+
 
 @patch("researchgraph.writer_subgraph.nodes.github_upload_node.GithubUploadNode._request_get_github_content")
 @patch("researchgraph.writer_subgraph.nodes.github_upload_node.GithubUploadNode._request_github_file_upload")

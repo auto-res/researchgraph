@@ -2,6 +2,7 @@ import pytest
 from unittest.mock import patch, MagicMock
 from researchgraph.executor_subgraph.nodes.execute_github_actions_workflow import ExecuteGithubActionsWorkflowNode
 
+
 @pytest.fixture(scope="function")
 def test_environment():
     """ テスト用の環境変数と入力データを設定 """
@@ -16,9 +17,11 @@ def test_environment():
         }
     }
 
+
 @pytest.fixture
 def execute_github_actions_workflow_node():
     return ExecuteGithubActionsWorkflowNode()
+
 
 @patch("researchgraph.executor_subgraph.nodes.execute_github_actions_workflow.fetch_api_data")
 @patch("researchgraph.executor_subgraph.nodes.execute_github_actions_workflow.retry_request")
@@ -35,6 +38,7 @@ def test_request_github_actions_workflow_execution(mock_retry_request, mock_fetc
 
     assert response is not None
     assert response["status"] == "success"
+
 
 @patch("researchgraph.executor_subgraph.nodes.execute_github_actions_workflow.fetch_api_data")
 @patch("researchgraph.executor_subgraph.nodes.execute_github_actions_workflow.retry_request")
@@ -54,6 +58,7 @@ def test_request_github_actions_workflow_info_before_execution(mock_retry_reques
     assert response is not None
     assert len(response["workflow_runs"]) == 1
     assert response["workflow_runs"][0]["id"] == 1
+
 
 @patch("researchgraph.executor_subgraph.nodes.execute_github_actions_workflow.fetch_api_data")
 @patch("researchgraph.executor_subgraph.nodes.execute_github_actions_workflow.retry_request")
@@ -77,6 +82,7 @@ def test_request_github_actions_workflow_info_after_execution(mock_retry_request
     assert response is not None
     assert len(response["workflow_runs"]) == 2
     assert response["workflow_runs"][1]["id"] == 2
+
 
 @patch("researchgraph.executor_subgraph.nodes.execute_github_actions_workflow.fetch_api_data")
 @patch("researchgraph.executor_subgraph.nodes.execute_github_actions_workflow.retry_request")

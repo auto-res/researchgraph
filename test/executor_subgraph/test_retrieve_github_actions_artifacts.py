@@ -4,6 +4,7 @@ import zipfile
 from unittest.mock import patch, MagicMock, mock_open
 from researchgraph.executor_subgraph.nodes.retrieve_github_actions_artifacts import RetrieveGithubActionsArtifactsNode
 
+
 @pytest.fixture(scope="function")
 def test_environment():
     """ テスト用の環境変数と入力データを設定 """
@@ -20,9 +21,11 @@ def test_environment():
         }
     }
 
+
 @pytest.fixture
 def retrieve_github_actions_artifacts_node():
     return RetrieveGithubActionsArtifactsNode()
+
 
 @patch("researchgraph.executor_subgraph.nodes.retrieve_github_actions_artifacts.fetch_api_data")
 @patch("researchgraph.executor_subgraph.nodes.retrieve_github_actions_artifacts.retry_request")
@@ -39,6 +42,7 @@ def test_request_github_actions_artifacts(mock_retry_request, mock_fetch_api_dat
     assert len(response["artifacts"]) == 1
     assert response["artifacts"][0]["id"] == 1
 
+
 def test_parse_artifacts_info(retrieve_github_actions_artifacts_node, test_environment):
     """ 正常系テスト: GitHub Actions アーティファクト情報のパースが正常に動作するか """
     artifacts_info = {
@@ -52,6 +56,7 @@ def test_parse_artifacts_info(retrieve_github_actions_artifacts_node, test_envir
 
     assert len(parsed_info) == 1
     assert parsed_info["artifact1"] == "https://github.com/test/artifact1.zip"
+
 
 @patch("researchgraph.executor_subgraph.nodes.retrieve_github_actions_artifacts.fetch_api_data")
 @patch("researchgraph.executor_subgraph.nodes.retrieve_github_actions_artifacts.retry_request")
@@ -68,6 +73,7 @@ def test_request_download_artifacts(mock_retry_request, mock_fetch_api_data, ret
         )
 
         mock_zip_to_txt.assert_called_once()
+
 
 @patch("os.remove")
 @patch("os.path.exists", return_value=True)

@@ -5,6 +5,7 @@ import re
 from researchgraph.writer_subgraph.nodes.writeup_node import WriteupNode, regex_rules
 from requests.exceptions import HTTPError
 
+
 @pytest.fixture(scope="function")
 def test_environment():
     return {
@@ -17,6 +18,7 @@ def test_environment():
         "new_method_code": ["def new_method(): pass"],
     }
 
+
 @pytest.fixture
 def writeup_node() -> WriteupNode:
     return WriteupNode(
@@ -26,6 +28,7 @@ def writeup_node() -> WriteupNode:
         target_sections=["Title", "Abstract", "Introduction", "Method", "Results"],
     )
 
+
 def test_generate_note(writeup_node: WriteupNode, test_environment):
     """
     _generate_note() が正しく state をセクションごとにまとめるかをテスト。
@@ -34,6 +37,7 @@ def test_generate_note(writeup_node: WriteupNode, test_environment):
     for section_name in regex_rules.keys():
         assert f"# {section_name}" in note
     assert "objective: Testing the WriteupNode generation." in note
+
 
 @patch("researchgraph.writer_subgraph.nodes.writeup_node.completion")
 def test_call_llm(mock_completion, writeup_node: WriteupNode):
@@ -54,6 +58,7 @@ def test_call_llm(mock_completion, writeup_node: WriteupNode):
     result = writeup_node._call_llm(prompt)
     assert result == "Mock LLM output"
 
+
 def test_clean_meta_information(writeup_node: WriteupNode):
     """
     _clean_meta_information() がメタ情報や指示を取り除けるかをテスト。
@@ -73,6 +78,7 @@ _Editor@cref
     assert "% This is a comment" not in cleaned_text
     assert "_Editor@cref" not in cleaned_text
 
+
 def test_generate_write_prompt(writeup_node: WriteupNode):
     """
     _generate_write_prompt() がセクション名とノートを元に正しいテンプレートを生成するかをテスト。
@@ -83,6 +89,7 @@ def test_generate_write_prompt(writeup_node: WriteupNode):
     assert "You are tasked with filling in the 'Method' section" in prompt
     assert "This is a note." in prompt
     assert "Some tips are provided below:" in prompt
+
 
 def test_generate_refinement_prompt(writeup_node: WriteupNode):
     """
@@ -96,6 +103,7 @@ def test_generate_refinement_prompt(writeup_node: WriteupNode):
     assert "This is a note for refinement." in prompt
     assert "This is the original content." in prompt
     assert "Some tips are provided below:" in prompt
+
 
 @patch.object(WriteupNode, "_call_llm", return_value="LLM generated content.")
 def test_write(mock_call_llm, writeup_node: WriteupNode):
@@ -122,6 +130,7 @@ def test_refine(mock_call_llm, writeup_node: WriteupNode):
     assert mock_call_llm.call_count == 3
     assert result == "Refined content."
 
+
 @patch("researchgraph.writer_subgraph.nodes.writeup_node.completion")
 def test_execute(mock_completion, writeup_node: WriteupNode, test_environment):
     mock_completion.return_value = MagicMock(
@@ -140,6 +149,7 @@ def test_execute(mock_completion, writeup_node: WriteupNode, test_environment):
         assert section in result_dict
         # ここで "MOCKED CONTENT" が返るはず
         assert result_dict[section] == "MOCKED CONTENT"
+
 
 def test_execute_refine_only(writeup_node: WriteupNode, test_environment):
     """
@@ -179,6 +189,7 @@ def test_regex_rules_validation(test_environment):
     assert re.search(pattern_methods, "base_method_text") is not None, \
         "base_method_text が Methods セクションにマッチしない"
 
+
 @patch("researchgraph.writer_subgraph.nodes.writeup_node.completion")
 def test_relate_work(mock_completion, writeup_node: WriteupNode):
     """
@@ -199,6 +210,7 @@ def test_call_llm_exception(mock_completion, writeup_node: WriteupNode):
     result = writeup_node._call_llm("Prompt that triggers error.")
     assert result is None, "Expected None when LLM call fails after max retries"
 
+
 @pytest.mark.parametrize(
     "exception, expected_message",
     [
@@ -215,6 +227,7 @@ def test_call_llm_api_errors(mock_completion, writeup_node, exception, expected_
 
     result = writeup_node._call_llm("Test prompt")
     assert result is None, expected_message
+
 
 @pytest.mark.parametrize(
     "mock_response, expected_message",

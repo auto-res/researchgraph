@@ -25,6 +25,7 @@ def test_state():
         devin_url="mock_devin_url"
     )
 
+
 @pytest.fixture
 def mock_nodes():
     """各ノードのモックを作成"""
@@ -39,6 +40,7 @@ def mock_nodes():
         
         yield mocks
 
+
 @pytest.fixture
 def writer_subgraph():
     """WriterSubgraph のテスト用インスタンスを作成"""
@@ -52,6 +54,7 @@ def writer_subgraph():
         figures_dir=figures_dir,
     ).build_graph()
 
+
 def test_writer_subgraph(mock_nodes, test_state, writer_subgraph):
     """WriterSubgraph の統合テスト"""
     result = writer_subgraph.invoke(test_state)
@@ -64,6 +67,7 @@ def test_writer_subgraph(mock_nodes, test_state, writer_subgraph):
     assert result["paper_content"]["Title"] == "Mock Title"
     assert result["paper_content"]["Abstract"] == "Mock Abstract"
 
+
 def test_writeup_node(mock_nodes, test_state, writer_subgraph):
     """LangGraphを通じた WriteupNode の統合テスト"""
     result = writer_subgraph.invoke(test_state)
@@ -72,12 +76,14 @@ def test_writeup_node(mock_nodes, test_state, writer_subgraph):
     assert result["paper_content"]["Title"] == "Mock Title"
     assert result["paper_content"]["Abstract"] == "Mock Abstract"
 
+
 def test_latex_node(mock_nodes, test_state, writer_subgraph):
     """LangGraphを通じた LatexNode の統合テスト"""
     result = writer_subgraph.invoke(test_state)
     mock_nodes["latex_node"].assert_called_once()
 
     assert result["pdf_file_path"] == "/mock/path/to/pdf.pdf"
+
 
 def test_github_upload_node(mock_nodes, test_state, writer_subgraph):
     """LangGraphを通じた GithubUploadNode の統合テスト"""
