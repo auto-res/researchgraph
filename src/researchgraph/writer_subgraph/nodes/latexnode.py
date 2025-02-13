@@ -281,15 +281,12 @@ class LatexNode:
                 iteration_count += 1
                 continue
 
-            if any(f.endswith(".png") for f in os.listdir(self.figures_dir)):
-                print("Check figures")
-                original_tex_text = tex_text
-                tex_text = self._check_figures(tex_text, self.figures_dir)
-                if tex_text != original_tex_text:
-                    iteration_count += 1
-                    continue
-            else:
-                print("Figures directory is empty or does not exist. Skipping figure check.")
+            print("Check figures")
+            original_tex_text = tex_text
+            tex_text = self._check_figures(tex_text, self.figures_dir)
+            if tex_text != original_tex_text:
+                iteration_count += 1
+                continue
 
             print("Check duplicates")
             original_tex_text = tex_text
