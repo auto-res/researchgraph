@@ -2,7 +2,7 @@ executor_subgraph_input_data = {
     "github_owner": "auto-res2",
     "repository_name": "auto-research",
     "save_dir": "/workspaces/researchgraph/data",
-    "fix_iteration_count": 1,
+    "fix_iteration_count": 0,
     "new_detailed_description_of_methodology": """
 The proposed method synergistically combines the advantages of AggMo's aggregated momentum with MADGRAD's adaptive updates. This is achieved by integrating the multiple momentum terms of AggMo to adjust the parameters within MADGRAD's dual averaging scheme based on cumulative gradient history. This hybrid approach aims to maintain stability while leveraging adaptivity, leading to accelerated convergence during varied machine learning tasks.
 """,
