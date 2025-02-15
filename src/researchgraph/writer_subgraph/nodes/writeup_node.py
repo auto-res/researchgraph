@@ -181,26 +181,38 @@ Pay particular attention to fixing any errors such as:
         # print(f"note: {template.render(sections=sections)}")
         return template.render(sections=sections)
 
-    def _call_llm(self, prompt: str) -> str:
-        response = completion(
-            model=self.llm_name,
-            messages=[
-                {"role": "user", "content": prompt},
-            ],
-            response_format=LLMOutput,
-        )
-        structured_output = json.loads(response.choices[0].message.content)
-        return structured_output["generated_paper_text"]
+    def _call_llm(self, prompt: str, max_retries: int = 3) -> str:
+        for attempt in range(max_retries): 
+            try:
+                response = completion(
+                    model=self.llm_name,
+                    messages=[
+                        {"role": "user", "content": prompt},
+                    ],
+                    response_format=LLMOutput,
+                )
+                structured_output = json.loads(response.choices[0].message.content)
+                return structured_output["generated_paper_text"]
+            except Exception as e:
+                print(f"[Attempt {attempt+1}/{max_retries}] Unexpected error: {e}")
+        print("Exceeded maximum retries for LLM call.")
+        return None
 
     def _write(self, note: str, section_name: str) -> str:
         prompt = self._generate_write_prompt(section_name, note)
         content = self._call_llm(prompt)
+        if not content:
+            raise RuntimeError(f"Failed to generate content for section: {section_name}. The LLM returned None.")
         return content
 
     def _refine(self, note: str, section_name: str, content: str) -> str:
-        for _ in range(self.refine_round):
+        for round_num in range(self.refine_round):
             prompt = self._generate_refinement_prompt(section_name, note, content)
-            content = self._call_llm(prompt)
+            refine_content = self._call_llm(prompt)
+            if not refine_content:
+                print(f"Refinement failed for {section_name} at round {round_num + 1}. Keeping previous content.")
+                break
+            content = refine_content
         return content
 
     def _relate_work(
@@ -236,12 +248,12 @@ Pay particular attention to fixing any errors such as:
         self, text: str
     ) -> str:  # TODO: Combine with prompts to more accurately remove unnecessary meta-information and artifacts.
         meta_patterns = [
-            r"Here(?: is|'s) \w+ version.*?(\.|\n)",
+            r"Here(?: is|'s)(?:.*?version.*?)(\.|\n)",
             r"This section discusses.*?(\.|\n)",
             r"Before every paragraph.*?(\.|\n)",
             r"Refinement Pass \d+.*?(\.|\n)",
             r"Do not include.*?(\.|\n)",
-            r"Certainly!*?(\.|\n)",
+            r"Certainly!.*?(\.|\n)",
             r"_.*?@cref",
             r"^\s*[-*]\s+.*?$",  # Bullet point instructions (e.g., "- Be concise.")
             r"^(```|''')[\w]*\n",  # Opening code block markers (e.g., ```latex)
@@ -284,8 +296,8 @@ Pay particular attention to fixing any errors such as:
                 # refined_content = self._refine(note, section, initial_content)
             else:
                 # refine only
-                # initial_content = paper_content.get(section, "")
-                initial_content = getattr(state, section)
+                initial_content = paper_content.get(section, "")
+                # initial_content = getattr(state, section)
                 refined_content = self._refine(note, section, initial_content)
 
             final_content = self._clean_meta_information(refined_content)

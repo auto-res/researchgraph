@@ -1,0 +1,80 @@
+name: ExecutorSubgraph
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths: [
+      'src/researchgraph/executor_subgraph/**', 
+      'test/executor_subgraph/**',
+      '.github/workflows/pytest_executor_subgraph.yml'
+      ]
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  test-executor-subgraph:
+    name: ExecutorSubgraph Components
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      matrix:
+        test_name:
+          - GenerateCodeWithDevinNode
+          - ExecuteGithubActionsWorkflowNode
+          - RetrieveGithubActionsArtifactsNode
+          - llm_decide
+          - FixCodeWithDevinNode
+          - ExecutorSubgraph
+        include:
+          - test_name: GenerateCodeWithDevinNode
+            test_file: test/executor_subgraph/test_generate_code_with_devin.py
+            save_dir: save_dir
+
+          - test_name: ExecuteGithubActionsWorkflowNode
+            test_file: test/executor_subgraph/test_execute_github_actions_workflow.py
+            save_dir: save_dir
+
+          - test_name: RetrieveGithubActionsArtifactsNode
+            test_file: test/executor_subgraph/test_retrieve_github_actions_artifacts.py
+            save_dir: save_dir
+
+          - test_name: llm_decide
+            test_file: test/executor_subgraph/test_llm_decide.py
+            save_dir: save_dir
+
+          - test_name: FixCodeWithDevinNode
+            test_file: test/executor_subgraph/test_fix_code_with_devin.py
+            save_dir: save_dir
+
+          - test_name: ExecutorSubgraph
+            test_file: test/executor_subgraph/test_executor_subgraph.py
+            save_dir: save_dir
+    env:
+      GITHUB_WORKSPACE: ${{ github.workspace }}
+      SAVE_DIR: ${{ github.workspace }}/${{ matrix.save_dir }}
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          curl -LsSf https://astral.sh/uv/0.5.5/install.sh | bash || exit 1
+          uv --version
+
+      - name: Set PYTHONPATH
+        run: echo "PYTHONPATH=$PYTHONPATH:$GITHUB_WORKSPACE/src" >> $GITHUB_ENV
+        
+      - name: Create Directory
+        run: mkdir -p $SAVE_DIR
+        
+      - name: Run pytest with coverage
+        run: uv run pytest --cov=researchgraph.executor_subgraph --cov-branch -s ${{ matrix.test_file }}
+
+      - name: Ensure pip cache folder exists
+        run: mkdir -p /home/runner/.cache/pip  
