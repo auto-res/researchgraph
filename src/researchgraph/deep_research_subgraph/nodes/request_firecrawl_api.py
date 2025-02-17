@@ -36,7 +36,7 @@ async def _request_firecrawl(
     data = {
         "query": f"{query}",
         "timeout": 15000,
-        "limit": 5,
+        "limit": 10,
         "scrapeOptions": {"formats": "markdown"},
     }
     delay = base_delay
