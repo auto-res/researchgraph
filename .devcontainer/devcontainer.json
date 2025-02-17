@@ -10,19 +10,32 @@
 		"vscode": {
 			"extensions": [
         "ms-python.python", // Python
+        "ms-python.debugpy", // Debugpy
 				"charliermarsh.ruff", // Ruff
 				"github.copilot", // GitHub Copilot
         "mhutchie.git-graph", // Git Graph
         "eamodio.gitlens", // GitLens
+        "github.vscode-pull-request-github", // GitHub Pull Requests and Issues
+        "github.vscode-github-actions", // GitHub Actions
         "gruntfuggly.todo-tree", // Todo Tree
         "ms-python.vscode-pylance", // Pylance
         "oderwat.indent-rainbow", // Indent Rainbow
         "tomoki1207.pdf", // PDF viewer
-        "ms-ceintl.vscode-language-pack-ja" // Japanese Language Pack
+        "ms-ceintl.vscode-language-pack-ja", // Japanese Language Pack
+        "rapidapi.vscode-rapidapi-client" // RapidAPI
 			],
             "settings": {
                 "python.analysis.inlayHints.variableTypes": true,
-                "python.analysis.inlayHints.functionReturnTypes": true
+                "python.analysis.inlayHints.functionReturnTypes": true,
+                "editor.minimap.enabled": false, // ミニマップを非表示にする
+                "files.autoGuessEncoding": true, // ファイルの自動エンコードを実施
+                "editor.bracketPairColorization.enabled": true, // 括弧の対応を色付ける
+                // pytestの設定
+                "python.testing.pytestArgs": [
+                  "test"
+                ],
+                "python.testing.unittestEnabled": false,
+                "python.testing.pytestEnabled": true
             }
 		}
 	}
