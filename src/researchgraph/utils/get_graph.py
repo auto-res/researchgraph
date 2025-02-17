@@ -10,6 +10,9 @@ from researchgraph.writer_subgraph.writer_subgraph import WriterSubgraph
 from researchgraph.integrate_generator_subgraph.integrate_generator_subgraph import (
     IntegrateGeneratorSubgraph,
 )
+from researchgraph.deep_research_subgraph.deep_research_subgraph import (
+    DeepResearchSubgraph,
+)
 from researchgraph.research_graph import ResearchGraph
 
 IMAGE_SAVE_DIR = "/workspaces/researchgraph/images"
@@ -38,6 +41,11 @@ if __name__ == "__main__":
         save_dir=save_dir,
     ).build_graph()
 
+    deep_research_subgraph = DeepResearchSubgraph(
+        breadth=3,
+        depth=2,
+    ).build_graph()
+
     integrate_generator_subgraph = IntegrateGeneratorSubgraph(
         llm_name=llm_name,
     ).build_graph()
@@ -61,6 +69,7 @@ if __name__ == "__main__":
     ).build_graph()
 
     make_image(graph=retrieve_paper_subgraph, file_name="retrieve_paper_subgraph.png")
+    make_image(graph=deep_research_subgraph, file_name="deep_research_subgraph.png")
     make_image(
         graph=integrate_generator_subgraph, file_name="integrate_generator_subgraph.png"
     )
@@ -69,6 +78,7 @@ if __name__ == "__main__":
     make_image(graph=research_graph, file_name="research_graph.png")
     # print_mermaid(research_graph)
     # print_mermaid(retrieve_paper_subgraph)
+    print_mermaid(deep_research_subgraph)
     # print_mermaid(integrate_generator_subgraph)
     # print_mermaid(executor_subgraph)
-    print_mermaid(writer_graph)
+    # print_mermaid(writer_graph)

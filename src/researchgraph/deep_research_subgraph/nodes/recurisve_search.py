@@ -9,6 +9,8 @@ from researchgraph.deep_research_subgraph.nodes.process_serp_result import (
     process_serp_result,
 )
 
+from researchgraph.deep_research_subgraph.nodes.generate_queries import QueryInfo
+
 
 class ResearchResult(TypedDict):
     learnings: list[str]
@@ -33,9 +35,9 @@ async def recursive_search(
     )
 
     tasks = []
-    for serp_query in serp_queries_list:
-        task = await _process_query(
-            query=serp_query.query,
+    for serp_query in serp_queries_list.queries_list:
+        task = _process_query(
+            serp_query=serp_query,
             depth=depth,
             breadth=breadth,
             current_learnings=learnings.copy(),
@@ -48,28 +50,43 @@ async def recursive_search(
     all_learnings = []
     all_visited_urls = []
     for result in results:
-        if isinstance(result, ResearchResult):
-            all_learnings.extend(result.learnings)
-            all_visited_urls.extend(result.visited_urls)
+        if isinstance(result, Exception):
+            print(f"Error occurred: {result}")
+            continue
+        if (
+            isinstance(result, dict)
+            and "learnings" in result
+            and "visited_urls" in result
+        ):
+            all_learnings.extend(result["learnings"])
+            all_visited_urls.extend(result["visited_urls"])
 
-    return all_learnings, all_visited_urls
+    return {
+        "learnings": list(dict.fromkeys(all_learnings)),
+        "visited_urls": list(dict.fromkeys(all_visited_urls)),
+    }
 
 
 async def _process_query(
-    serp_query: str,
+    serp_query: QueryInfo,
     depth: int,
     breadth: int,
     current_learnings: list[str],
     current_visited_urls: list[str],
-):
+) -> ResearchResult:
+    print(f"Processing query: {serp_query.query}")
+    print(f"depth:{depth}")
+    print(f"breadth:{breadth}")
     try:
         # 検索
-        search_result = await request_firecrawl_api(serp_query)
-        new_urls = [item.url for item in search_result.search_data if item.url]
+        search_result = await request_firecrawl_api(serp_query.query)
+        new_urls = [item.url for item in search_result if item.url]
 
         # 結果をまとめる
         processed_result = await process_serp_result(
-            query=serp_query.query, result=search_result
+            llm_name="gpt-4o-mini-2024-07-18",
+            query=serp_query.query,
+            result=search_result,
         )
         all_learnings = current_learnings + processed_result.learnings
         all_urls = current_visited_urls + new_urls
@@ -91,14 +108,19 @@ async def _process_query(
             )
 
         return ResearchResult(learnings=all_learnings, visited_urls=all_urls)
+
     except Exception as e:
         print(f"Error processing query '{serp_query.query}': {str(e)}")
         return ResearchResult(learnings=[], visited_urls=[])
 
 
 async def main():
-    query = "deepseekのアルゴリズムについて教えてください．"
-    response = await request_firecrawl_api(query)
+    query = "Tell me more about the technology used in DeepSeek."
+    response = await recursive_search(
+        query=query,
+        breadth=2,
+        depth=1,
+    )
     print(response)
 
 

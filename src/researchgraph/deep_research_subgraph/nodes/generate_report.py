@@ -1,113 +1,115 @@
-from dataclasses import dataclass
-from typing import List, Optional, Callable
-import asyncio
 from datetime import datetime
+from typing import List
+from litellm import completion
+from jinja2 import Environment
+from pydantic import BaseModel
+import json
 
 
-@dataclass
-class ResearchProgress:
-    current_depth: int
-    total_depth: int
-    current_breadth: int
-    total_breadth: int
-    current_query: Optional[str]
-    total_queries: int
-    completed_queries: int
+class ReportSummary(BaseModel):
+    executive_summary: str
 
 
-class OutputManager:
-    """
-    Manages console output and progress reporting for the research process.
-    """
-
-    def __init__(self):
-        self._lock = asyncio.Lock()
-        self._progress_callbacks: List[Callable[[ResearchProgress], None]] = []
-
-    async def log(self, *args):
-        """Thread-safe logging with timestamp."""
-        async with self._lock:
-            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            print(f"[{timestamp}]", *args)
-
-    def register_progress_callback(self, callback: Callable[[ResearchProgress], None]):
-        """Register a callback for progress updates."""
-        self._progress_callbacks.append(callback)
-
-    async def update_progress(self, progress: ResearchProgress):
-        """Update research progress and notify all callbacks."""
-        async with self._lock:
-            for callback in self._progress_callbacks:
-                callback(progress)
+class DetailedFindings(BaseModel):
+    detailed_findings: str
 
 
-class ReportGenerator:
-    """
-    Generates the final markdown report from research results.
-    """
+def generate_report(query: str, learnings: List[str], visited_urls: List[str]) -> str:
+    learning_str = "\n".join(f"- {learning}" for learning in learnings)
+    sections = [
+        create_header(query),
+        create_summary(query, learning_str),
+        create_findings(query, learning_str),
+        create_sources(visited_urls),
+    ]
+    return "\n\n".join(sections)
 
-    def __init__(self, output_manager: OutputManager):
-        self.output = output_manager
 
-    async def generate_report(
-        self, prompt: str, learnings: List[str], visited_urls: List[str]
-    ) -> str:
-        """
-        Generate a final markdown report from research results.
+def create_header(query: str) -> str:
+    """レポートのヘッダー部分を作成"""
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    return (
+        f"# Research Report\n"
+        f"Generated on: {timestamp}\n\n"
+        f"## Original Query\n"
+        f"{query}"
+    )
 
-        Args:
-            prompt: Original research query
-            learnings: List of research findings
-            visited_urls: List of sources visited
 
-        Returns:
-            Markdown formatted report
-        """
-        # Create report sections
-        sections = [
-            self._create_header(prompt),
-            self._create_summary(learnings),
-            self._create_findings(learnings),
-            self._create_sources(visited_urls),
-        ]
+def create_summary(query: str, learning_str: str) -> str:
+    data = {"learning_str": learning_str}
+    prompt_template = """
+Please create a summary of the answers to the questions listed in the “Question” section based on the information in the “Knowledge” section.
+Please do not use any information other than that provided by “Knowledge”.
+# Question
+{{ query }}
+# Knowledge
+{{ learning_str }}"""
+    env = Environment()
+    template = env.from_string(prompt_template)
+    prompt = template.render(data)
+    response = completion(
+        model="gpt-4o-mini-2024-07-18",
+        messages=[
+            {"role": "user", "content": f"{prompt}"},
+        ],
+        response_format=ReportSummary,
+    )
+    output = response.choices[0].message.content
+    output_dict = json.loads(output)
+    executive_summary = f"## Executive Summary\n{output_dict['executive_summary']}"
+    return executive_summary
 
-        return "\n\n".join(sections)
 
-    def _create_header(self, prompt: str) -> str:
-        """Create report header with title and original query."""
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        return (
-            f"# Research Report\n"
-            f"Generated on: {timestamp}\n\n"
-            f"## Original Query\n"
-            f"{prompt}"
-        )
+def create_findings(query: str, learning_str: str) -> str:
+    data = {"learning_str": learning_str}
+    prompt_template = """
+Please create a detailed response to the information in the “Question” section, using the information in the “Knowledge” section as a guide.
+Please do not use any information other than that provided by “Knowledge”.
+# Question
+{{ query }}
+# Knowledge
+{{ learning_str }}"""
+    env = Environment()
+    template = env.from_string(prompt_template)
+    prompt = template.render(data)
+    response = completion(
+        model="gpt-4o-mini-2024-07-18",
+        messages=[
+            {"role": "user", "content": f"{prompt}"},
+        ],
+        response_format=DetailedFindings,
+    )
+    output = response.choices[0].message.content
+    output_dict = json.loads(output)
+    detailed_findings = f"## Detailed Findings\n{output_dict['detailed_findings']}"
+    return detailed_findings
 
-    def _create_summary(self, learnings: List[str]) -> str:
-        """Create executive summary from key learnings."""
-        if not learnings:
-            return "## Summary\nNo significant findings to report."
 
-        # Use first few learnings for summary
-        key_points = learnings[:3]
-        summary = "\n".join(f"- {point}" for point in key_points)
+def create_sources(urls: List[str]) -> str:
+    """リサーチで参照した情報源（URLリスト）を作成"""
+    if not urls:
+        return "## Sources\nNo sources to cite."
 
-        return f"## Executive Summary\n" f"{summary}"
+    sources = "\n".join(f"- {url}" for url in urls)
+    return f"## Sources\n{sources}"
 
-    def _create_findings(self, learnings: List[str]) -> str:
-        """Create detailed findings section."""
-        if not learnings:
-            return "## Findings\nNo detailed findings to report."
 
-        findings = "\n".join(f"- {learning}" for learning in learnings)
+# 実行例
+if __name__ == "__main__":
+    query = "How does deep learning impact medical research?"
+    learnings = [
+        "Deep learning improves diagnostic accuracy in medical imaging.",
+        "Neural networks help in drug discovery by predicting molecular interactions.",
+        "AI models assist doctors in predicting patient outcomes with high precision.",
+    ]
+    visited_urls = [
+        "https://www.ncbi.nlm.nih.gov/",
+        "https://arxiv.org/",
+        "https://www.nature.com/",
+    ]
 
-        return f"## Detailed Findings\n" f"{findings}"
-
-    def _create_sources(self, urls: List[str]) -> str:
-        """Create sources section with visited URLs."""
-        if not urls:
-            return "## Sources\nNo sources to cite."
-
-        sources = "\n".join(f"- {url}" for url in urls)
-
-        return f"## Sources\n" f"{sources}"
+    report = generate_report(
+        query=query, learnings=learnings, visited_urls=visited_urls
+    )
+    print(report)

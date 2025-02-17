@@ -9,11 +9,6 @@ from researchgraph.deep_research_subgraph.nodes.request_firecrawl_api import (
 )
 
 
-# class ResearchResult(BaseModel):
-#     learnings: list[str]
-#     visited_urls: list[str]
-
-
 class ResearchResult(BaseModel):
     learnings: list[str]
     followup_questions: list[str]
@@ -25,11 +20,9 @@ async def process_serp_result(
     result: SearchResponse,
     num_learnings: int = 3,
     num_followup_questions: int = 3,
-) -> dict[str, list[str]]:
+) -> ResearchResult:
     contents = [
-        await trim_prompt(item.markdown, 25000)
-        for item in result.search_data
-        if item.markdown
+        await trim_prompt(item.markdown, 25000) for item in result if item.markdown
     ]
     output = await generate_object(
         llm_name, query, contents, num_learnings, num_followup_questions
