@@ -3,7 +3,7 @@
 ResearchGraphは完全な研究の自動化を目的としたOSSになります．
 
 ## ResearchGraph
-全てのサブグラフを実行します．
+全てのサブグラフを実行します．(現在はDeep Research Subgraphを組み込めていません)
 
 ```python
 python src/researchgraph/research_graph.py
@@ -36,7 +36,7 @@ graph TD;
 
 
 ## Retrieve paper subgraph
-研究を行うための論文を取得するためのサブグラフです．
+ベースにする研究論文とそれに追加する技術の論文を取得するためのサブグラフです．
 
 ```python
 python src/researchgraph/retrieve_paper_subgraph/retrieve_paper_subgraph.py
@@ -90,7 +90,36 @@ graph TD;
 </details>
 
 
-## Integrate generator subgraph
+## Deep Research Subgraph
+Web上から情報を取得するためのサブグラフです．
+
+```python
+python src/researchgraph/deep_research_subgraph/deep_research_subgraph.py
+```
+
+
+<details>
+
+<summary>Architecture</summary>
+
+```mermaid
+%%{init: {'flowchart': {'curve': 'linear'}}}%%
+graph TD;
+        __start__([<p>__start__</p>]):::first
+        recursive_search_node(recursive_search_node)
+        generate_report_node(generate_report_node)
+        __end__([<p>__end__</p>]):::last
+        __start__ --> recursive_search_node;
+        generate_report_node --> __end__;
+        recursive_search_node --> generate_report_node;
+        classDef default fill:#f2f0ff,line-height:1.2
+        classDef first fill-opacity:0
+        classDef last fill:#bfb6fc
+```
+</details>
+
+
+## Integrate Generator Subgraph
 手法を合成するためのサブグラフです．
 
 ```python
@@ -122,7 +151,7 @@ graph TD;
 </details>
 
 
-## executor subgraph
+## Executor Subgraph
 新規の手法をコーディングし実行するためのサブグラフです．
 
 ```python
@@ -156,7 +185,7 @@ graph TD;
 </details>
 
 
-## writer subgraph
+## Writer Subgraph
 論文を執筆するためのサブグラフです．執筆した論文はGitHub上にアップロードされます．
 
 ```python

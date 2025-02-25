@@ -14,6 +14,8 @@ from researchgraph.executor_subgraph.nodes.retrieve_github_actions_artifacts imp
 from researchgraph.executor_subgraph.nodes.fix_code_with_devin import (
     FixCodeWithDevinNode,
 )
+from researchgraph.executor_subgraph.nodes.llm_decide import llm_decide
+
 from researchgraph.executor_subgraph.input_data import (
     executor_subgraph_input_data,
 )
@@ -35,6 +37,7 @@ class ExecutorState(TypedDict):
     output_text_data: str
     error_text_data: str
     devin_url: str
+    judgment_result: bool
 
 
 class ExecutorSubgraph:
@@ -94,6 +97,19 @@ class ExecutorSubgraph:
             "error_text_data": error_text_data,
         }
 
+    def _llm_decide_node(self, state: ExecutorState) -> dict:
+        print("llm_decide_node")
+        output_text_data = state["output_text_data"]
+        error_text_data = state["error_text_data"]
+        judgment_result = llm_decide(
+            llm_name="gpt-4o-mini-2024-07-18",
+            output_text_data=output_text_data,
+            error_text_data=error_text_data,
+        )
+        return {
+            "judgment_result": judgment_result,
+        }
+
     def _fix_code_with_devin_node(self, state: ExecutorState) -> dict:
         print("fix_code_with_devin_node")
         session_id = state["session_id"]
@@ -111,12 +127,13 @@ class ExecutorSubgraph:
         }
 
     def iteration_function(self, state: ExecutorState):
-        if state["error_text_data"] == "":
+        if state["judgment_result"] is True:
             return "finish"
-        if state["fix_iteration_count"] <= self.max_fix_iteration:
-            return "correction"
         else:
-            return "finish"
+            if state["fix_iteration_count"] < self.max_fix_iteration:
+                return "correction"
+            else:
+                return "finish"
 
     def build_graph(self) -> CompiledGraph:
         graph_builder = StateGraph(ExecutorState)
@@ -132,6 +149,7 @@ class ExecutorSubgraph:
             "retrieve_github_actions_artifacts_node",
             self._retrieve_github_actions_artifacts_node,
         )
+        graph_builder.add_node("llm_decide_node", self._llm_decide_node)
         graph_builder.add_node(
             "fix_code_with_devin_node", self._fix_code_with_devin_node
         )
@@ -145,8 +163,11 @@ class ExecutorSubgraph:
             "execute_github_actions_workflow_node",
             "retrieve_github_actions_artifacts_node",
         )
+        graph_builder.add_edge(
+            "retrieve_github_actions_artifacts_node", "llm_decide_node"
+        )
         graph_builder.add_conditional_edges(
-            "retrieve_github_actions_artifacts_node",
+            "llm_decide_node",
             self.iteration_function,
             {
                 "correction": "fix_code_with_devin_node",

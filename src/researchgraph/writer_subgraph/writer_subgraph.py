@@ -5,6 +5,7 @@ from langgraph.graph.graph import CompiledGraph
 from researchgraph.writer_subgraph.nodes.writeup_node import WriteupNode
 from researchgraph.writer_subgraph.nodes.latexnode import LatexNode
 from researchgraph.writer_subgraph.nodes.github_upload_node import GithubUploadNode
+from researchgraph.writer_subgraph.input_data import writer_subgraph_input_data
 
 
 class WriterState(TypedDict):
@@ -23,6 +24,7 @@ class WriterState(TypedDict):
     add_github_url: str
     base_github_url: str
     completion: bool
+    devin_url: str
 
 
 class WriterSubgraph:
@@ -112,3 +114,4 @@ if __name__ == "__main__":
         latex_template_file_path=latex_template_file_path,
         figures_dir=figures_dir,
     ).build_graph()
+    result = subgraph.invoke(writer_subgraph_input_data)
