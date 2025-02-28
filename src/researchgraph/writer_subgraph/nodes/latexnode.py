@@ -4,6 +4,7 @@ import re
 import subprocess
 import shutil
 import json
+import tempfile
 from pydantic import BaseModel
 
 from litellm import completion
@@ -78,10 +79,19 @@ class LatexNode:
 
         for section, value in content.items():
             placeholder = f"{section.upper()} HERE"
-            tex_text = tex_text.replace(placeholder, value)
+            if placeholder in tex_text:
+                tex_text = tex_text.replace(placeholder, value)
+                print(f"置換完了: {placeholder}")
+            else:
+                print(f"プレースホルダーが見つかりませんでした: {placeholder}")
 
         with open(self.template_copy_file, "w") as f:
             f.write(tex_text)
+
+        with open(self.template_copy_file, "r") as f:
+            updated_tex_text = f.read()
+
+        print("更新後の `template_copy.tex` 内容:\n", updated_tex_text)
 
         return tex_text
 
@@ -186,40 +196,43 @@ class LatexNode:
                 tex_text = llm_response
         return tex_text
 
-    def _fix_latex_errors(self, writeup_file: str) -> str:
+    def _fix_latex_errors(self, tex_text: str) -> str:
         # Fix LaTeX errors iteratively using chktex and automated suggestions
-        with open(writeup_file, "r") as f:
-            tex_text = f.read()
-        
         try:
-            check_output = os.popen(f"chktex {writeup_file} -q -n2 -n24 -n13 -n1").read()
+            with tempfile.NamedTemporaryFile(mode="w", suffix=".tex", delete=True) as tmp_file:
+                tmp_file.write(tex_text)
+                tmp_file.flush()
+
+                ignored_warnings = "-n2 -n24 -n13 -n1 -n8 -n29 -n36 -n44"
+                check_cmd = f"chktex {tmp_file.name} -q {ignored_warnings}"
+                check_output = os.popen(check_cmd).read()
+
+                if check_output:
+                    error_messages = check_output.strip().split("\n")
+                    formatted_errors = "\n".join(f"- {msg}" for msg in error_messages if msg)
+                    print(f"LaTeX エラー検出: {formatted_errors}")
+
+                    prompt = f"""
+                    LaTeX text:
+                    {tex_text}
+
+                    Please fix the following LaTeX errors: {formatted_errors}.      
+                    Make the minimal fix required and do not remove or change any packages unnecessarily.
+                    Pay attention to any accidental uses of HTML syntax, e.g. </end instead of \\end.
+
+                    Return the complete corrected LaTeX text.
+                    """
+                    print("LLMの実行")
+
+                    llm_response = self._call_llm(prompt)
+                    if not llm_response:
+                        raise RuntimeError("LLM failed to fix LaTeX errors")
+                    return llm_response
+                else:
+                    print("No LaTex errors found by chktex.")
+                    return tex_text
         except FileNotFoundError:
-            print("chktex command not found. Skipping latex checks.")
-            return tex_text
-
-        if check_output:
-            error_messages = check_output.strip().split("\n")
-            formatted_errors = "\n".join(f"- {msg}" for msg in error_messages if msg)
-            prompt = f"""
-            LaTeX text:
-            {tex_text}
-
-
-            Please fix the following LaTeX errors: {formatted_errors}.      
-            Make the minimal fix required and do not remove or change any packages unnecessarily.
-            Pay attention to any accidental uses of HTML syntax, e.g. </end instead of \\end.
-
-            Return the complete corrected LaTeX text.
-            """
-            print("LLMの実行")
-
-            llm_response = self._call_llm(prompt)
-
-            if not llm_response:
-                raise RuntimeError(f"LLM failed to fix latex errors for {writeup_file}")
-            return llm_response
-        else:
-            print("No LaTex errors found by chktex.")
+            print("chktex command not found. Skipping LaTeX checks.")
             return tex_text
 
     def _compile_latex(
@@ -267,6 +280,13 @@ class LatexNode:
             print("Failed to rename PDF.")
 
     def execute(self, paper_content: dict, pdf_file_path) -> str:
+        """
+        Main entry point:
+        1. Copy template
+        2. Fill placeholders
+        3. Iterate checks (refs, figures, duplicates, minimal error fix)
+        4. Compile
+        """
         self._copy_template()
         tex_text = self._fill_template(paper_content)
         max_iterations = 5
@@ -274,21 +294,22 @@ class LatexNode:
 
         while iteration_count < max_iterations:
             print(f"Start iteration: {iteration_count}")
-            print("Check references")
+
+            print("Check references...")
             original_tex_text = tex_text
             tex_text = self._check_references(tex_text)
             if tex_text != original_tex_text:
                 iteration_count += 1
                 continue
 
-            print("Check figures")
+            print("Check figures...")
             original_tex_text = tex_text
             tex_text = self._check_figures(tex_text, self.figures_dir)
             if tex_text != original_tex_text:
                 iteration_count += 1
                 continue
 
-            print("Check duplicates")
+            print("Check duplicates...")
             original_tex_text = tex_text
             tex_text = self._check_duplicates(
                 tex_text,
@@ -301,9 +322,9 @@ class LatexNode:
                 iteration_count += 1
                 continue
 
-            print("Fix latex errors")
+            print("Check LaTeX errors...")
             original_tex_text = tex_text
-            tex_text = self._fix_latex_errors(self.template_copy_file)
+            tex_text = self._fix_latex_errors(tex_text)
             if tex_text != original_tex_text:
                 iteration_count += 1
                 continue
