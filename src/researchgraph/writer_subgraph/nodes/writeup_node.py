@@ -137,7 +137,7 @@ Here is the context of the entire paper:
 - Be sure to use \cite or \citet where relevant, referring to the works provided in the file.
     - **Do not cite anything that is not already in `references.bib`. Do not add any new entries to this.
 - Keep the experimental results (figures and tables) only in the Results section, and make sure that any captions are filled in.
-- The full paper should be **about 10 pages long**, meaning **each section should contain substantial content**.
+- The full paper should be **about 8 pages long**, meaning **each section should contain substantial content**.
 """
 
         self.refinement_template = """
@@ -177,7 +177,7 @@ Here is the context of the entire paper:
     - Additionally, avoid including section-specific commands such as \\begin{abstract}, \\section{ {{ section }} }, or any other similar environment definitions.
 - Identify any redundancies (e.g. repeated figures or repeated text), if there are any, decide where in the paper things should be cut.
 - Identify where we can save space, and be more concise without weakening the message of the text.
-- The full paper should be **about 10 pages long**, meaning **each section should contain substantial content**.
+- The full paper should be **about 8 pages long**, meaning **each section should contain substantial content**.
 Pay particular attention to fixing any errors such as:
 {{ error_list_prompt }}"""
 
