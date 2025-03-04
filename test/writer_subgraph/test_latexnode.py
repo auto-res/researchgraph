@@ -183,9 +183,9 @@ def test_fix_latex_no_errors(mock_popen, latex_node, test_environment):
     \end{document}
     """
     
-    test_environment["template_file"].write_text(original_tex_text)
+    original_tex_text = test_environment["template_file"].read_text()
 
-    result_text = latex_node._fix_latex_errors(str(test_environment["template_file"]))
+    result_text = latex_node._fix_latex_errors(original_tex_text)
     assert result_text == original_tex_text
 
 
@@ -195,7 +195,8 @@ def test_fix_latex_errors(mock_popen, latex_node, test_environment):
     mock_popen.return_value.read.return_value = "1: Undefined control sequence."
 
     with patch.object(latex_node, "_call_llm", return_value="Fixed LaTeX text") as mock_llm:
-        result_text = latex_node._fix_latex_errors(str(test_environment["template_file"]))
+        tex_text_with_error = test_environment["template_file"].read_text() + r"\undefinedcommand"
+        result_text = latex_node._fix_latex_errors(tex_text_with_error)
         assert result_text == "Fixed LaTeX text"
         mock_llm.assert_called_once()
 

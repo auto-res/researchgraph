@@ -13,7 +13,7 @@ regex_rules = {
     "Methods": r".*_method_text$",
     "Codes": r".*_method_code$",
     "Results": r".*_results$",
-    "Analyses": r".*_analysis$",
+    "Analysis": r".*_analysis$",
     # "Related Work": r"^(arxiv_url|github_url)$"
 }
 
@@ -46,17 +46,21 @@ class WriteupNode:
         ]
         self.per_section_tips_prompt_dict = {
             "Title": """
-- Write only the title of the paper, in **one single line**.
+- Write only the title of the paper in one single line, as plain text with no quotation marks.
+    - Example of correct output: Efficient Adaptation of Large Language Models via Low-Rank Optimization
+    - Incorrect output: "Efficient Adaptation of Large Language Models via Low-Rank Optimization"
 - The title must be concise and descriptive of the paper's concept, but try by creative with it.
-- Do not include any explanations, descriptions, comments, or additional sentences—**strictly output only the title**.""",
+- Do not include any explanations, subsections, LaTeX commands (\\title{...}, etc.)""", 
             "Abstract": """
+- Expected length: about 1000 words
 - TL;DR of the paper
 - What are we trying to do and why is it relevant?
 - Why is this hard? 
 - How do we solve it (i.e. our contribution!)
 - How do we verify that we solved it (e.g. Experiments and results)
-Please make sure the abstract reads smoothly and is well-motivated. This should be one continuous paragraph with no breaks between the lines.""",
+- Please make sure the abstract reads smoothly and is well-motivated. This should be one continuous paragraph with no breaks between the lines.""",
             "Introduction": """
+- Expected length: about 4000 words (~1–1.5 pages)
 - Longer version of the Abstract, i.e. of the entire paper
 - What are we trying to do and why is it relevant?
 - Why is this hard? 
@@ -65,20 +69,25 @@ Please make sure the abstract reads smoothly and is well-motivated. This should 
 - New trend: specifically list your contributions as bullet points
 - Extra space? Future work!""",
             "Related Work": """
+- Expected length: about 3000 words (~1 pages)
 - Academic siblings of our work, i.e. alternative attempts in literature at trying to solve the same problem. 
 - Goal is to “Compare and contrast” - how does their approach differ in either assumptions or method? If their method is applicable to our Problem Setting I expect a comparison in the experimental section. If not, there needs to be a clear statement why a given method is not applicable. 
 - Note: Just describing what another paper is doing is not enough. We need to compare and contrast.""",
             "Background": """
+- Expected length: about 3000 words (~1 pages)
 - Academic Ancestors of our work, i.e. all concepts and prior work that are required for understanding our method. 
 - Usually includes a subsection, Problem Setting, which formally introduces the problem setting and notation (Formalism) for our method. Highlights any specific assumptions that are made that are unusual. 
 - Note: If our paper introduces a novel problem setting as part of its contributions, it's best to have a separate Section.""",
             "Method": """
+- Expected length: about 4000 words (~1–1.5 pages)
 - What we do. Why we do it. All described using the general Formalism introduced in the Problem Setting and building on top of the concepts / foundations introduced in Background.""",
             "Experimental Setup": """
+- Expected length: about 4000 words (~1–1.5 pages)
 - How do we test that our stuff works? Introduces a specific instantiation of the Problem Setting and specific implementation details of our Method for this Problem Setting.
 - Do not imagine unknown hardware details.
 - Includes a description of the dataset, evaluation metrics, important hyperparameters, and implementation details.""",
             "Results": """
+- Expected length: about 4000 words (~1–1.5 pages)
 - Shows the results of running Method on our problem described in Experimental Setup.
 - Includes statements on hyperparameters and other potential issues of fairness.
 - Only includes results that have actually been run and saved in the logs. Do not hallucinate results that don't exist.
@@ -87,59 +96,88 @@ Please make sure the abstract reads smoothly and is well-motivated. This should 
 - Discusses limitations of the method.
 - Make sure to include all the results from the experiments, and include all relevant figures.""",
             "Conclusions": """
+- Expected length: about 2000 words (~0.5 pages)
+- Do not include \section{...} or \subsection{...}.
 - Brief recap of the entire paper.
 - To keep going with the analogy, you can think of future work as (potential) academic offspring.""",
         }
 
         self.write_prompt_template = """
 You are tasked with filling in the '{{ section }}' section of a research paper.
-The generated text should be output as a value for the key “generated_papet_text”.
+
+A complete LaTeX template is already in place.
+Your role is to generate the LaTeX content specifically for the designated section, such as text, equations, figures, tables, and citations—all within the existing document structure.
+
+The generated text should be output as a value for the key “generated_paper_text”.
 The value of "generated_paper_text" should be the content of the '{{ section }}' section in LaTeX format.
+
 Some tips are provided below:
 {{ tips }}
+
 Here is the context of the entire paper:
 {{ note }}
+
 **Instructions**:
 - Use ONLY the provided information in the context. 
-    -**DO NOT add any assumptions, invented data, or details that are not explicitly mentioned in the context.
-- Avoid placeholders, speculative text, or comments like "details are missing."
-- Do not include section headings such as \section{...}. 
-    -**Use \subsection{Subsection Title} for any subsections within this section.** The titles of the subsections should be derived from the content you are generating. The "Title" section should not have any subsections.
-    - Ensure that identical or similar {{ section }} sections are completely removed. Subsection names should be derived from the content of the section.
+    - **DO NOT add any assumptions, invented data, or details that are not explicitly mentioned in the context.
+- **Use ALL information from '{{ note }}'.** However, you are free to organize and structure the content in a natural and logical way, rather than directly following the order or format of `{{ note }}`
+    - **It is mandatory to include all details related to methods, experiments, and results.**
+    - **Ensure all mathematical equations, pseudocode, experimental setups, configurations, numerical results, and figures/tables are fully incorporated.**
+    - When beneficial for clarity, utilize tables or pseudocode to describe mathematical equations, parameter settings, and procedural steps.
+    - Avoid overly explanatory or repetitive descriptions that would be self-evident to readers familiar with standard machine learning notation.
+- Avoid editor instructions, placeholders, speculative text, or comments like "details are missing."
+    - Example: Remove phrases like "Here’s a refined version of the '{{ section }}'," as they are not part of the final document.
+    - These phrases are found at the beginning of sections, introducing edits or refinements. Carefully review the start of each section for such instructions and ensure they are eliminated while preserving the actual content.
+- **Use \\subsection{...} for any subsections within this section.**
+    - Subsection titles should be distinct from the '{{ section }}' title. 
+    - **Do not use '\\subsection{ {{ section }} }', or other slight variations. Use more descriptive and unique titles.
+    - Avoid creating too many subsections. If the content of a subsection is brief or overlaps significantly with other subsections, merge them to streamline the document. Focus on clarity and brevity over excessive structural division.
+- Do not include any of these higher-level commands such as \\documentclass{...}, \\begin{document}, and \\end{document}.
+    - Additionally, avoid including section-specific commands such as \\begin{abstract}, \\section{ {{ section }} }, or any other similar environment definitions.
 - Be sure to use \cite or \citet where relevant, referring to the works provided in the file.
-    -**Do not cite anything that is not already in `references.bib`. Do not add any new entries to this.
+    - **Do not cite anything that is not already in `references.bib`. Do not add any new entries to this.
 - Keep the experimental results (figures and tables) only in the Results section, and make sure that any captions are filled in.
-- Ensure that editor instructions are completely removed:
-  - Example: Remove phrases like "Here’s a refined version of the Background section," as they are not part of the final document.
-  - These phrases are found at the beginning of sections, introducing edits or refinements. Carefully review the start of each section for such instructions and ensure they are eliminated while preserving the actual content.
-Before every paragraph, please include a brief description of what you plan to write in that paragraph in a LaTeX comment (% ...).
-Be sure to first name the file and use *SEARCH/REPLACE* blocks to perform these edits.
-
+- The full paper should be **about 8 pages long**, meaning **each section should contain substantial content**.
 """
 
         self.refinement_template = """
-Great job! Now criticize and refine only the {{ section }} that you just wrote. Return the refined content as a JSON object with the key "paper_text".
-The generated text should be output as a value for the key “generated_papet_text”.
+You are tasked with refining in the '{{ section }}' section of a research paper.
+
+A complete LaTeX template is already in place.
+Your role is to refine the LaTeX content specifically for the designated section, such as text, equations, figures, tables, and citations—all within the existing document structure.
+
+The refined text should be output as a value for the key “generated_paper_text”.
 The value of "generated_paper_text" should be the refined content of the '{{ section }}' section in LaTeX format.
+
 Here is the content that needs refinement:
 {{ content }}
+
 Some tips are provided below:
 {{ tips }}
+
 Here is the context of the entire paper:
 {{ note }}
+
 **Instructions**:
 - Use ONLY the provided information in the context. 
-    -**DO NOT add any assumptions, invented data, or details that are not explicitly mentioned in the context.
-- Avoid placeholders, speculative text, or comments like "details are missing."
-- Do not include section headings such as \section{...}. 
-    -**Convert all headings into subsections using \subsection{...}, except for the "Title" section. 
-    - Ensure that identical or similar sections are completely removed. The titles of the subsections should be derived from the content you are generating.
+    - **DO NOT add any assumptions, invented data, or details that are not explicitly mentioned in the context.
+- **Use ALL information from '{{ note }}'.** However, you are free to organize and structure the content in a natural and logical way, rather than directly following the order or format of `{{ note }}`
+    - **It is mandatory to include all details related to methods, experiments, and results.**
+    - **Ensure all mathematical equations, pseudocode, experimental setups, configurations, numerical results, and figures/tables are fully incorporated.**
+    - When beneficial for clarity, utilize tables or pseudocode to describe mathematical equations, parameter settings, and procedural steps.
+    - Avoid overly explanatory or repetitive descriptions that would be self-evident to readers familiar with standard machine learning notation.
+- Avoid editor instructions, placeholders, speculative text, or comments like "details are missing."
+    - Example: Remove phrases like "Here’s a refined version of the '{{ section }}'," as they are not part of the final document.
+    - These phrases are found at the beginning of sections, introducing edits or refinements. Carefully review the start of each section for such instructions and ensure they are eliminated while preserving the actual content.
+- **Use \\subsection{...} for any subsections within this section.**
+    - Subsection titles should be distinct from the '{{ section }}' title. 
+    - **Do not use '\\subsection{ {{ section }} }', or other slight variations. Use more descriptive and unique titles.
     - Avoid creating too many subsections. If the content of a subsection is brief or overlaps significantly with other subsections, merge them to streamline the document. Focus on clarity and brevity over excessive structural division.
+- Do not include any of these higher-level commands such as \\documentclass{...}, \\begin{document}, and \\end{document}.
+    - Additionally, avoid including section-specific commands such as \\begin{abstract}, \\section{ {{ section }} }, or any other similar environment definitions.
 - Identify any redundancies (e.g. repeated figures or repeated text), if there are any, decide where in the paper things should be cut.
 - Identify where we can save space, and be more concise without weakening the message of the text.
-- Ensure that editor instructions are completely removed:
-  - Example: Remove phrases like "Here’s a refined version of the Background section," as they are not part of the final document.
-  - These phrases are found at the beginning of sections, introducing edits or refinements. Carefully review the start of each section for such instructions and ensure they are eliminated while preserving the actual content.
+- The full paper should be **about 8 pages long**, meaning **each section should contain substantial content**.
 Pay particular attention to fixing any errors such as:
 {{ error_list_prompt }}"""
 
@@ -244,44 +282,6 @@ Pay particular attention to fixing any errors such as:
             error_list_prompt=self.error_list_prompt,
         )
 
-    def _clean_meta_information(
-        self, text: str
-    ) -> str:  # TODO: Combine with prompts to more accurately remove unnecessary meta-information and artifacts.
-        meta_patterns = [
-            r"Here(?: is|'s)(?:.*?version.*?)(\.|\n)",
-            r"This section discusses.*?(\.|\n)",
-            r"Before every paragraph.*?(\.|\n)",
-            r"Refinement Pass \d+.*?(\.|\n)",
-            r"Do not include.*?(\.|\n)",
-            r"Certainly!.*?(\.|\n)",
-            r"_.*?@cref",
-            r"^\s*[-*]\s+.*?$",  # Bullet point instructions (e.g., "- Be concise.")
-            r"^(```|''')[\w]*\n",  # Opening code block markers (e.g., ```latex)
-            r"(```|''')\s*$",  # Closing code block markers
-            r"\[\s*[a-zA-Z\s]+\s*\]",  # Unresolved placeholders (e.g., [specific reason])
-            r"^%\s*.*$",  # Lines starting with '%'
-            r"---\n",
-        ]
-        combined_pattern = "|".join(meta_patterns)
-        text = re.sub(
-            combined_pattern, "", text, flags=re.DOTALL | re.IGNORECASE | re.MULTILINE
-        )
-
-        text = re.sub(
-            r"^#{1,}\s*", "", text, flags=re.MULTILINE
-        )  # Remove '###' but keep the title content
-        text = re.sub(
-            r"([_%&#$])", r"\\\1", text
-        )  # Escape LaTeX special characters: _, %, &, #, $
-        text = re.sub(
-            r"\*\*(.*?)\*\*", r"\\textbf{\1}", text
-        )  # Convert Markdown bold (**text**) to LaTeX bold (\textbf{text})
-        text = re.sub(
-            r"(\n\s*){2,}", "\n\n", text.strip()
-        )  # Replace consecutive blank lines (2 or more) with a single blank line
-        cleaned_text = "\n".join(line.strip() for line in text.splitlines())
-        return cleaned_text
-
     def execute(self, state: dict) -> dict:
         note = self._generate_note(state)
         paper_content = {}
@@ -291,8 +291,8 @@ Pay particular attention to fixing any errors such as:
                 # generate and refine
                 initial_content = self._write(note, section)
                 # initial_content = self._relate_work(initial_content)
-                cleaned_initial_content = self._clean_meta_information(initial_content)
-                refined_content = self._refine(note, section, cleaned_initial_content)
+                # cleaned_initial_content = self._clean_meta_information(initial_content)
+                refined_content = self._refine(note, section, initial_content)
                 # refined_content = self._refine(note, section, initial_content)
             else:
                 # refine only
@@ -300,8 +300,8 @@ Pay particular attention to fixing any errors such as:
                 # initial_content = getattr(state, section)
                 refined_content = self._refine(note, section, initial_content)
 
-            final_content = self._clean_meta_information(refined_content)
-            paper_content[section] = final_content
+            #final_content = self._clean_meta_information(refined_content)
+            paper_content[section] = refined_content
         return paper_content
 
 
@@ -368,24 +368,3 @@ Pay particular attention to fixing any errors such as:
 # - "Description": Update the previous description of the required edit if needed. Ensure that any cites precisely match the name in the bibtex!!!
 # Do not select papers that are already in the `references.bib` file at the top of the draft, or if the same citation exists under a different name.
 # This JSON will be automatically parsed, so ensure the format is precise."""
-
-if __name__ == "__main__":
-    state = {
-        "objective": "Researching optimizers for fine-tuning LLMs.",
-        "base_method_text": "Baseline method description...",
-        "add_method_text": "Added method description...",
-        "new_method_text": ["New combined method description..."],
-        "base_method_code": "def base_method(): pass",
-        "add_method_code": "def add_method(): pass",
-        "new_method_code": ["def new_method(): pass"],
-        "base_method_results": "Accuracy: 0.85",
-        "add_method_results": "Accuracy: 0.88",
-        "new_method_results": ["Accuracy: 0.92"],
-    }
-    llm_name = "gpt-4o-2024-11-20"
-    refine_round = 2
-    paper_content = WriteupNode(
-        llm_name=llm_name,
-        refine_round=refine_round,
-    ).execute(state)
-    print(paper_content)
