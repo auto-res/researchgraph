@@ -22,21 +22,8 @@
         "oderwat.indent-rainbow", // Indent Rainbow
         "tomoki1207.pdf", // PDF viewer
         "ms-ceintl.vscode-language-pack-ja", // Japanese Language Pack
-        "rapidapi.vscode-rapidapi-client" // RapidAPI
-			],
-            "settings": {
-                "python.analysis.inlayHints.variableTypes": true,
-                "python.analysis.inlayHints.functionReturnTypes": true,
-                "editor.minimap.enabled": false, // ミニマップを非表示にする
-                "files.autoGuessEncoding": true, // ファイルの自動エンコードを実施
-                "editor.bracketPairColorization.enabled": true, // 括弧の対応を色付ける
-                // pytestの設定
-                "python.testing.pytestArgs": [
-                  "test"
-                ],
-                "python.testing.unittestEnabled": false,
-                "python.testing.pytestEnabled": true
-            }
+        "saoudrizwan.claude-dev" // Claine
+			]
 		}
 	}
 }
