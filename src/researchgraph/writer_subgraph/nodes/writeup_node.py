@@ -10,9 +10,9 @@ env = Environment()
 # NOTE: These regex rules are used to classify the keys in state[""] into specific sections.
 regex_rules = {
     "Title": r"^(title|objective)$",
-    "Methods": r".*_method_text$",
-    "Codes": r".*_method_code$",
-    "Results": r".*_results$",
+    "Methods": r"^(new_method|verification_policy|experiment_details)$",
+    "Codes": r"^(experiment_code)$",
+    "Results": r"^(output_text_data)$",
     "Analysis": r".*_analysis$",
     # "Related Work": r"^(arxiv_url|github_url)$"
 }
@@ -50,7 +50,7 @@ class WriteupNode:
     - Example of correct output: Efficient Adaptation of Large Language Models via Low-Rank Optimization
     - Incorrect output: "Efficient Adaptation of Large Language Models via Low-Rank Optimization"
 - The title must be concise and descriptive of the paper's concept, but try by creative with it.
-- Do not include any explanations, subsections, LaTeX commands (\\title{...}, etc.)""", 
+- Do not include any explanations, subsections, LaTeX commands (\\title{...}, etc.)""",
             "Abstract": """
 - Expected length: about 1000 words
 - TL;DR of the paper
@@ -207,9 +207,9 @@ Pay particular attention to fixing any errors such as:
         {% endfor %}
         """)
 
-        sections = {}
+        sections: dict[str, dict] = {}
         for section, pattern in regex_rules.items():
-            matched_items = {}
+            matched_items: dict[str, str] = {}
             for key, value in state.items():
                 if re.search(pattern, key):
                     matched_items[key] = (
@@ -220,7 +220,7 @@ Pay particular attention to fixing any errors such as:
         return template.render(sections=sections)
 
     def _call_llm(self, prompt: str, max_retries: int = 3) -> str:
-        for attempt in range(max_retries): 
+        for attempt in range(max_retries):
             try:
                 response = completion(
                     model=self.llm_name,
@@ -240,7 +240,9 @@ Pay particular attention to fixing any errors such as:
         prompt = self._generate_write_prompt(section_name, note)
         content = self._call_llm(prompt)
         if not content:
-            raise RuntimeError(f"Failed to generate content for section: {section_name}. The LLM returned None.")
+            raise RuntimeError(
+                f"Failed to generate content for section: {section_name}. The LLM returned None."
+            )
         return content
 
     def _refine(self, note: str, section_name: str, content: str) -> str:
@@ -248,7 +250,9 @@ Pay particular attention to fixing any errors such as:
             prompt = self._generate_refinement_prompt(section_name, note, content)
             refine_content = self._call_llm(prompt)
             if not refine_content:
-                print(f"Refinement failed for {section_name} at round {round_num + 1}. Keeping previous content.")
+                print(
+                    f"Refinement failed for {section_name} at round {round_num + 1}. Keeping previous content."
+                )
                 break
             content = refine_content
         return content
@@ -300,7 +304,7 @@ Pay particular attention to fixing any errors such as:
                 # initial_content = getattr(state, section)
                 refined_content = self._refine(note, section, initial_content)
 
-            #final_content = self._clean_meta_information(refined_content)
+            # final_content = self._clean_meta_information(refined_content)
             paper_content[section] = refined_content
         return paper_content
 

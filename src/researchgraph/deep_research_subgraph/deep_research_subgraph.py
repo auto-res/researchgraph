@@ -68,8 +68,8 @@ class DeepResearchSubgraph:
 
 if __name__ == "__main__":
     graph = DeepResearchSubgraph(
-        breadth=4,
-        depth=3,
+        breadth=2,
+        depth=2,
     ).build_graph()
 
     async def main():

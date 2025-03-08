@@ -3,16 +3,16 @@ from langgraph.graph import START, END, StateGraph
 from langgraph.graph.graph import CompiledGraph
 
 from researchgraph.executor_subgraph.nodes.generate_code_with_devin import (
-    GenerateCodeWithDevinNode,
+    generate_code_with_devin,
 )
 from researchgraph.executor_subgraph.nodes.execute_github_actions_workflow import (
-    ExecuteGithubActionsWorkflowNode,
+    execute_github_actions_workflow,
 )
 from researchgraph.executor_subgraph.nodes.retrieve_github_actions_artifacts import (
-    RetrieveGithubActionsArtifactsNode,
+    retrieve_github_actions_artifacts,
 )
 from researchgraph.executor_subgraph.nodes.fix_code_with_devin import (
-    FixCodeWithDevinNode,
+    fix_code_with_devin,
 )
 from researchgraph.executor_subgraph.nodes.llm_decide import llm_decide
 
@@ -22,10 +22,8 @@ from researchgraph.executor_subgraph.input_data import (
 
 
 class ExecutorState(TypedDict):
-    new_detailed_description_of_methodology: str
-    new_novelty: str
-    new_experimental_procedure: str
-    new_method_code: str
+    new_method: str
+    experiment_code: str
 
     branch_name: str
     github_owner: str
@@ -49,17 +47,11 @@ class ExecutorSubgraph:
 
     def _generate_code_with_devin_node(self, state: ExecutorState) -> dict:
         print("---ExecutorSubgraph---")
-
-        print("generate_code_with_devin_node")
-        session_id, branch_name, devin_url = GenerateCodeWithDevinNode().execute(
+        session_id, branch_name, devin_url = generate_code_with_devin(
             github_owner=state["github_owner"],
             repository_name=state["repository_name"],
-            new_detailed_description_of_methodology=state[
-                "new_detailed_description_of_methodology"
-            ],
-            new_novelty=state["new_novelty"],
-            new_experimental_procedure=state["new_experimental_procedure"],
-            new_method_code=state["new_method_code"],
+            new_method=state["new_method"],
+            experiment_code=state["experiment_code"],
         )
 
         return {
@@ -69,28 +61,22 @@ class ExecutorSubgraph:
         }
 
     def _execute_github_actions_workflow_node(self, state: ExecutorState) -> dict:
-        print("execute_github_actions_workflow_node")
-        github_owner = state["github_owner"]
-        repository_name = state["repository_name"]
-        branch_name = state["branch_name"]
-        workflow_run_id = ExecuteGithubActionsWorkflowNode().execute(
-            github_owner=github_owner,
-            repository_name=repository_name,
-            branch_name=branch_name,
+        workflow_run_id = execute_github_actions_workflow(
+            github_owner=state["github_owner"],
+            repository_name=state["repository_name"],
+            branch_name=state["branch_name"],
         )
         return {
             "workflow_run_id": workflow_run_id,
         }
 
     def _retrieve_github_actions_artifacts_node(self, state: ExecutorState) -> dict:
-        print("retrieve_github_actions_artifacts_node")
-        github_owner = state["github_owner"]
-        repository_name = state["repository_name"]
-        workflow_run_id = state["workflow_run_id"]
-        save_dir = state["save_dir"]
-        fix_iteration_count = state["fix_iteration_count"]
-        output_text_data, error_text_data = (
-            RetrieveGithubActionsArtifactsNode().execute(github_owner=github_owner, repository_name=repository_name, workflow_run_id=workflow_run_id, save_dir=save_dir, fix_iteration_count=fix_iteration_count)
+        output_text_data, error_text_data = retrieve_github_actions_artifacts(
+            github_owner=state["github_owner"],
+            repository_name=state["repository_name"],
+            workflow_run_id=state["workflow_run_id"],
+            save_dir=state["save_dir"],
+            fix_iteration_count=state["fix_iteration_count"],
         )
         return {
             "output_text_data": output_text_data,
@@ -98,7 +84,6 @@ class ExecutorSubgraph:
         }
 
     def _llm_decide_node(self, state: ExecutorState) -> dict:
-        print("llm_decide_node")
         output_text_data = state["output_text_data"]
         error_text_data = state["error_text_data"]
         judgment_result = llm_decide(
@@ -111,16 +96,11 @@ class ExecutorSubgraph:
         }
 
     def _fix_code_with_devin_node(self, state: ExecutorState) -> dict:
-        print("fix_code_with_devin_node")
-        session_id = state["session_id"]
-        output_text_data = state["output_text_data"]
-        error_text_data = state["error_text_data"]
-        fix_iteration_count = state["fix_iteration_count"]
-        fix_iteration_count = FixCodeWithDevinNode().execute(
-            session_id=session_id,
-            output_text_data=output_text_data,
-            error_text_data=error_text_data,
-            fix_iteration_count=fix_iteration_count,
+        fix_iteration_count = fix_code_with_devin(
+            session_id=state["session_id"],
+            output_text_data=state["output_text_data"],
+            error_text_data=state["error_text_data"],
+            fix_iteration_count=state["fix_iteration_count"],
         )
         return {
             "fix_iteration_count": fix_iteration_count,

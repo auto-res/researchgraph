@@ -1,13 +1,13 @@
 # ResearchGraph
+ResearchGraph is created by [AutoRes](https://www.autores.one/english).
+ResearchGraph is an OSS that aims to automate complete machine learning research and to self-improve the automatic research system.  
+ResearchGraphは[AutoRes](https://www.autores.one/japanese)というプロジェクトで作成しています．
+ResearchGraphは完全な機械学習研究の自動化および，自動研究システムの自己改善を目的としたOSSになります．
 
-ResearchGraphは完全な研究の自動化を目的としたOSSになります．
+## Explanation
 
-## ResearchGraph
-全てのサブグラフを実行します．(現在はDeep Research Subgraphを組み込めていません)
 
-```python
-python src/researchgraph/research_graph.py
-```
+### ResearchGraph Architecture
 
 <details>
 
@@ -35,68 +35,9 @@ graph TD;
 </details>
 
 
-## Retrieve paper subgraph
-ベースにする研究論文とそれに追加する技術の論文を取得するためのサブグラフです．
 
-```python
-python src/researchgraph/retrieve_paper_subgraph/retrieve_paper_subgraph.py
-```
-
-
-<details>
-
-<summary>Architecture</summary>
-
-```mermaid
-%%{init: {'flowchart': {'curve': 'linear'}}}%%
-graph TD;
-        __start__([<p>__start__</p>]):::first
-        initialize_state(initialize_state)
-        base_search_papers_node(base_search_papers_node)
-        base_retrieve_arxiv_full_text_node(base_retrieve_arxiv_full_text_node)
-        base_extract_github_urls_node(base_extract_github_urls_node)
-        base_summarize_paper_node(base_summarize_paper_node)
-        base_select_best_paper_node(base_select_best_paper_node)
-        generate_queries_node(generate_queries_node)
-        add_search_papers_node(add_search_papers_node)
-        add_retrieve_arxiv_full_text_node(add_retrieve_arxiv_full_text_node)
-        add_extract_github_urls_node(add_extract_github_urls_node)
-        add_summarize_paper_node(add_summarize_paper_node)
-        add_select_best_paper_node(add_select_best_paper_node)
-        __end__([<p>__end__</p>]):::last
-        __start__ --> initialize_state;
-        add_retrieve_arxiv_full_text_node --> add_extract_github_urls_node;
-        add_search_papers_node --> add_retrieve_arxiv_full_text_node;
-        add_select_best_paper_node --> __end__;
-        base_retrieve_arxiv_full_text_node --> base_extract_github_urls_node;
-        base_search_papers_node --> base_retrieve_arxiv_full_text_node;
-        base_select_best_paper_node --> generate_queries_node;
-        generate_queries_node --> add_search_papers_node;
-        initialize_state --> base_search_papers_node;
-        base_extract_github_urls_node -. &nbsp;Next paper&nbsp; .-> base_retrieve_arxiv_full_text_node;
-        base_extract_github_urls_node -. &nbsp;Generate paper summary&nbsp; .-> base_summarize_paper_node;
-        base_extract_github_urls_node -. &nbsp;All complete&nbsp; .-> base_select_best_paper_node;
-        base_summarize_paper_node -. &nbsp;Next paper&nbsp; .-> base_retrieve_arxiv_full_text_node;
-        base_summarize_paper_node -. &nbsp;All complete&nbsp; .-> base_select_best_paper_node;
-        add_extract_github_urls_node -. &nbsp;Next paper&nbsp; .-> add_retrieve_arxiv_full_text_node;
-        add_extract_github_urls_node -. &nbsp;Generate paper summary&nbsp; .-> add_summarize_paper_node;
-        add_extract_github_urls_node -. &nbsp;All complete&nbsp; .-> add_select_best_paper_node;
-        add_summarize_paper_node -. &nbsp;Next paper&nbsp; .-> add_retrieve_arxiv_full_text_node;
-        add_summarize_paper_node -. &nbsp;All complete&nbsp; .-> add_select_best_paper_node;
-        classDef default fill:#f2f0ff,line-height:1.2
-        classDef first fill-opacity:0
-        classDef last fill:#bfb6fc
-```
-</details>
-
-
-## Deep Research Subgraph
+- Deep Research Subgraph
 Web上から情報を取得するためのサブグラフです．
-
-```python
-python src/researchgraph/deep_research_subgraph/deep_research_subgraph.py
-```
-
 
 <details>
 
@@ -119,13 +60,8 @@ graph TD;
 </details>
 
 
-## Integrate Generator Subgraph
+- Generator Subgraph
 手法を合成するためのサブグラフです．
-
-```python
-python src/researchgraph/integrate_generator_subgraph/integrate_generator_subgraph.py
-```
-
 
 <details>
 
@@ -151,13 +87,8 @@ graph TD;
 </details>
 
 
-## Executor Subgraph
+- Executor Subgraph
 新規の手法をコーディングし実行するためのサブグラフです．
-
-```python
-python src/researchgraph/executor_subgraph/executor_subgraph.py
-```
-
 
 <details>
 
@@ -185,13 +116,8 @@ graph TD;
 </details>
 
 
-## Writer Subgraph
+- Writer Subgraph
 論文を執筆するためのサブグラフです．執筆した論文はGitHub上にアップロードされます．
-
-```python
-python src/researchgraph/writer_subgraph/writer_subgraph.py
-```
-
 
 <details>
 
@@ -214,3 +140,35 @@ graph TD;
         classDef last fill:#bfb6fc
 ```
 </details>
+
+
+### Result
+The following is a repository that summarizes the results of ResearchGraph.
+- [auto-research](https://github.com/auto-res2/auto-research)
+
+
+
+## Settings
+
+
+## How to execute
+- Research Graph
+```python
+python src/researchgraph/research_graph.py
+```
+- Deep Research Subgraph
+```python
+python src/researchgraph/deep_research_subgraph/deep_research_subgraph.py
+```
+- Generate Subgraph
+```python
+python src/researchgraph/integrate_generator_subgraph/integrate_generator_subgraph.py
+```
+- Executor Subgraph
+```python
+python src/researchgraph/executor_subgraph/executor_subgraph.py
+```
+- writer subgraph
+```python
+python src/researchgraph/writer_subgraph/writer_subgraph.py
+```

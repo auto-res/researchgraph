@@ -26,8 +26,9 @@ def llm_decide(
     output_text_data: str,
     error_text_data: str,
     prompt_template: str = llm_decide_prompt,
-    max_retries: int = 3, 
-) -> bool:
+    max_retries: int = 3,
+) -> bool | None:
+    print("llm_decide_node")
     data = {"output_text_data": output_text_data, "error_text_data": error_text_data}
 
     env = Environment()
@@ -50,7 +51,7 @@ def llm_decide(
         except Exception as e:
             print(f"[Attempt {attempt+1}/{max_retries}] Error calling LLM: {e}")
     print("Exceeded maximum retries for LLM call.")
-    return None   
+    return None
 
 
 if __name__ == "__main__":

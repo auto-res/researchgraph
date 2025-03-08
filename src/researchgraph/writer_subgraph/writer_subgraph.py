@@ -4,7 +4,6 @@ from langgraph.graph.graph import CompiledGraph
 
 from researchgraph.writer_subgraph.nodes.writeup_node import WriteupNode
 from researchgraph.writer_subgraph.nodes.latexnode import LatexNode
-from researchgraph.writer_subgraph.nodes.github_upload_node import GithubUploadNode
 from researchgraph.writer_subgraph.input_data import writer_subgraph_input_data
 
 
@@ -16,15 +15,9 @@ class WriterState(TypedDict):
     base_method_code: str
     add_method_code: str
     new_method_code: list
+
     paper_content: dict
     pdf_file_path: str
-    github_owner: str
-    repository_name: str
-    branch_name: str
-    add_github_url: str
-    base_github_url: str
-    completion: bool
-    devin_url: str
 
 
 class WriterSubgraph:
@@ -63,42 +56,15 @@ class WriterSubgraph:
         )
         return {"pdf_file_path": pdf_file_path}
 
-    def _github_upload_node(self, state: WriterState) -> dict:
-        pdf_file_path = state["pdf_file_path"]
-        github_owner = state["github_owner"]
-        repository_name = state["repository_name"]
-        branch_name = state["branch_name"]
-        title = state["paper_content"]["Title"]
-        abstract = state["paper_content"]["Abstract"]
-        add_github_url = state["add_github_url"]
-        base_github_url = state["base_github_url"]
-        devin_url = state["devin_url"]
-        all_logs = state
-        completion = GithubUploadNode().execute(
-            pdf_file_path=pdf_file_path,
-            github_owner=github_owner,
-            repository_name=repository_name,
-            branch_name=branch_name,
-            title=title,
-            abstract=abstract,
-            add_github_url=add_github_url,
-            base_github_url=base_github_url,
-            devin_url=devin_url,
-            all_logs=all_logs,
-        )
-        return {"completion": completion}
-
     def build_graph(self) -> CompiledGraph:
         graph_builder = StateGraph(WriterState)
         # make nodes
         graph_builder.add_node("writeup_node", self._writeup_node)
         graph_builder.add_node("latex_node", self._latex_node)
-        graph_builder.add_node("github_upload_node", self._github_upload_node)
         # make edges
         graph_builder.add_edge(START, "writeup_node")
         graph_builder.add_edge("writeup_node", "latex_node")
-        graph_builder.add_edge("latex_node", "github_upload_node")
-        graph_builder.add_edge("github_upload_node", END)
+        graph_builder.add_edge("latex_node", END)
 
         return graph_builder.compile()
 

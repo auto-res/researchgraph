@@ -3,11 +3,8 @@ from typing import TypedDict
 from langgraph.graph.graph import CompiledGraph
 
 
-from researchgraph.retrieve_paper_subgraph.retrieve_paper_subgraph import (
-    RetrievePaperSubgraph,
-)
-from researchgraph.integrate_generator_subgraph.integrate_generator_subgraph import (
-    IntegrateGeneratorSubgraph,
+from researchgraph.generator_subgraph.generator_subgraph import (
+    GeneratorSubgraph,
     # method_integrate_prompt
 )
 from researchgraph.executor_subgraph.executor_subgraph import ExecutorSubgraph
@@ -17,30 +14,14 @@ from researchgraph.input_data import research_graph_input_data
 
 
 class ResearchGraphState(TypedDict):
-    # Input Data
-    queries: list[str]
-    objective: str
-    github_owner: str
-    repository_name: str
-    save_dir: str
-    fix_iteration_count: int
-    pdf_file_path: str
-
-    base_github_url: str
-    base_method_code: str
-    base_method_text: str
-    add_github_url: str
-    add_method_code: str
-    add_method_text: str
-
-    new_detailed_description_of_methodology: str
-    new_novelty: str
-    new_experimental_procedure: str
-    new_method_code: str
+    new_method: str  # 論文執筆で使う
+    verification_policy: str  # 論文執筆で使う
+    experiment_details: str  # 論文執筆で使う
+    experiment_code: str  # 論文執筆で使う
 
     workflow_run_id: int
     session_id: str
-    output_text_data: str
+    output_text_data: str  # 論文執筆で使う
     error_text_data: str
     devin_url: str
 
@@ -72,15 +53,12 @@ class ResearchGraph:
 
     def build_graph(self) -> CompiledGraph:
         # Search Subgraph
-        retrieve_paper_subgraph = RetrievePaperSubgraph(
-            llm_name="gpt-4o-mini-2024-07-18",
-            save_dir=self.save_dir,
-        ).build_graph()
+        # retrieve_paper_subgraph = RetrievePaperSubgraph(
+        #     llm_name="gpt-4o-mini-2024-07-18",
+        #     save_dir=self.save_dir,
+        # ).build_graph()
         # Generator Subgraph
-        generator_subgraph = IntegrateGeneratorSubgraph(
-            llm_name="gpt-4o-2024-11-20",
-            # method_integrate_prompt=self. method_integrate_prompt,
-        ).build_graph()
+        generator_subgraph = GeneratorSubgraph().build_graph()
         # Executor Subgraph
         executor_subgraph = ExecutorSubgraph(
             max_fix_iteration=self.max_fix_iteration,
@@ -91,13 +69,16 @@ class ResearchGraph:
             latex_template_file_path=self.latex_template_file_path,
             figures_dir=self.figures_dir,
         ).build_graph()
+        # Upload Subgraph
+        # upload_subgraph = UploadSubgraph().build_graph()
 
         graph_builder = StateGraph(ResearchGraphState)
         # make nodes
-        graph_builder.add_node("retrieve_paper_subgraph", retrieve_paper_subgraph)
+        # graph_builder.add_node("retrieve_paper_subgraph", retrieve_paper_subgraph)
         graph_builder.add_node("generator_subgraph", generator_subgraph)
         graph_builder.add_node("executor_subgraph", executor_subgraph)
         graph_builder.add_node("writer_subgraph", writer_subgraph)
+        # graph_builder.add_node("upload_subgraph", upload_subgraph)
         # make edges
         graph_builder.add_edge(START, "retrieve_paper_subgraph")
         graph_builder.add_edge("retrieve_paper_subgraph", "generator_subgraph")
