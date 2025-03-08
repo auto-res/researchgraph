@@ -80,8 +80,9 @@ class ResearchGraph:
         graph_builder.add_node("writer_subgraph", writer_subgraph)
         # graph_builder.add_node("upload_subgraph", upload_subgraph)
         # make edges
-        graph_builder.add_edge(START, "retrieve_paper_subgraph")
-        graph_builder.add_edge("retrieve_paper_subgraph", "generator_subgraph")
+        # graph_builder.add_edge(START, "retrieve_paper_subgraph")
+        # graph_builder.add_edge("retrieve_paper_subgraph", "generator_subgraph")
+        graph_builder.add_edge(START, "generator_subgraph")
         graph_builder.add_edge("generator_subgraph", "executor_subgraph")
         graph_builder.add_edge("executor_subgraph", "writer_subgraph")
         graph_builder.add_edge("writer_subgraph", END)

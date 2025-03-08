@@ -17,16 +17,37 @@ ResearchGraphは完全な機械学習研究の自動化および，自動研究�
 %%{init: {'flowchart': {'curve': 'linear'}}}%%
 graph TD;
         __start__([<p>__start__</p>]):::first
-        retrieve_paper_subgraph(retrieve_paper_subgraph)
-        generate_subgraph(generate_subgraph)
-        executor_subgraph(executor_subgraph)
-        writer_subgraph(writer_subgraph)
+        generator_subgraph_generate_advantage_criteria_node(generate_advantage_criteria_node)
+        generator_subgraph_generate_experiment_details_node(generate_experiment_details_node)
+        generator_subgraph_generate_experiment_code_node(generate_experiment_code_node)
+        executor_subgraph_generate_code_with_devin_node(generate_code_with_devin_node)
+        executor_subgraph_execute_github_actions_workflow_node(execute_github_actions_workflow_node)
+        executor_subgraph_retrieve_github_actions_artifacts_node(retrieve_github_actions_artifacts_node)
+        executor_subgraph_llm_decide_node(llm_decide_node)
+        executor_subgraph_fix_code_with_devin_node(fix_code_with_devin_node)
+        executor_subgraph___end__(<p>__end__</p>)
+        writer_subgraph_writeup_node(writeup_node)
+        writer_subgraph_latex_node(latex_node)
         __end__([<p>__end__</p>]):::last
-        __start__ --> retrieve_paper_subgraph;
-        executor_subgraph --> writer_subgraph;
-        generate_subgraph --> executor_subgraph;
-        retrieve_paper_subgraph --> generate_subgraph;
-        writer_subgraph --> __end__;
+        __start__ --> generator_subgraph_generate_advantage_criteria_node;
+        executor_subgraph___end__ --> writer_subgraph_writeup_node;
+        generator_subgraph_generate_experiment_code_node --> executor_subgraph_generate_code_with_devin_node;
+        writer_subgraph_latex_node --> __end__;
+        subgraph generator_subgraph
+        generator_subgraph_generate_advantage_criteria_node --> generator_subgraph_generate_experiment_details_node;
+        generator_subgraph_generate_experiment_details_node --> generator_subgraph_generate_experiment_code_node;
+        end
+        subgraph executor_subgraph
+        executor_subgraph_execute_github_actions_workflow_node --> executor_subgraph_retrieve_github_actions_artifacts_node;
+        executor_subgraph_fix_code_with_devin_node --> executor_subgraph_execute_github_actions_workflow_node;
+        executor_subgraph_generate_code_with_devin_node --> executor_subgraph_execute_github_actions_workflow_node;
+        executor_subgraph_retrieve_github_actions_artifacts_node --> executor_subgraph_llm_decide_node;
+        executor_subgraph_llm_decide_node -. &nbsp;correction&nbsp; .-> executor_subgraph_fix_code_with_devin_node;
+        executor_subgraph_llm_decide_node -. &nbsp;finish&nbsp; .-> executor_subgraph___end__;
+        end
+        subgraph writer_subgraph
+        writer_subgraph_writeup_node --> writer_subgraph_latex_node;
+        end
         classDef default fill:#f2f0ff,line-height:1.2
         classDef first fill-opacity:0
         classDef last fill:#bfb6fc
