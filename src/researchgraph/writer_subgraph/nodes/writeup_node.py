@@ -3,6 +3,7 @@ import json
 from pydantic import BaseModel
 from jinja2 import Template, Environment
 from litellm import completion
+from typing import Optional
 
 
 env = Environment()
@@ -28,7 +29,7 @@ class WriteupNode:
         llm_name: str,
         refine_round: int = 2,
         refine_only: bool = False,
-        target_sections: list[str] = None,
+        target_sections: list[str] = [],
     ):
         self.llm_name = llm_name
         self.refine_round = refine_round
@@ -219,7 +220,7 @@ Pay particular attention to fixing any errors such as:
         # print(f"note: {template.render(sections=sections)}")
         return template.render(sections=sections)
 
-    def _call_llm(self, prompt: str, max_retries: int = 3) -> str:
+    def _call_llm(self, prompt: str, max_retries: int = 3) -> Optional[str]:
         for attempt in range(max_retries): 
             try:
                 response = completion(

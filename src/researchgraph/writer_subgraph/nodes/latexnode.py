@@ -6,7 +6,7 @@ import shutil
 import json
 import tempfile
 from pydantic import BaseModel
-
+from typing import Optional
 from litellm import completion
 
 
@@ -30,7 +30,7 @@ class LatexNode:
         template_dir = osp.dirname(latex_template_file_path)
         self.template_copy_file = osp.join(template_dir, "template_copy.tex")
 
-    def _call_llm(self, prompt: str, max_retries: int = 3) -> str:
+    def _call_llm(self, prompt: str, max_retries: int = 3) -> Optional[str]:
         system_prompt = """
         You are a helpful LaTeX rewriting assistant.
         Please respond ONLY in valid JSON format with a single key "latex_full_text" and no other keys.
