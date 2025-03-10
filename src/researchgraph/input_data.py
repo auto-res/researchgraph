@@ -5,5 +5,4 @@ research_graph_input_data = {
     "repository_name": "auto-research",
     "save_dir": "/workspaces/researchgraph/data",
     "fix_iteration_count": 1,
-    "pdf_file_path": "/workspaces/researchgraph/data/paper.pdf",
 }

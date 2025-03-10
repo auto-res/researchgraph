@@ -17,7 +17,7 @@ class WriterState(TypedDict):
     add_method_code: str
     new_method_code: list
     paper_content: dict
-    pdf_file_path: str
+    tex_text: str
     github_owner: str
     repository_name: str
     branch_name: str
@@ -33,12 +33,14 @@ class WriterSubgraph:
         llm_name: str,
         latex_template_file_path: str,
         figures_dir: str,
+        pdf_file_path: str, 
         refine_round: int = 2,
     ):
         self.llm_name = llm_name
         self.refine_round = refine_round
         self.latex_template_file_path = latex_template_file_path
         self.figures_dir = figures_dir
+        self.pdf_file_path = pdf_file_path
 
     def _writeup_node(self, state: WriterState) -> dict:
         print("---WriterSubgraph---")
@@ -51,20 +53,18 @@ class WriterSubgraph:
     def _latex_node(self, state: WriterState) -> dict:
         paper_content = state["paper_content"]
         print(paper_content)
-        pdf_file_path = state["pdf_file_path"]
-        pdf_file_path = LatexNode(
+        tex_text = LatexNode(
             llm_name=self.llm_name,
             latex_template_file_path=self.latex_template_file_path,
             figures_dir=self.figures_dir,
+            pdf_file_path=self.pdf_file_path, 
             timeout=30,
         ).execute(
             paper_content,
-            pdf_file_path,
         )
-        return {"pdf_file_path": pdf_file_path}
+        return {"tex_text": tex_text}
 
     def _github_upload_node(self, state: WriterState) -> dict:
-        pdf_file_path = state["pdf_file_path"]
         github_owner = state["github_owner"]
         repository_name = state["repository_name"]
         branch_name = state["branch_name"]
@@ -75,7 +75,7 @@ class WriterSubgraph:
         devin_url = state["devin_url"]
         all_logs = state
         completion = GithubUploadNode().execute(
-            pdf_file_path=pdf_file_path,
+            pdf_file_path=self.pdf_file_path,
             github_owner=github_owner,
             repository_name=repository_name,
             branch_name=branch_name,
@@ -106,6 +106,7 @@ class WriterSubgraph:
 if __name__ == "__main__":
     latex_template_file_path = "/workspaces/researchgraph/data/latex/template.tex"
     figures_dir = "/workspaces/researchgraph/images"
+    pdf_file_path = "/workspaces/researchgraph/data/test_output.pdf"
     # llm_name = "gpt-4o-2024-11-20"
     llm_name = "gpt-4o-mini-2024-07-18"
 
@@ -113,5 +114,6 @@ if __name__ == "__main__":
         llm_name=llm_name,
         latex_template_file_path=latex_template_file_path,
         figures_dir=figures_dir,
+        pdf_file_path=pdf_file_path, 
     ).build_graph()
     result = subgraph.invoke(writer_subgraph_input_data)

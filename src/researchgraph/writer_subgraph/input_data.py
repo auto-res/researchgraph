@@ -7,7 +7,7 @@ writer_subgraph_input_data = {
     "add_method_code": "def add_method(): pass",
     "new_method_code": ["def new_method(): pass"],
     "paper_content": {},
-    "pdf_file_path": "/workspaces/researchgraph/data/test_output.pdf",
+    "tex_text": "", 
     "github_owner": "auto-res",
     "repository_name": "experimental-script",
     "branch_name": "devin/1738496296-learnable-gated-pooling",
