@@ -24,7 +24,6 @@ class ResearchGraphState(TypedDict):
     repository_name: str
     save_dir: str
     fix_iteration_count: int
-    pdf_file_path: str
 
     base_github_url: str
     base_method_code: str
@@ -45,6 +44,7 @@ class ResearchGraphState(TypedDict):
     devin_url: str
 
     paper_content: dict
+    tex_text: str
     completion: bool
 
 
@@ -57,6 +57,7 @@ class ResearchGraph:
         max_fix_iteration: int,
         latex_template_file_path: str,
         figures_dir: str,
+        pdf_file_path: str, 
     ):
         self.llm_name = llm_name
         self.save_dir = save_dir
@@ -66,9 +67,10 @@ class ResearchGraph:
         # self. method_integrate_prompt =  method_integrate_prompt
         # Executor Subgraph
         self.max_fix_iteration = max_fix_iteration
-        # Witer Subgraph
+        # Writer Subgraph
         self.latex_template_file_path = latex_template_file_path
         self.figures_dir = figures_dir
+        self.pdf_file_path = pdf_file_path
 
     def build_graph(self) -> CompiledGraph:
         # Search Subgraph
@@ -90,6 +92,7 @@ class ResearchGraph:
             llm_name="gpt-4o-2024-11-20",
             latex_template_file_path=self.latex_template_file_path,
             figures_dir=self.figures_dir,
+            pdf_file_path=self.pdf_file_path, 
         ).build_graph()
 
         graph_builder = StateGraph(ResearchGraphState)
@@ -113,6 +116,7 @@ if __name__ == "__main__":
     save_dir = "/workspaces/researchgraph/data"
     latex_template_file_path = "/workspaces/researchgraph/data/latex/template.tex"
     figures_dir = "/workspaces/researchgraph/images"
+    pdf_file_path = "/workspaces/researchgraph/data/paper.pdf"
 
     research_graph = ResearchGraph(
         llm_name=llm_name,
@@ -120,6 +124,7 @@ if __name__ == "__main__":
         max_fix_iteration=3,
         latex_template_file_path=latex_template_file_path,
         figures_dir=figures_dir,
+        pdf_file_path=pdf_file_path, 
     ).build_graph()
 
     config = {"recursion_limit": 500}

@@ -2,7 +2,7 @@ import os
 import pytest
 import glob
 from unittest.mock import patch
-from test.writer_subgraph.writer_subgraph_input_prep import WriterSubgraphInputPrep
+from test.writer_subgraph.utils.writer_subgraph_input_prep import WriterSubgraphInputPrep
 from researchgraph.writer_subgraph.writer_subgraph import WriterSubgraph
 
 SAMPLE_PAPER_DIR = "test/writer_subgraph/sample_papers/"
@@ -20,6 +20,8 @@ def test_writer_subgraph_with_paper(pdf_file):
 
     latex_template_file_path = "/workspaces/researchgraph/data/latex/template.tex"
     figures_dir = "/workspaces/researchgraph/images"
+    paper_name = os.path.splitext(os.path.basename(pdf_file))[0]
+    pdf_file_path = os.path.join(OUTPUT_DIR, f"{paper_name}_generated.pdf")
     # llm_name = "gpt-4o-mini-2024-07-18"
     llm_name = "gpt-4o-2024-11-20"
 
@@ -28,6 +30,7 @@ def test_writer_subgraph_with_paper(pdf_file):
         llm_name=llm_name,
         latex_template_file_path=latex_template_file_path,
         figures_dir=figures_dir,
+        pdf_file_path=pdf_file_path, 
         refine_round = 2,
     ).build_graph()
 

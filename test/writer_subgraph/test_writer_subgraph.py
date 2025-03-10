@@ -15,7 +15,7 @@ def test_state():
         add_method_code="Additional method code",
         new_method_code=[],
         paper_content={},
-        pdf_file_path="",
+        tex_text="",
         github_owner="mock_owner",
         repository_name="mock_repo",
         branch_name="mock_branch",
@@ -31,7 +31,7 @@ def mock_nodes():
     """各ノードのモックを作成"""
     mocks = {}
     with patch("researchgraph.writer_subgraph.nodes.writeup_node.WriteupNode.execute", return_value={"Title": "Mock Title", "Abstract": "Mock Abstract"}) as mock_writeup, \
-        patch("researchgraph.writer_subgraph.nodes.latexnode.LatexNode.execute", return_value="/mock/path/to/pdf.pdf") as mock_latex, \
+        patch("researchgraph.writer_subgraph.nodes.latexnode.LatexNode.execute", return_value="LaTeX Content") as mock_latex, \
         patch("researchgraph.writer_subgraph.nodes.github_upload_node.GithubUploadNode.execute", return_value=True) as mock_github:
 
         mocks["writeup_node"] = mock_writeup
@@ -46,12 +46,14 @@ def writer_subgraph():
     """WriterSubgraph のテスト用インスタンスを作成"""
     latex_template_file_path = "/mock/path/to/template.tex"
     figures_dir = "/mock/path/to/figures"
+    pdf_file_path = "/mock/path/to/generated.pdf"
     llm_name = "gpt-4o-mini-mock"
     
     return WriterSubgraph(
         llm_name=llm_name,
         latex_template_file_path=latex_template_file_path,
         figures_dir=figures_dir,
+        pdf_file_path=pdf_file_path, 
     ).build_graph()
 
 
@@ -63,7 +65,7 @@ def test_writer_subgraph(mock_nodes, test_state, writer_subgraph):
         mock_nodes[node].assert_called_once()
 
     assert result["completion"] is True
-    assert result["pdf_file_path"] == "/mock/path/to/pdf.pdf"
+    assert result["tex_text"] == "LaTeX Content"
     assert result["paper_content"]["Title"] == "Mock Title"
     assert result["paper_content"]["Abstract"] == "Mock Abstract"
 
@@ -82,12 +84,11 @@ def test_latex_node(mock_nodes, test_state, writer_subgraph):
     result = writer_subgraph.invoke(test_state)
     mock_nodes["latex_node"].assert_called_once()
 
-    assert result["pdf_file_path"] == "/mock/path/to/pdf.pdf"
+    assert result["tex_text"] == "LaTeX Content"
 
 
 def test_github_upload_node(mock_nodes, test_state, writer_subgraph):
     """LangGraphを通じた GithubUploadNode の統合テスト"""
-    test_state["pdf_file_path"] = "/mock/path/to/pdf.pdf"
     test_state["paper_content"] = {"Title": "Mock Title", "Abstract": "Mock Abstract"}
 
     result = writer_subgraph.invoke(test_state)
