@@ -1,3 +1,3 @@
 deep_research_subgraph_input_data = {
-    "query": "Please tell us about the technology used in deepseek.",
+    "query": "Please write a comprehensive reoprt about M4 mac book air.",
 }

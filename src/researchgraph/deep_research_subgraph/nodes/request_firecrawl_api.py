@@ -1,87 +1,145 @@
 import os
 from pydantic import BaseModel
-import httpx
 import asyncio
+from typing import List
+
+from researchgraph.utils.firecrawl_app import FirecrawlApp
 
 FIRE_CRAWL_API_KEY = os.getenv("FIRE_CRAWL_API_KEY")
 
 
 class SearchResponseItem(BaseModel):
     url: str
-    markdown: str
-
-
-class SearchResponse(BaseModel):
-    search_data: list[SearchResponseItem]
+    markdown: str = ""
+    title: str = ""
 
 
 async def request_firecrawl_api(
     query: str,
-) -> SearchResponse:
-    response = await _request_firecrawl(query)
-    parsed_response = _parse_response(response)
-    return parsed_response
+) -> List[SearchResponseItem]:
+    """
+    FireCrawl APIを使用してウェブ検索を実行する
+
+    Args:
+        query: 検索クエリ
+
+    Returns:
+        検索結果のリスト
+    """
+    print(f"  Sending FireCrawl API request for query: '{query}'")
+
+    try:
+        # 新しいFirecrawlAppクラスを使用
+        firecrawl = FirecrawlApp(FIRE_CRAWL_API_KEY)
+
+        # APIキーのデバッグ
+        if not FIRE_CRAWL_API_KEY:
+            print(f"  WARNING: FIRE_CRAWL_API_KEY environment variable is not set")
+        else:
+            masked_key = FIRE_CRAWL_API_KEY[:6] + "..." + FIRE_CRAWL_API_KEY[-4:] if len(FIRE_CRAWL_API_KEY) > 10 else "***"
+            print(f"  Using FireCrawl API key: {masked_key}")
+
+        # 検索オプションの設定
+        scrape_options = {"formats": ["markdown"]}
+
+        # リクエストの詳細をログ出力
+        print(f"  Request URL: {firecrawl.api_url}/search")
+        print(f"  Request options: query='{query}', limit=10, scrapeOptions={scrape_options}")
+
+        # 検索実行
+        print(f"  Executing FireCrawl API search...")
+        response = await firecrawl.search(
+            query=query,
+            timeout=15000,  # 15秒タイムアウト
+            limit=10,       # 最大10件の結果
+            scrape_options=scrape_options
+        )
+
+        # レスポンスの詳細をログ出力
+        print(f"  Response structure: {list(response.keys())}")
+
+        # 検索結果のパース
+        parsed_response = _parse_response(response)
+        print(f"  Received {len(parsed_response)} results from FireCrawl API")
+        return parsed_response
+
+    except Exception as e:
+        print(f"  Error with FireCrawl API: {e}")
+        print(f"  FireCrawl API failed - returning empty results")
+        # APIが失敗した場合は空のリストを返す
+        return []
 
 
-async def _request_firecrawl(
-    query: str, max_retries: int = 30, base_delay: float = 5, max_delay: float = 60
-):
-    # NOTE:The following is the official documentation of the API.
-    # https://docs.firecrawl.dev/api-reference/endpoint/search
-    url = "https://api.firecrawl.dev/v0/search"
-    headers = {
-        "Authorization": f"Bearer {FIRE_CRAWL_API_KEY}",
-        "Content-Type": "application/json",
-    }
-    data = {
-        "query": f"{query}",
-        "timeout": 15000,
-        "limit": 10,
-        "scrapeOptions": {"formats": "markdown"},
-    }
-    delay = base_delay
-    timeout = httpx.Timeout(60.0)
-    for attempt in range(max_retries):
-        try:
-            async with httpx.AsyncClient(timeout=timeout) as client:
-                response = await client.post(url, json=data, headers=headers)
-                response.raise_for_status()
-                return response.json()
+def _parse_response(response: dict) -> List[SearchResponseItem]:
+    """
+    FireCrawl APIのレスポンスをパースする
 
-        except httpx.HTTPStatusError as e:
-            if e.response.status_code == 429:  # Too Many Requests
-                retry_after = e.response.headers.get("Retry-After")
-                if retry_after:
-                    delay = float(retry_after)
-                print(f"Rate limited (429). Retrying in {delay:.2f} seconds...")
+    Args:
+        response: APIレスポンス（JSON）
 
-            elif e.response.status_code >= 500:  # サーバーエラー（5xx）
-                print(
-                    f"Server error {e.response.status_code}. Retrying in {delay:.2f} seconds..."
-                )
+    Returns:
+        検索結果のリスト
+    """
+    # データフィールドの取得
+    data = response.get("data", [])
+    if not data:
+        print(f"  Warning: No data in response - returning empty results")
+        return []
 
-            else:
-                raise
+    # 検索結果の変換
+    search_items = []
+    for item in data:
+        if not item:
+            continue
 
-        except httpx.RequestError as e:
-            print(f"Request error: {e}. Retrying in {delay:.2f} seconds...")
-        await asyncio.sleep(delay)
-        delay = min(delay * 2, max_delay)
-    raise Exception(f"Failed to fetch from Firecrawl API after {max_retries} retries.")
+        url = item.get("url", "")
+        if not url:
+            continue
 
+        # マークダウンコンテンツの取得（なければテキストを使用）
+        markdown = item.get("markdown", "")
+        if not markdown:
+            markdown = item.get("text", "")
 
-def _parse_response(response: dict) -> SearchResponse:
-    search_items = [
-        SearchResponseItem(url=item.get("url", ""), markdown=item.get("markdown"))
-        for item in response.get("data", [])
-    ]
+        title = item.get("title", "")
+
+        search_items.append(
+            SearchResponseItem(
+                url=url,
+                markdown=markdown,
+                title=title
+            )
+        )
+
     return search_items
 
 
 async def main():
-    query = "deepseekのアルゴリズムについて教えてください．"
-    response = await request_firecrawl_api(query)
-    print(response)
+    """テスト用のメイン関数"""
+    # 環境変数からAPIキーを取得
+    api_key = os.getenv("FIRE_CRAWL_API_KEY")
+    if not api_key:
+        print("Error: FIRE_CRAWL_API_KEY environment variable not set")
+        return
+
+    query = "latest advancements in deep learning"
+    print(f"Testing FireCrawl API with query: '{query}'")
+
+    try:
+        response = await request_firecrawl_api(query)
+        print(f"Found {len(response)} results:")
+
+        for i, item in enumerate(response, 1):
+            print(f"\nResult {i}:")
+            print(f"Title: {item.title}")
+            print(f"URL: {item.url}")
+
+            # マークダウンの一部を表示
+            content_preview = item.markdown[:200] + "..." if len(item.markdown) > 200 else item.markdown
+            print(f"Content preview: {content_preview}")
+
+    except Exception as e:
+        print(f"Error: {e}")
 
 
 if __name__ == "__main__":
