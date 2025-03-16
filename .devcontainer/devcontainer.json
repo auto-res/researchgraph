@@ -10,20 +10,17 @@
 		"vscode": {
 			"extensions": [
         "ms-python.python", // Python
+        "ms-python.debugpy", // Debugpy
 				"charliermarsh.ruff", // Ruff
 				"github.copilot", // GitHub Copilot
-        "mhutchie.git-graph", // Git Graph
         "eamodio.gitlens", // GitLens
-        "gruntfuggly.todo-tree", // Todo Tree
+        "github.vscode-pull-request-github", // GitHub Pull Requests and Issues
         "ms-python.vscode-pylance", // Pylance
         "oderwat.indent-rainbow", // Indent Rainbow
         "tomoki1207.pdf", // PDF viewer
-        "ms-ceintl.vscode-language-pack-ja" // Japanese Language Pack
-			],
-            "settings": {
-                "python.analysis.inlayHints.variableTypes": true,
-                "python.analysis.inlayHints.functionReturnTypes": true
-            }
+        "ms-ceintl.vscode-language-pack-ja", // Japanese Language Pack
+        "ms-python.mypy-type-checker" // Mypy
+			]
 		}
 	}
 }

@@ -1,55 +1,9 @@
 executor_subgraph_input_data = {
-    "github_owner": "auto-res2",
-    "repository_name": "auto-research",
-    "save_dir": "/workspaces/researchgraph/data",
-    "fix_iteration_count": 1,
-    "new_method_text": """
-Learnable Gated Pooling: A New Approach
-This approach combines the benefits of learnable weights (as discussed in the previous responses) with a gating mechanism. The gating mechanism allows the model to dynamically decide how much of each element in the input sequence should contribute to the final pooled vector. This adds another layer of flexibility and expressiveness compared to simple learnable weights.
-Here's the breakdown:
-Learnable Weights: Similar to the previous "Approach 1," we introduce learnable weights (w) for each dimension of the input vectors. These weights determine the importance of each feature.
-Gating Mechanism: We introduce a separate set of learnable parameters to create a "gate" (g). This gate is also applied element-wise to the weighted input. The gate values are typically between 0 and 1, controlling how much of the weighted input is passed through to the pooling operation.
-Pooling Operation: After applying both the weights and the gate, we perform a pooling operation (e.g., average pooling, sum pooling).
-Mathematical Representation
-
-Let x = [x_1, x_2, ..., x_n] be the input sequence, where x_i is the vector representation of the i-th element. Let w = [w_1, w_2, ..., w_d] be the learnable weights (where d is the dimension of x_i), and g = [g_1, g_2, ..., g_n] be the learnable gates (where n is the sequence length).
-
-The Learnable Gated Pooling can be represented as:
-
-weighted_x = x * w  (element-wise multiplication, broadcasting w across the sequence length)
-gated_x = weighted_x * sigmoid(g) (element-wise multiplication)
-pooled_vector = pooling_operation(gated_x)
-where pooling_operation can be average pooling (mean), sum pooling, or another suitable operation. The sigmoid function ensures the gate values are between 0 and 1.
+    "fix_iteration_count": 0,
+    "new_method": """
+Adaptive Curvature Momentum (ACM) Optimizer Overview Existing adaptive optimizers such as Adam and AdaBelief dynamically adjust the learning rate based on the history of gradients. However, while these methods adapt to the magnitude of the gradients, they do not fully exploit information about the local curvature of the loss landscape. In this proposal, we introduce a new optimizer called Adaptive Curvature Momentum (ACM), which utilizes local quadratic approximations to adaptively adjust the update direction and scale. Method Standard Momentum Update Similar to SGD or Adam, ACM maintains a momentum term based on past gradients. Adaptive Learning Rate Scaling Uses second-order information (approximations of the Hessian) to dynamically adjust the learning rate for each direction. To reduce the computational cost of Hessian calculations, Fisher Information Matrix approximations can be employed. Curvature-Aware Adaptive Adjustment Estimates curvature by using the gradient change rate: Δ 𝑔 = 𝑔 𝑡 − 𝑔 𝑡 − 1 Δg=g t ​ −g t−1 ​ Modifies the learning rate based on curvature: 𝜂 𝑡 = 𝛼 1 + 𝛽 ⋅ Curvature ( 𝑔 𝑡 ) η t ​ = 1+β⋅Curvature(g t ​ ) α ​ where 𝛼 α is the base learning rate, and 𝛽 β controls the influence of curvature. Adaptive Regularization Encourages stable updates by incorporating an adaptive weight decay mechanism. When local curvature is high, the optimizer strengthens regularization to suppress excessive updates. Key Features and Benefits Combines Adam-style adaptability with curvature-aware updates. Faster convergence: Adapts step sizes dynamically, taking larger steps in flat regions and smaller steps in sharp valleys. Hessian-free approximation: Utilizes efficient curvature estimation while maintaining low computational overhead. Scalability: Suitable for large-scale models such as ResNets and Transformers.
 """,
-    "new_method_code": """
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-
-class LearnableGatedPooling(nn.Module):
-    def __init__(self, input_dim, seq_len):
-        super(LearnableGatedPooling, self).__init__()
-        self.weights = nn.Parameter(torch.ones(input_dim))
-        self.gate_linear = nn.Linear(input_dim, 1) # Linear layer for gating
-
-    def forward(self, x):
-        # x: (batch_size, seq_len, input_dim)
-
-        weighted_x = x * self.weights
-        gate_values = torch.sigmoid(self.gate_linear(x)).squeeze(2) # (batch_size, seq_len)
-        gated_x = weighted_x * gate_values.unsqueeze(2)
-
-        pooled_vector = torch.mean(gated_x, dim=1)  # Average pooling
-        return pooled_vector
-
-# Example usage
-input_dim = 768  # Example: BERT embedding dimension
-batch_size = 32
-seq_len = 10
-embeddings = torch.randn(batch_size, seq_len, input_dim)
-
-learnable_gated_pooling = LearnableGatedPooling(input_dim, seq_len)
-pooled_output = learnable_gated_pooling(embeddings)
-
-print(pooled_output.shape)  # Output: torch.Size([32, 768])""",
+    "experiment_code": """
+#!/usr/bin/env python This script contains the following experiments: 1. Synthetic Optimization Benchmark (Convex Quadratic and Rosenbrock-like functions) 2. Deep Neural Network Training on CIFAR-10 using a simple CNN 3. Ablation Study & Hyperparameter Sensitivity Analysis on MNIST Each experiment compares a custom Adaptive Curvature Momentum (ACM) optimizer against established optimizers (Adam, SGD with momentum). The ACM optimizer adjusts per-parameter learning rates using a simple curvature-estimate (the difference between successive gradients) and uses momentum buffering. A quick_test() function is provided to run minimal iterations (to verify code execution). import torch import torch.nn as nn import torch.optim as optim import torchvision import torchvision.transforms as transforms import matplotlib.pyplot as plt import numpy as np import time ################################################################################ # 1. Synthetic Optimization Benchmark ################################################################################ # Define the ACM optimizer (for synthetic experiments and later deep-learning tests) class ACMOptimizer(optim.Optimizer): def __init__(self, params, lr=0.01, beta=0.9, curvature_influence=0.1): # The momentum_buffer variable will be stored in state, so we do not initialize it in defaults. defaults = dict(lr=lr, beta=beta, curvature_influence=curvature_influence) super(ACMOptimizer, self).__init__(params, defaults) def step(self, closure=None): loss = None if closure is not None: loss = closure() # Only single parameter group is assumed in this simple implementation. for group in self.param_groups: lr = group['lr'] beta = group['beta'] curvature_influence = group['curvature_influence'] for p in group['params']: if p.grad is None: continue grad = p.grad.data state = self.state[p] if 'momentum_buffer' not in state: # For the very first update, simply store the current gradient. state['momentum_buffer'] = torch.clone(grad).detach() p.data.add_(-lr * grad) else: buf = state['momentum_buffer'] # Estimate curvature simply as the absolute difference between current gradient and previous momentum. curvature_est = (grad - buf).abs() # Compute an adaptive per-component learning rate. adaptive_lr = lr / (1.0 + curvature_influence * curvature_est) # Update the momentum buffer with exponential moving average. buf.mul_(beta).add_(grad, alpha=1 - beta) # Update parameters using (elementwise) adaptive learning rate and momentum buffer. p.data.add_(-adaptive_lr * buf) return loss # Define a convex quadratic function: f(x) = 0.5 * x^T A x - b^T x. def quadratic_loss(x, A, b): return 0.5 * x @ A @ x - b @ x # Define a modified Rosenbrock-like function (a simple nonconvex function) def rosenbrock_loss(x): # Here x is assumed to be a 2D tensor. a = 1.0 b = 100.0 return (a - x[0])**2 + b * (x[1] - x[0]**2)**2 def run_synthetic_experiment(num_iters=100): print("=== Synthetic Experiment: Quadratic Function Optimization ===") torch.manual_seed(0) # Example 2D quadratic. A is positive definite. A = torch.tensor([[3.0, 0.2], [0.2, 2.0]]) b = torch.tensor([1.0, 1.0]) # Prepare optimizers for each method. optimizers_dict = { "ACM": ACMOptimizer, "Adam": optim.Adam, "SGD_mom": lambda params, lr: optim.SGD(params, lr=lr, momentum=0.9) } results = {name: [] for name in optimizers_dict.keys()} # Run separate optimization runs for each optimizer starting with a new initial point. for name, opt_class in optimizers_dict.items(): print(f"\nRunning optimization with {name}") # reinitialize the initial point for fairness x_data = torch.randn(2, requires_grad=True) # Instantiate the optimizer. if name == "ACM": optimizer = opt_class([x_data], lr=0.1, beta=0.9, curvature_influence=0.05) else: optimizer = opt_class([x_data], lr=0.1) for i in range(num_iters): optimizer.zero_grad() loss = quadratic_loss(x_data, A, b) loss.backward() optimizer.step() results[name].append(loss.item()) if (i + 1) % (num_iters // 5) == 0 or i == 0: print(f"Iter {i+1}/{num_iters} - Loss: {loss.item():.4f}") # Plot the convergence curves. plt.figure() for name, losses in results.items(): plt.plot(losses, label=name) plt.xlabel("Iteration") plt.ylabel("Loss") plt.title("Quadratic Function Optimization") plt.legend() plt.show()
+""",
 }

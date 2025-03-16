@@ -5,146 +5,148 @@ from researchgraph.utils.api_request_handler import fetch_api_data, retry_reques
 GITHUB_PERSONAL_ACCESS_TOKEN = os.getenv("GITHUB_PERSONAL_ACCESS_TOKEN")
 
 
-class ExecuteGithubActionsWorkflowNode:
-    def __init__(
-        self,
-    ):
-        self.headers = {
-            "Accept": "application/vnd.github+json",
-            "Authorization": f"Bearer {GITHUB_PERSONAL_ACCESS_TOKEN}",
-            "X-GitHub-Api-Version": "2022-11-28",
-        }
+def _request_github_actions_workflow_execution(
+    headers: dict, github_owner: str, repository_name: str, branch_name: str
+):
+    workflow_file_name = "run_experiment.yml"
+    url = f"https://api.github.com/repos/{github_owner}/{repository_name}/actions/workflows/{workflow_file_name}/dispatches"
+    data = {
+        "ref": f"{branch_name}",
+    }
+    return retry_request(fetch_api_data, url, headers=headers, data=data, method="POST")
 
-    def _request_github_actions_workflow_execution(
-        self, github_owner: str, repository_name: str, branch_name: str
-    ):
-        workflow_file_name = "run_experiment.yml"
-        url = f"https://api.github.com/repos/{github_owner}/{repository_name}/actions/workflows/{workflow_file_name}/dispatches"
-        data = {
-            "ref": f"{branch_name}",
-        }
-        return retry_request(
-            fetch_api_data, url, headers=self.headers, data=data, method="POST"
+
+def _request_github_actions_workflow_info_before_execution(
+    headers: dict, github_owner: str, repository_name: str, branch_name: str
+):
+    url = f"https://api.github.com/repos/{github_owner}/{repository_name}/actions/runs"
+    params = {
+        "branch": f"{branch_name}",
+        "event": "workflow_dispatch",
+    }
+    return retry_request(
+        fetch_api_data, url, headers=headers, params=params, method="GET"
+    )
+
+
+def _request_github_actions_workflow_info_after_execution(
+    headers: dict,
+    github_owner: str,
+    repository_name: str,
+    branch_name: str,
+    num_workflow_runs_before_execution: int,
+):
+    url = f"https://api.github.com/repos/{github_owner}/{repository_name}/actions/runs"
+    params = {
+        "branch": f"{branch_name}",
+        "event": "workflow_dispatch",
+    }
+
+    # NOTE:The number of runs is increased by one to confirm that execution is complete.
+    def should_retry(response) -> bool:
+        # Describe the process so that it is True if you want to retry
+        num_workflow_runs_after_execution = _count_github_actions_workflow_runs(
+            response
+        )
+        return not (
+            (
+                num_workflow_runs_after_execution
+                == num_workflow_runs_before_execution + 1
+            )
+            and _check_confirmation_of_execution_completion(response)
         )
 
-    def _request_github_actions_workflow_info_before_execution(
-        self, github_owner: str, repository_name: str, branch_name: str
-    ):
-        url = f"https://api.github.com/repos/{github_owner}/{repository_name}/actions/runs"
-        params = {
-            "branch": f"{branch_name}",
-            "event": "workflow_dispatch",
-        }
-        return retry_request(
-            fetch_api_data, url, headers=self.headers, params=params, method="GET"
-        )
+    return retry_request(
+        fetch_api_data,
+        url,
+        headers=headers,
+        params=params,
+        method="GET",
+        check_condition=should_retry,
+    )
 
-    def _request_github_actions_workflow_info_after_execution(
-        self,
-        github_owner: str,
-        repository_name: str,
-        branch_name: str,
-        num_workflow_runs_before_execution: int,
-    ):
-        url = f"https://api.github.com/repos/{github_owner}/{repository_name}/actions/runs"
-        params = {
-            "branch": f"{branch_name}",
-            "event": "workflow_dispatch",
-        }
 
-        # NOTE:The number of runs is increased by one to confirm that execution is complete.
-        def should_retry(response) -> bool:
-            # Describe the process so that it is True if you want to retry
-            num_workflow_runs_after_execution = (
-                self._count_github_actions_workflow_runs(response)
-            )
-            return not (
-                (
-                    num_workflow_runs_after_execution
-                    == num_workflow_runs_before_execution + 1
-                )
-                and self._check_confirmation_of_execution_completion(response)
-            )
+def _count_github_actions_workflow_runs(response: dict) -> int:
+    num_workflow_runs = len(response["workflow_runs"])
+    return num_workflow_runs
 
-        return retry_request(
-            fetch_api_data,
-            url,
-            headers=self.headers,
-            params=params,
-            method="GET",
-            check_condition=should_retry,
-        )
 
-    def _count_github_actions_workflow_runs(self, response: dict):
-        num_workflow_runs = len(response["workflow_runs"])
-        return num_workflow_runs
+def _parse_workflow_run_id(response: dict):
+    workflow_timestamp_dict = {}
+    latest_timestamp = datetime.min.replace(tzinfo=timezone.utc)
+    for res in response["workflow_runs"]:
+        created_at = datetime.fromisoformat(res["created_at"].replace("Z", "+00:00"))
+        workflow_timestamp_dict[created_at] = res["id"]
+        if created_at > latest_timestamp:
+            latest_timestamp = created_at
+    return workflow_timestamp_dict[latest_timestamp]
 
-    def _parse_workflow_run_id(self, response: dict):
-        workflow_timestamp_dict = {}
-        latest_timestamp = datetime.min.replace(tzinfo=timezone.utc)
-        for res in response["workflow_runs"]:
-            created_at = datetime.fromisoformat(
-                res["created_at"].replace("Z", "+00:00")
-            )
-            workflow_timestamp_dict[created_at] = res["id"]
-            if created_at > latest_timestamp:
-                latest_timestamp = created_at
-        return workflow_timestamp_dict[latest_timestamp]
 
-    def _check_confirmation_of_execution_completion(self, response: dict):
-        status_list = []
-        for res in response["workflow_runs"]:
-            status_list.append(res["status"])
-        return all(item == "completed" for item in status_list)
+def _check_confirmation_of_execution_completion(response: dict):
+    status_list = []
+    for res in response["workflow_runs"]:
+        status_list.append(res["status"])
+    return all(item == "completed" for item in status_list)
 
-    def execute(self, github_owner: str, repository_name: str, branch_name: str) -> int:
-        # Check the number of runs before executing workflow
-        response_before_execution = (
-            self._request_github_actions_workflow_info_before_execution(
-                github_owner, repository_name, branch_name
-            )
-        )
-        if response_before_execution:
-            print(
-                "Successfully retrieved information on Github actions prior to execution of workflow."
-            )
-        else:
-            print(
-                "Failure to retrieve information on Github actions before executing workflow."
-            )
-        num_workflow_runs_before_execution = self._count_github_actions_workflow_runs(
-            response_before_execution
-        )
+
+def execute_github_actions_workflow(
+    github_owner: str, repository_name: str, branch_name: str
+) -> int:
+    headers = {
+        "Accept": "application/vnd.github+json",
+        "Authorization": f"Bearer {GITHUB_PERSONAL_ACCESS_TOKEN}",
+        "X-GitHub-Api-Version": "2022-11-28",
+    }
+    # Check the number of runs before executing workflow
+    response_before_execution = _request_github_actions_workflow_info_before_execution(
+        headers=headers,
+        github_owner=github_owner,
+        repository_name=repository_name,
+        branch_name=branch_name,
+    )
+    if response_before_execution:
         print(
-            f"Number of workflow runs before execution:{num_workflow_runs_before_execution}"
+            "Successfully retrieved information on Github actions prior to execution of workflow."
+        )
+    else:
+        print(
+            "Failure to retrieve information on Github actions before executing workflow."
+        )
+    num_workflow_runs_before_execution = _count_github_actions_workflow_runs(
+        response_before_execution
+    )
+    print(
+        f"Number of workflow runs before execution:{num_workflow_runs_before_execution}"
+    )
+
+    # Execute the workflow
+    _request_github_actions_workflow_execution(
+        headers=headers,
+        github_owner=github_owner,
+        repository_name=repository_name,
+        branch_name=branch_name,
+    )
+
+    # Check the number of runs after executing workflow
+    response_after_execution = _request_github_actions_workflow_info_after_execution(
+        headers,
+        github_owner,
+        repository_name,
+        branch_name,
+        num_workflow_runs_before_execution,
+    )
+    if response_before_execution:
+        print(
+            "Successfully retrieved information on Github actions after execution of workflow."
+        )
+    else:
+        print(
+            "Failure to retrieve information on Github actions after executing workflow."
         )
 
-        # Execute the workflow
-        self._request_github_actions_workflow_execution(
-            github_owner, repository_name, branch_name
-        )
+    workflow_run_id = _parse_workflow_run_id(response_after_execution)
 
-        # Check the number of runs after executing workflow
-        response_after_execution = (
-            self._request_github_actions_workflow_info_after_execution(
-                github_owner,
-                repository_name,
-                branch_name,
-                num_workflow_runs_before_execution,
-            )
-        )
-        if response_before_execution:
-            print(
-                "Successfully retrieved information on Github actions after execution of workflow."
-            )
-        else:
-            print(
-                "Failure to retrieve information on Github actions after executing workflow."
-            )
-
-        workflow_run_id = self._parse_workflow_run_id(response_after_execution)
-
-        return workflow_run_id
+    return workflow_run_id
 
 
 # if __name__ == "__main__":

@@ -1,47 +1,13 @@
 # ResearchGraph
+ResearchGraph is created by [AutoRes](https://www.autores.one/english).
+ResearchGraph is an OSS that aims to automate complete machine learning research and to self-improve the automatic research system.  
+ResearchGraphは[AutoRes](https://www.autores.one/japanese)というプロジェクトで作成しています．
+ResearchGraphは完全な機械学習研究の自動化および，自動研究システムの自己改善を目的としたOSSになります．
 
-ResearchGraphは完全な研究の自動化を目的としたOSSになります．
-
-## ResearchGraph
-全てのサブグラフを実行します．
-
-```python
-python src/researchgraph/research_graph.py
-```
-
-<details>
-
-<summary>Architecture</summary>
-
-```mermaid
-%%{init: {'flowchart': {'curve': 'linear'}}}%%
-graph TD;
-        __start__([<p>__start__</p>]):::first
-        retrieve_paper_subgraph(retrieve_paper_subgraph)
-        generate_subgraph(generate_subgraph)
-        executor_subgraph(executor_subgraph)
-        writer_subgraph(writer_subgraph)
-        __end__([<p>__end__</p>]):::last
-        __start__ --> retrieve_paper_subgraph;
-        executor_subgraph --> writer_subgraph;
-        generate_subgraph --> executor_subgraph;
-        retrieve_paper_subgraph --> generate_subgraph;
-        writer_subgraph --> __end__;
-        classDef default fill:#f2f0ff,line-height:1.2
-        classDef first fill-opacity:0
-        classDef last fill:#bfb6fc
-```
-
-</details>
+## Explanation
 
 
-## Retrieve paper subgraph
-研究を行うための論文を取得するためのサブグラフです．
-
-```python
-python src/researchgraph/retrieve_paper_subgraph/retrieve_paper_subgraph.py
-```
-
+### ResearchGraph Architecture
 
 <details>
 
@@ -51,38 +17,63 @@ python src/researchgraph/retrieve_paper_subgraph/retrieve_paper_subgraph.py
 %%{init: {'flowchart': {'curve': 'linear'}}}%%
 graph TD;
         __start__([<p>__start__</p>]):::first
-        initialize_state(initialize_state)
-        base_search_papers_node(base_search_papers_node)
-        base_retrieve_arxiv_full_text_node(base_retrieve_arxiv_full_text_node)
-        base_extract_github_urls_node(base_extract_github_urls_node)
-        base_summarize_paper_node(base_summarize_paper_node)
-        base_select_best_paper_node(base_select_best_paper_node)
-        generate_queries_node(generate_queries_node)
-        add_search_papers_node(add_search_papers_node)
-        add_retrieve_arxiv_full_text_node(add_retrieve_arxiv_full_text_node)
-        add_extract_github_urls_node(add_extract_github_urls_node)
-        add_summarize_paper_node(add_summarize_paper_node)
-        add_select_best_paper_node(add_select_best_paper_node)
+        generator_subgraph_generate_advantage_criteria_node(generate_advantage_criteria_node)
+        generator_subgraph_generate_experiment_details_node(generate_experiment_details_node)
+        generator_subgraph_generate_experiment_code_node(generate_experiment_code_node)
+        executor_subgraph_generate_code_with_devin_node(generate_code_with_devin_node)
+        executor_subgraph_execute_github_actions_workflow_node(execute_github_actions_workflow_node)
+        executor_subgraph_retrieve_github_actions_artifacts_node(retrieve_github_actions_artifacts_node)
+        executor_subgraph_llm_decide_node(llm_decide_node)
+        executor_subgraph_fix_code_with_devin_node(fix_code_with_devin_node)
+        executor_subgraph___end__(<p>__end__</p>)
+        writer_subgraph_writeup_node(writeup_node)
+        writer_subgraph_latex_node(latex_node)
         __end__([<p>__end__</p>]):::last
-        __start__ --> initialize_state;
-        add_retrieve_arxiv_full_text_node --> add_extract_github_urls_node;
-        add_search_papers_node --> add_retrieve_arxiv_full_text_node;
-        add_select_best_paper_node --> __end__;
-        base_retrieve_arxiv_full_text_node --> base_extract_github_urls_node;
-        base_search_papers_node --> base_retrieve_arxiv_full_text_node;
-        base_select_best_paper_node --> generate_queries_node;
-        generate_queries_node --> add_search_papers_node;
-        initialize_state --> base_search_papers_node;
-        base_extract_github_urls_node -. &nbsp;Next paper&nbsp; .-> base_retrieve_arxiv_full_text_node;
-        base_extract_github_urls_node -. &nbsp;Generate paper summary&nbsp; .-> base_summarize_paper_node;
-        base_extract_github_urls_node -. &nbsp;All complete&nbsp; .-> base_select_best_paper_node;
-        base_summarize_paper_node -. &nbsp;Next paper&nbsp; .-> base_retrieve_arxiv_full_text_node;
-        base_summarize_paper_node -. &nbsp;All complete&nbsp; .-> base_select_best_paper_node;
-        add_extract_github_urls_node -. &nbsp;Next paper&nbsp; .-> add_retrieve_arxiv_full_text_node;
-        add_extract_github_urls_node -. &nbsp;Generate paper summary&nbsp; .-> add_summarize_paper_node;
-        add_extract_github_urls_node -. &nbsp;All complete&nbsp; .-> add_select_best_paper_node;
-        add_summarize_paper_node -. &nbsp;Next paper&nbsp; .-> add_retrieve_arxiv_full_text_node;
-        add_summarize_paper_node -. &nbsp;All complete&nbsp; .-> add_select_best_paper_node;
+        __start__ --> generator_subgraph_generate_advantage_criteria_node;
+        executor_subgraph___end__ --> writer_subgraph_writeup_node;
+        generator_subgraph_generate_experiment_code_node --> executor_subgraph_generate_code_with_devin_node;
+        writer_subgraph_latex_node --> __end__;
+        subgraph generator_subgraph
+        generator_subgraph_generate_advantage_criteria_node --> generator_subgraph_generate_experiment_details_node;
+        generator_subgraph_generate_experiment_details_node --> generator_subgraph_generate_experiment_code_node;
+        end
+        subgraph executor_subgraph
+        executor_subgraph_execute_github_actions_workflow_node --> executor_subgraph_retrieve_github_actions_artifacts_node;
+        executor_subgraph_fix_code_with_devin_node --> executor_subgraph_execute_github_actions_workflow_node;
+        executor_subgraph_generate_code_with_devin_node --> executor_subgraph_execute_github_actions_workflow_node;
+        executor_subgraph_retrieve_github_actions_artifacts_node --> executor_subgraph_llm_decide_node;
+        executor_subgraph_llm_decide_node -. &nbsp;correction&nbsp; .-> executor_subgraph_fix_code_with_devin_node;
+        executor_subgraph_llm_decide_node -. &nbsp;finish&nbsp; .-> executor_subgraph___end__;
+        end
+        subgraph writer_subgraph
+        writer_subgraph_writeup_node --> writer_subgraph_latex_node;
+        end
+        classDef default fill:#f2f0ff,line-height:1.2
+        classDef first fill-opacity:0
+        classDef last fill:#bfb6fc
+```
+
+</details>
+
+
+
+- Deep Research Subgraph
+Web上から情報を取得するためのサブグラフです．
+
+<details>
+
+<summary>Architecture</summary>
+
+```mermaid
+%%{init: {'flowchart': {'curve': 'linear'}}}%%
+graph TD;
+        __start__([<p>__start__</p>]):::first
+        recursive_search_node(recursive_search_node)
+        generate_report_node(generate_report_node)
+        __end__([<p>__end__</p>]):::last
+        __start__ --> recursive_search_node;
+        generate_report_node --> __end__;
+        recursive_search_node --> generate_report_node;
         classDef default fill:#f2f0ff,line-height:1.2
         classDef first fill-opacity:0
         classDef last fill:#bfb6fc
@@ -90,13 +81,8 @@ graph TD;
 </details>
 
 
-## Integrate generator subgraph
+- Generator Subgraph
 手法を合成するためのサブグラフです．
-
-```python
-python src/researchgraph/integrate_generator_subgraph/integrate_generator_subgraph.py
-```
-
 
 <details>
 
@@ -122,13 +108,8 @@ graph TD;
 </details>
 
 
-## executor subgraph
+- Executor Subgraph
 新規の手法をコーディングし実行するためのサブグラフです．
-
-```python
-python src/researchgraph/executor_subgraph/executor_subgraph.py
-```
-
 
 <details>
 
@@ -156,13 +137,8 @@ graph TD;
 </details>
 
 
-## writer subgraph
+- Writer Subgraph
 論文を執筆するためのサブグラフです．執筆した論文はGitHub上にアップロードされます．
-
-```python
-python src/researchgraph/writer_subgraph/writer_subgraph.py
-```
-
 
 <details>
 
@@ -185,3 +161,35 @@ graph TD;
         classDef last fill:#bfb6fc
 ```
 </details>
+
+
+### Result
+The following is a repository that summarizes the results of ResearchGraph.
+- [auto-research](https://github.com/auto-res2/auto-research)
+
+
+
+## Settings
+
+
+## How to execute
+- Research Graph
+```python
+python src/researchgraph/research_graph.py
+```
+- Deep Research Subgraph
+```python
+python src/researchgraph/deep_research_subgraph/deep_research_subgraph.py
+```
+- Generate Subgraph
+```python
+python src/researchgraph/integrate_generator_subgraph/integrate_generator_subgraph.py
+```
+- Executor Subgraph
+```python
+python src/researchgraph/executor_subgraph/executor_subgraph.py
+```
+- writer subgraph
+```python
+python src/researchgraph/writer_subgraph/writer_subgraph.py
+```
