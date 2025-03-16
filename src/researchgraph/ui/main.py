@@ -1,5 +1,9 @@
 import streamlit as st
 
+import sys
+
+sys.path.append("/mount/src/researchgraph/src")
+
 from researchgraph.generator_subgraph.generator_subgraph import GeneratorSubgraph
 from researchgraph.generator_subgraph.input_data import generator_subgraph_input_data
 from researchgraph.executor_subgraph.executor_subgraph import ExecutorSubgraph
