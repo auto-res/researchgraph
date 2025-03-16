@@ -58,10 +58,6 @@ on = gen.toggle("Generator Subgraphのアーキテクチャ")
 if on:
     gen.image("/workspaces/researchgraph/images/generator_subgraph.png")
 
-# new_method = ""
-# experiment_code = ""
-# verification_policy = ""
-# experiment_details = ""
 if gen.button("新規手法の生成"):
     gen.write("実行中")
     generator_subgraph = GeneratorSubgraph().build_graph()
@@ -71,8 +67,6 @@ if gen.button("新規手法の生成"):
         ):
             node_name = list(event.keys())[0]
             gen.markdown(f"{node_name}の実行結果")
-            # if event[node_name].get("new_method", ""):
-            #     st.session_state["new_method"] = event[node_name]["new_method"]
             if event[node_name].get("experiment_code", ""):
                 st.session_state["experiment_code"] = event[node_name][
                     "experiment_code"
@@ -151,7 +145,6 @@ llm_name = write.selectbox(
     ("gpt-4o-mini-2024-07-18", "gpt-4o-2024-11-20"),
 )
 
-# paper_content = {}
 if write.button("論文の執筆"):
     write.write("実行中")
     writer_subgraph_input_data = {
