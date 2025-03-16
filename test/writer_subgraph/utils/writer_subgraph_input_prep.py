@@ -67,8 +67,6 @@ class WriterSubgraphInputPrep:
 
     def execute(self, pdf_path):
         full_text = self._parse_pdf(pdf_path)
-        base_name = os.path.basename(pdf_path).replace(".pdf", "_generated.pdf")
-        output_pdf_path = os.path.join(self.output_dir, base_name)
 
         writer_input_data = self._call_llm(writer_subgraph_input_prep_prompt, {"full_text": full_text})
         print(f"writer_input_data: {writer_input_data}")
@@ -86,7 +84,7 @@ class WriterSubgraphInputPrep:
             "new_method_analysis": writer_input_data["new_method_analysis"],
             "github_url": "https://github.com/example/repo", 
             "paper_content": {}, 
-            "pdf_file_path": output_pdf_path,
+            "tex_text": "",
             "github_owner": "mock_owner",
             "repository_name": "mock_repo",
             "branch_name": "mock_branch",

@@ -6,7 +6,7 @@ import shutil
 import json
 import tempfile
 from pydantic import BaseModel
-
+from typing import Optional
 from litellm import completion
 
 
@@ -20,17 +20,19 @@ class LatexNode:
         llm_name: str,
         latex_template_file_path: str,
         figures_dir: str,
+        pdf_file_path: str,
         timeout: int = 30,
     ):
         self.llm_name = llm_name
-        self.timeout = timeout
-        self.figures_dir = figures_dir
         self.latex_template_file_path = latex_template_file_path
+        self.figures_dir = figures_dir
+        self.pdf_file_path = pdf_file_path
+        self.timeout = timeout
 
         template_dir = osp.dirname(latex_template_file_path)
         self.template_copy_file = osp.join(template_dir, "template_copy.tex")
 
-    def _call_llm(self, prompt: str, max_retries: int = 3) -> str:
+    def _call_llm(self, prompt: str, max_retries: int = 3) -> Optional[str]:
         system_prompt = """
         You are a helpful LaTeX rewriting assistant.
         Please respond ONLY in valid JSON format with a single key "latex_full_text" and no other keys.
@@ -138,11 +140,10 @@ class LatexNode:
     def _check_figures(
         self,
         tex_text: str,
-        figures_dir: str,
         pattern: str = r"\\includegraphics.*?{(.*?)}",
     ) -> str:
         # Verify all referenced figures in the LaTeX content exist in the figures directory
-        all_figs = [f for f in os.listdir(figures_dir) if f.endswith(".png")]
+        all_figs = [f for f in os.listdir(self.figures_dir) if f.endswith(".png")]
         if not all_figs:
             print("論文生成に使える図がありません")
             return tex_text
@@ -235,16 +236,14 @@ class LatexNode:
             print("chktex command not found. Skipping LaTeX checks.")
             return tex_text
 
-    def _compile_latex(
-        self, cwd: str, template_copy_file: str, pdf_file_path: str, timeout: int = 30
-    ):
+    def _compile_latex(self, cwd: str):
         # Compile the LaTeX document to PDF using pdflatex and bibtex commands
         print("GENERATING LATEX")
         commands = [
-            ["pdflatex", "-interaction=nonstopmode", template_copy_file],
-            ["bibtex", osp.splitext(template_copy_file)[0]],
-            ["pdflatex", "-interaction=nonstopmode", template_copy_file],
-            ["pdflatex", "-interaction=nonstopmode", template_copy_file],
+            ["pdflatex", "-interaction=nonstopmode", self.template_copy_file],
+            ["bibtex", osp.splitext(self.template_copy_file)[0]],
+            ["pdflatex", "-interaction=nonstopmode", self.template_copy_file],
+            ["pdflatex", "-interaction=nonstopmode", self.template_copy_file],
         ]
 
         for command in commands:
@@ -255,7 +254,7 @@ class LatexNode:
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE,
                     text=True,
-                    timeout=timeout,
+                    timeout=self.timeout,
                     check=True,
                 )
                 print("Standard Output:\n", result.stdout)
@@ -273,13 +272,13 @@ class LatexNode:
                 print(f"An unexpected error occurred: {e}")
 
         print("FINISHED GENERATING LATEX")
-        pdf_filename = f"{osp.splitext(osp.basename(template_copy_file))[0]}.pdf"
+        pdf_filename = f"{osp.splitext(osp.basename(self.template_copy_file))[0]}.pdf"
         try:
-            shutil.move(osp.join(cwd, pdf_filename), pdf_file_path)
+            shutil.move(osp.join(cwd, pdf_filename), self.pdf_file_path)
         except FileNotFoundError:
             print("Failed to rename PDF.")
 
-    def execute(self, paper_content: dict, pdf_file_path) -> str:
+    def execute(self, paper_content: dict) -> str:
         """
         Main entry point:
         1. Copy template
@@ -304,7 +303,7 @@ class LatexNode:
 
             print("Check figures...")
             original_tex_text = tex_text
-            tex_text = self._check_figures(tex_text, self.figures_dir)
+            tex_text = self._check_figures(tex_text)
             if tex_text != original_tex_text:
                 iteration_count += 1
                 continue
@@ -339,17 +338,12 @@ class LatexNode:
             f.write(tex_text)
 
         try:
-            self._compile_latex(
-                osp.dirname(self.template_copy_file),
-                self.template_copy_file,
-                pdf_file_path,
-                timeout=self.timeout,
-            )
-            return pdf_file_path
+            self._compile_latex(osp.dirname(self.template_copy_file))
+            return tex_text
 
         except Exception as e:
-            print(f"Error occurred: {e}")
-            return None
+            print(f"Error occurred during compiling: {e}")
+            return tex_text
         
 if __name__ == "__main__":
     state = {
@@ -358,19 +352,20 @@ if __name__ == "__main__":
             "abstract": "Test Abstract.",
             "introduction": "This is the introduction.",
         },
-        "pdf_file_path": "/workspaces/researchgraph/data/test_output.pdf", 
+        "tex_text": "", 
     }
     paper_content = state["paper_content"]
-    pdf_file_path = state["pdf_file_path"]
+    tex_text = state["tex_text"]
     llm_name = "gpt-4o-mini-2024-07-18"
     latex_template_file_path = "/workspaces/researchgraph/data/latex/template.tex"
     figures_dir = "/workspaces/researchgraph/images"
-    pdf_file_path = LatexNode(
+    pdf_file_path = "/workspaces/researchgraph/data/test_output.pdf"
+    tex_text= LatexNode(
         llm_name=llm_name,
         latex_template_file_path=latex_template_file_path,
         figures_dir=figures_dir,
+        pdf_file_path=pdf_file_path,
         timeout=30,
     ).execute(
-        paper_content,
-        pdf_file_path, 
+        paper_content 
     )
