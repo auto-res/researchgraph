@@ -53,7 +53,6 @@ def retrieve_github_actions_artifacts(
     save_dir,
     fix_iteration_count,
 ) -> tuple[str, str]:
-    print("retrieve_github_actions_artifacts_node")
     headers = {
         "Accept": "application/vnd.github+json",
         "Authorization": f"Bearer {GITHUB_PERSONAL_ACCESS_TOKEN}",

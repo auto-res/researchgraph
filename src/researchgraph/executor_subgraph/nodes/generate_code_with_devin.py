@@ -17,6 +17,7 @@ def _request_create_session(
 The “New Method” and “Experiment Code” sections contain ideas for new machine learning research and the code associated with those ideas. 
 The name of the new branch should be exactly the same as the session ID, starting with “devin-”.
 Please follow the “Rules” section to create an experimental script to conduct this research.
+Please create code that can run on NVIDIA Tesla T4 · 16 GB VRAM.
 # Rules
 - Create and implement a new branch in the repository given in “Repository URL”. 
 - Experimental scripts should be given a simple test run to make sure they work. The test run should not be too long.
@@ -74,7 +75,6 @@ def generate_code_with_devin(
     new_method: str,
     experiment_code: str,
 ) -> tuple[str | None, str | None, str | None]:
-    print("generate_code_with_devin_node")
     headers = {
         "Authorization": f"Bearer {DEVIN_API_KEY}",
         "Content-Type": "application/json",

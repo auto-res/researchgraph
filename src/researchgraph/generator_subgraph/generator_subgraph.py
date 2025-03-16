@@ -18,11 +18,18 @@ from researchgraph.generator_subgraph.nodes.generate_experiment_code import (
 from researchgraph.generator_subgraph.input_data import generator_subgraph_input_data
 
 
-class GeneratorSubgraphState(TypedDict):
+class GeneratorSubgraphInputState(TypedDict):
     new_method: str
+
+
+class GeneratorSubgraphOutputState(TypedDict):
     verification_policy: str
     experiment_details: str
     experiment_code: str
+
+
+class GeneratorSubgraphState(GeneratorSubgraphInputState, GeneratorSubgraphOutputState):
+    pass
 
 
 class GeneratorSubgraph:
@@ -30,6 +37,8 @@ class GeneratorSubgraph:
         pass
 
     def _generate_new_method_node(self, state: GeneratorSubgraphState) -> dict:
+        print("---GeneratorSubgraph---")
+        print("generate_new_method_node")
         new_method = generate_new_method(
             model_name="o3-mini-2025-01-31",
             new_method=state["new_method"],
@@ -37,6 +46,7 @@ class GeneratorSubgraph:
         return {"new_method": new_method}
 
     def _generate_advantage_criteria_node(self, state: GeneratorSubgraphState) -> dict:
+        print("generate_advantage_criteria_node")
         verification_policy = generate_advantage_criteria(
             model_name="o3-mini-2025-01-31",
             new_method=state["new_method"],
@@ -44,6 +54,7 @@ class GeneratorSubgraph:
         return {"verification_policy": verification_policy}
 
     def _generate_experiment_details_node(self, state: GeneratorSubgraphState) -> dict:
+        print("generate_experiment_details_node")
         experimet_details = generate_experiment_details(
             model_name="o3-mini-2025-01-31",
             verification_policy=state["verification_policy"],
@@ -51,6 +62,7 @@ class GeneratorSubgraph:
         return {"experiment_details": experimet_details}
 
     def _generate_experiment_code_node(self, state: GeneratorSubgraphState) -> dict:
+        print("generate_experiment_code_node")
         experiment_code = generate_experiment_code(
             model_name="o3-mini-2025-01-31",
             experiment_details=state["experiment_details"],
@@ -90,4 +102,9 @@ if __name__ == "__main__":
     output = graph.invoke(
         generator_subgraph_input_data,
     )
-    print(output)
+    # print(output)
+    import pprint
+
+    # pprint.pprint(output["verification_policy"])
+    pprint.pprint(output["experiment_details"])
+    # pprint.pprint(output["experiment_code"])

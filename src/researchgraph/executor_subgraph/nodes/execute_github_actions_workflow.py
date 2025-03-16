@@ -92,7 +92,6 @@ def _check_confirmation_of_execution_completion(response: dict):
 def execute_github_actions_workflow(
     github_owner: str, repository_name: str, branch_name: str
 ) -> int:
-    print("execute_github_actions_workflow_node")
     headers = {
         "Accept": "application/vnd.github+json",
         "Authorization": f"Bearer {GITHUB_PERSONAL_ACCESS_TOKEN}",

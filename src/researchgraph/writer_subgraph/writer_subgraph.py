@@ -7,7 +7,7 @@ from researchgraph.writer_subgraph.nodes.latexnode import LatexNode
 from researchgraph.writer_subgraph.input_data import writer_subgraph_input_data
 
 
-class WriterState(TypedDict):
+class WriterSubgraphInputState(TypedDict):
     objective: str
     base_method_text: str
     add_method_text: str
@@ -16,8 +16,19 @@ class WriterState(TypedDict):
     add_method_code: str
     new_method_code: list
 
+
+class WriterSubgraphHiddenState(TypedDict):
     paper_content: dict
+
+
+class WriterSubgraphOutputState(TypedDict):
     pdf_file_path: str
+
+
+class WriterSubgraphState(
+    WriterSubgraphInputState, WriterSubgraphHiddenState, WriterSubgraphOutputState
+):
+    pass
 
 
 class WriterSubgraph:
@@ -33,15 +44,17 @@ class WriterSubgraph:
         self.latex_template_file_path = latex_template_file_path
         self.figures_dir = figures_dir
 
-    def _writeup_node(self, state: WriterState) -> dict:
+    def _writeup_node(self, state: WriterSubgraphState) -> dict:
         print("---WriterSubgraph---")
+        print("writeup_node")
         paper_content = WriteupNode(
             llm_name=self.llm_name,
             refine_round=self.refine_round,
         ).execute(state)
         return {"paper_content": paper_content}
 
-    def _latex_node(self, state: WriterState) -> dict:
+    def _latex_node(self, state: WriterSubgraphState) -> dict:
+        print("latex_node")
         paper_content = state["paper_content"]
         print(paper_content)
         pdf_file_path = state["pdf_file_path"]
@@ -57,7 +70,7 @@ class WriterSubgraph:
         return {"pdf_file_path": pdf_file_path}
 
     def build_graph(self) -> CompiledGraph:
-        graph_builder = StateGraph(WriterState)
+        graph_builder = StateGraph(WriterSubgraphState)
         # make nodes
         graph_builder.add_node("writeup_node", self._writeup_node)
         graph_builder.add_node("latex_node", self._latex_node)

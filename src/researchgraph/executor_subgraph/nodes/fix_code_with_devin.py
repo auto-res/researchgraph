@@ -60,7 +60,6 @@ def fix_code_with_devin(
     error_text_data: str,
     fix_iteration_count: int,
 ) -> int:
-    print("fix_code_with_devin_node")
     headers = {
         "Authorization": f"Bearer {API_KEY}",
         "Content-Type": "application/json",

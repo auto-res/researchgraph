@@ -28,7 +28,6 @@ def llm_decide(
     prompt_template: str = llm_decide_prompt,
     max_retries: int = 3,
 ) -> bool | None:
-    print("llm_decide_node")
     data = {"output_text_data": output_text_data, "error_text_data": error_text_data}
 
     env = Environment()
