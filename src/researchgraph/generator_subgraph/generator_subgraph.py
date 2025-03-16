@@ -98,13 +98,17 @@ class GeneratorSubgraph:
 
 if __name__ == "__main__":
     graph = GeneratorSubgraph().build_graph()
-
-    output = graph.invoke(
-        generator_subgraph_input_data,
-    )
+    # output = graph.invoke(
+    #     generator_subgraph_input_data,
+    # )
     # print(output)
-    import pprint
+    # graph_nodes = list(graph.nodes.keys())[1:]
+    for event in graph.stream(generator_subgraph_input_data, stream_mode="updates"):
+        # print(node)
+        node_name = list(event.keys())[0]
+        print(node_name)
+        print(event[node_name])
 
     # pprint.pprint(output["verification_policy"])
-    pprint.pprint(output["experiment_details"])
+    # pprint.pprint(output["experiment_details"])
     # pprint.pprint(output["experiment_code"])
