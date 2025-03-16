@@ -49,15 +49,15 @@ class LatexNode:
                 response = completion(
                     model=self.llm_name,
                     messages=[
-                        {"role": "system", "content": system_prompt}, 
-                        {"role": "user", "content": prompt}, 
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": prompt},
                     ],
                     temperature=0,
                     response_format=LLMOutput,
                 )
                 structured_output = json.loads(response.choices[0].message.content)
                 return structured_output["latex_full_text"]
-            except Exception as e:  
+            except Exception as e:
                 print(f"[Attempt {attempt+1}/{max_retries}] Error calling LLM: {e}")
         print("Exceeded maximum retries for LLM call.")
         return None
@@ -200,7 +200,9 @@ class LatexNode:
     def _fix_latex_errors(self, tex_text: str) -> str:
         # Fix LaTeX errors iteratively using chktex and automated suggestions
         try:
-            with tempfile.NamedTemporaryFile(mode="w", suffix=".tex", delete=True) as tmp_file:
+            with tempfile.NamedTemporaryFile(
+                mode="w", suffix=".tex", delete=True
+            ) as tmp_file:
                 tmp_file.write(tex_text)
                 tmp_file.flush()
 
@@ -210,7 +212,9 @@ class LatexNode:
 
                 if check_output:
                     error_messages = check_output.strip().split("\n")
-                    formatted_errors = "\n".join(f"- {msg}" for msg in error_messages if msg)
+                    formatted_errors = "\n".join(
+                        f"- {msg}" for msg in error_messages if msg
+                    )
                     print(f"LaTeX エラー検出: {formatted_errors}")
 
                     prompt = f"""
@@ -344,7 +348,8 @@ class LatexNode:
         except Exception as e:
             print(f"Error occurred during compiling: {e}")
             return tex_text
-        
+
+
 if __name__ == "__main__":
     state = {
         "paper_content": {
@@ -352,7 +357,7 @@ if __name__ == "__main__":
             "abstract": "Test Abstract.",
             "introduction": "This is the introduction.",
         },
-        "tex_text": "", 
+        "tex_text": "",
     }
     paper_content = state["paper_content"]
     tex_text = state["tex_text"]
@@ -360,12 +365,10 @@ if __name__ == "__main__":
     latex_template_file_path = "/workspaces/researchgraph/data/latex/template.tex"
     figures_dir = "/workspaces/researchgraph/images"
     pdf_file_path = "/workspaces/researchgraph/data/test_output.pdf"
-    tex_text= LatexNode(
+    tex_text = LatexNode(
         llm_name=llm_name,
         latex_template_file_path=latex_template_file_path,
         figures_dir=figures_dir,
         pdf_file_path=pdf_file_path,
         timeout=30,
-    ).execute(
-        paper_content 
-    )
+    ).execute(paper_content)

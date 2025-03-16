@@ -19,14 +19,21 @@ class UploadState(TypedDict):
 
 
 class UploadSubgraph:
-    def __init__(self) -> None:
-        pass
+    def __init__(
+        self,
+        github_owner: str,
+        repository_name: str,
+        pdf_file_path: str,
+    ) -> None:
+        self.github_owner = github_owner
+        self.repository_name = repository_name
+        self.pdf_file_path = pdf_file_path
 
     def _github_upload_node(self, state: UploadState) -> dict:
         completion = github_upload(
-            pdf_file_path=state["pdf_file_path"],
-            github_owner=state["github_owner"],
-            repository_name=state["repository_name"],
+            pdf_file_path=self.pdf_file_path,
+            github_owner=self.github_owner,
+            repository_name=self.repository_name,
             branch_name=state["branch_name"],
             title=state["paper_content"]["Title"],
             abstract=state["paper_content"]["Abstract"],
@@ -47,5 +54,9 @@ class UploadSubgraph:
 
 
 if __name__ == "__main__":
-    subgraph = UploadSubgraph().build_graph()
+    subgraph = UploadSubgraph(
+        github_owner="auto-res2",
+        repository_name="auto-research",
+        pdf_file_path="/workspaces/researchgraph/data/latex/paper.pdf",
+    ).build_graph()
     result = subgraph.invoke(upload_subgraph_input_data)

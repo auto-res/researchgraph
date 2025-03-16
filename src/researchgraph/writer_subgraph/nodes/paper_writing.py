@@ -1,7 +1,6 @@
-import re
 import json
 from pydantic import BaseModel
-from jinja2 import Template, Environment
+from jinja2 import Environment
 from litellm import completion
 from typing import Optional
 
@@ -9,21 +8,21 @@ from typing import Optional
 env = Environment()
 
 # NOTE: These regex rules are used to classify the keys in state[""] into specific sections.
-regex_rules = {
-    "Title": r"^(title|objective)$",
-    "Methods": r"^(new_method|verification_policy|experiment_details)$",
-    "Codes": r"^(experiment_code)$",
-    "Results": r"^(output_text_data)$",
-    "Analysis": r".*_analysis$",
-    # "Related Work": r"^(arxiv_url|github_url)$"
-}
+# regex_rules = {
+#     "Title": r"^(title|objective)$",
+#     "Methods": r"^(new_method|verification_policy|experiment_details)$",
+#     "Codes": r"^(experiment_code)$",
+#     "Results": r"^(output_text_data)$",
+#     "Analysis": r".*_analysis$",
+#     # "Related Work": r"^(arxiv_url|github_url)$"
+# }
 
 
 class LLMOutput(BaseModel):
     generated_paper_text: str
 
 
-class WriteupNode:
+class WritingNode:
     def __init__(
         self,
         llm_name: str,
@@ -198,27 +197,27 @@ Pay particular attention to fixing any errors such as:
 - Incorrect closing of environments, e.g. </end{{figure}}> instead of \\end{{figure}}
 """
 
-    def _generate_note(self, state: dict) -> str:
-        template = Template("""
-        {% for section, items in sections.items() %}
-        # {{ section }}
-        {% for key, value in items.items() %}
-        {{ key }}: {{ value }}
-        {% endfor %}
-        {% endfor %}
-        """)
+    # def _generate_note(self, state: dict) -> str:
+    #     template = Template("""
+    #     {% for section, items in sections.items() %}
+    #     # {{ section }}
+    #     {% for key, value in items.items() %}
+    #     {{ key }}: {{ value }}
+    #     {% endfor %}
+    #     {% endfor %}
+    #     """)
 
-        sections: dict[str, dict] = {}
-        for section, pattern in regex_rules.items():
-            matched_items: dict[str, str] = {}
-            for key, value in state.items():
-                if re.search(pattern, key):
-                    matched_items[key] = (
-                        ", ".join(value) if isinstance(value, list) else value
-                    )
-            sections[section] = matched_items
-        # print(f"note: {template.render(sections=sections)}")
-        return template.render(sections=sections)
+    #     sections: dict[str, dict] = {}
+    #     for section, pattern in regex_rules.items():
+    #         matched_items: dict[str, str] = {}
+    #         for key, value in state.items():
+    #             if re.search(pattern, key):
+    #                 matched_items[key] = (
+    #                     ", ".join(value) if isinstance(value, list) else value
+    #                 )
+    #         sections[section] = matched_items
+    #     # print(f"note: {template.render(sections=sections)}")
+    #     return template.render(sections=sections)
 
     def _call_llm(self, prompt: str, max_retries: int = 3) -> Optional[str]:
         for attempt in range(max_retries):
@@ -287,8 +286,8 @@ Pay particular attention to fixing any errors such as:
             error_list_prompt=self.error_list_prompt,
         )
 
-    def execute(self, state: dict) -> dict:
-        note = self._generate_note(state)
+    def execute(self, note: str) -> dict:
+        # note = self._generate_note(state)
         paper_content = {}
         for section in self.target_sections:
             print(f"section: {section}")
