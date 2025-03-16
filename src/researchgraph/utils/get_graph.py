@@ -3,6 +3,11 @@ from IPython.display import Image
 from langgraph.graph.graph import CompiledGraph
 
 from researchgraph.research_graph import ResearchGraph
+from researchgraph.generator_subgraph.generator_subgraph import GeneratorSubgraph
+from researchgraph.executor_subgraph.executor_subgraph import ExecutorSubgraph
+from researchgraph.writer_subgraph.writer_subgraph import WriterSubgraph
+from researchgraph.upload_subgraph.upload_subgraph import UploadSubgraph
+
 
 IMAGE_SAVE_DIR = "/workspaces/researchgraph/images"
 
@@ -39,33 +44,47 @@ if __name__ == "__main__":
     #     llm_name=llm_name,
     # ).build_graph()
 
-    # executor_subgraph = ExecutorSubgraph(
-    #     max_fix_iteration=3,
-    # ).build_graph()
+    generator_subgraph = GeneratorSubgraph().build_graph()
 
-    # writer_graph = WriterSubgraph(
-    #     llm_name=llm_name,
-    #     latex_template_file_path=latex_template_file_path,
-    #     figures_dir=figures_dir,
-    # ).build_graph()
+    executor_subgraph = ExecutorSubgraph(
+        github_owner="auto-res2",
+        repository_name="auto-research",
+        save_dir=save_dir,
+        max_code_fix_iteration=3,
+    ).build_graph()
+
+    writer_graph = WriterSubgraph(
+        llm_name=llm_name,
+        latex_template_file_path=latex_template_file_path,
+        figures_dir=figures_dir,
+        pdf_file_path="/workspaces/researchgraph/data/test_output.pdf",
+    ).build_graph()
+
+    upload_subgraph = UploadSubgraph(
+        github_owner="auto-res2",
+        repository_name="auto-research",
+        pdf_file_path="/workspaces/researchgraph/data/test_output.pdf",
+    ).build_graph()
 
     research_graph = ResearchGraph(
         llm_name=llm_name,
         save_dir=save_dir,
-        max_fix_iteration=3,
+        max_code_fix_iteration=3,
+        github_owner="auto-res2",
+        repository_name="auto-research",
+        pdf_file_path="/workspaces/researchgraph/data/test_output.pdf",
         latex_template_file_path=latex_template_file_path,
         figures_dir=figures_dir,
     ).build_graph()
 
     # make_image(graph=retrieve_paper_subgraph, file_name="retrieve_paper_subgraph.png")
     # make_image(graph=deep_research_subgraph, file_name="deep_research_subgraph.png")
-    # make_image(
-    #     graph=integrate_generator_subgraph, file_name="integrate_generator_subgraph.png"
-    # )
-    # make_image(graph=executor_subgraph, file_name="executor_subgraph.png")
-    # make_image(graph=writer_graph, file_name="writer_subgraph.png")
+    make_image(graph=generator_subgraph, file_name="generator_subgraph.png")
+    make_image(graph=executor_subgraph, file_name="executor_subgraph.png")
+    make_image(graph=writer_graph, file_name="writer_subgraph.png")
+    make_image(graph=upload_subgraph, file_name="upload_subgraph.png")
     make_image(graph=research_graph, file_name="research_graph.png")
-    print_mermaid(research_graph)
+    # print_mermaid(research_graph)
     # print_mermaid(retrieve_paper_subgraph)
     # print_mermaid(deep_research_subgraph)
     # print_mermaid(integrate_generator_subgraph)
