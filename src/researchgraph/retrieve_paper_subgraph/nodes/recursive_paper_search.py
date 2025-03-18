@@ -97,7 +97,8 @@ class RecursivePaperSearchNode:
         return urls, processed_result
     
     def _perform_arxiv_search(self, serp_query: str) -> list:
-        academic_query = f"{serp_query} (NeurIPS OR ICML OR AAAI OR ICLR OR CVPR OR ACL)" #TODO: クエリを変更する
+        print(f"Arxiv serp_query: {serp_query}")
+        academic_query = f"{serp_query}"
         paper_search = ArxivNode(num_retrieve_paper=5, period_days=365) #TODO: インスタンス引数にする
         return paper_search.execute([academic_query])
     

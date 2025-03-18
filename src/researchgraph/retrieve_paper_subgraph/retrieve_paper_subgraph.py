@@ -211,7 +211,7 @@ class RetrievePaperSubgraph:
 
 
 if __name__ == "__main__":
-    save_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), "data")
+    save_dir = "/workspaces/researchgraph/data"
     llm_name = "gpt-4o-mini-2024-07-18"
 
     breadth = 1  # 最小の幅

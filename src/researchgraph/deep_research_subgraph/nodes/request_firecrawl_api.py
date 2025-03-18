@@ -37,7 +37,6 @@ async def request_firecrawl_api(
             print(f"  WARNING: FIRE_CRAWL_API_KEY environment variable is not set")
         else:
             masked_key = FIRE_CRAWL_API_KEY[:6] + "..." + FIRE_CRAWL_API_KEY[-4:] if len(FIRE_CRAWL_API_KEY) > 10 else "***"
-            print(f"  Using FireCrawl API key: {masked_key}")
 
         # 検索オプションの設定
         scrape_options = {"formats": ["markdown"]}
