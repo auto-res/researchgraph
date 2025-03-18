@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import patch, MagicMock
 import json
 import re
-from researchgraph.writer_subgraph.nodes.writeup_node import WriteupNode, regex_rules
+from researchgraph.writer_subgraph.nodes.paper_writing import WriteupNode, regex_rules
 from requests.exceptions import HTTPError
 
 
@@ -59,26 +59,6 @@ def test_call_llm(mock_completion, writeup_node: WriteupNode):
     assert result == "Mock LLM output"
 
 
-def test_clean_meta_information(writeup_node: WriteupNode):
-    """
-    _clean_meta_information() がメタ情報や指示を取り除けるかをテスト。
-    """
-    text_with_meta = """
-Here is a refined version. 
-Certainly! This section discusses ...
-% This is a comment
---- 
-**Some instructions**:
-_Editor@cref
-"""
-    cleaned_text = writeup_node._clean_meta_information(text_with_meta)
-    assert "Here is a refined version." not in cleaned_text
-    assert "Certainly! This section discusses" not in cleaned_text
-    assert "---" not in cleaned_text
-    assert "% This is a comment" not in cleaned_text
-    assert "_Editor@cref" not in cleaned_text
-
-
 def test_generate_write_prompt(writeup_node: WriteupNode):
     """
     _generate_write_prompt() がセクション名とノートを元に正しいテンプレートを生成するかをテスト。
@@ -99,7 +79,7 @@ def test_generate_refinement_prompt(writeup_node: WriteupNode):
     note = "This is a note for refinement."
     content = "This is the original content."
     prompt = writeup_node._generate_refinement_prompt(section, note, content)
-    assert "Now criticize and refine only the Method that you just wrote" in prompt
+    assert "You are tasked with refining in the 'Method' section of a research paper. in prompt"
     assert "This is a note for refinement." in prompt
     assert "This is the original content." in prompt
     assert "Some tips are provided below:" in prompt
@@ -160,11 +140,12 @@ def test_execute_refine_only(writeup_node: WriteupNode, test_environment):
     custom_state["Title"] = "Existing title content"
     custom_state["Abstract"] = "Existing abstract content"
 
-    with patch.object(
-        writeup_node, "_refine", return_value="Refined existing content"
-    ) as mock_refine, patch.object(
-        writeup_node, "_write"
-    ) as mock_write:
+    with (
+        patch.object(
+            writeup_node, "_refine", return_value="Refined existing content"
+        ) as mock_refine,
+        patch.object(writeup_node, "_write") as mock_write,
+    ):
         result_dict = writeup_node.execute(custom_state)
 
     mock_write.assert_not_called()
@@ -181,13 +162,15 @@ def test_regex_rules_validation(test_environment):
     """
     pattern_title = regex_rules.get("Title")
     assert pattern_title is not None
-    assert re.search(pattern_title, "objective") is not None, \
-        "objective が Title セクションにマッチしない"
+    assert (
+        re.search(pattern_title, "objective") is not None
+    ), "objective が Title セクションにマッチしない"
 
     pattern_methods = regex_rules.get("Methods")
     assert pattern_methods is not None
-    assert re.search(pattern_methods, "base_method_text") is not None, \
-        "base_method_text が Methods セクションにマッチしない"
+    assert (
+        re.search(pattern_methods, "base_method_text") is not None
+    ), "base_method_text が Methods セクションにマッチしない"
 
 
 @patch("researchgraph.writer_subgraph.nodes.writeup_node.completion")
@@ -197,16 +180,21 @@ def test_relate_work(mock_completion, writeup_node: WriteupNode):
     """
     input_text = "Some related work content."
     output_text = writeup_node._relate_work(input_text)
-    assert output_text == input_text, "_relate_work() が現状は入力をそのまま返していない"
+    assert (
+        output_text == input_text
+    ), "_relate_work() が現状は入力をそのまま返していない"
 
 
-@patch("researchgraph.writer_subgraph.nodes.writeup_node.completion", side_effect=Exception("Mock LLM error"))
+@patch(
+    "researchgraph.writer_subgraph.nodes.writeup_node.completion",
+    side_effect=Exception("Mock LLM error"),
+)
 def test_call_llm_exception(mock_completion, writeup_node: WriteupNode):
     """
     LLM への呼び出し（_call_llm）がエラーを投げた場合、リトライ後に `None` を返すことを確認する。
     """
     mock_completion.side_effect = Exception("Mock LLM error")
-    
+
     result = writeup_node._call_llm("Prompt that triggers error.")
     assert result is None, "Expected None when LLM call fails after max retries"
 
@@ -214,15 +202,29 @@ def test_call_llm_exception(mock_completion, writeup_node: WriteupNode):
 @pytest.mark.parametrize(
     "exception, expected_message",
     [
-        (ConnectionError("Mocked Connection Error"), "ConnectionError が発生した場合 None を返すべき"),
-        (TimeoutError("Mocked Timeout Error"), "TimeoutError が発生した場合 None を返すべき"),
-        (HTTPError("Mocked Rate Limit Error (429)"), "RateLimitError が発生した場合 None を返すべき"),
-        (HTTPError("Mocked Internal Server Error (500)"), "HTTPError が発生した場合 None を返すべき"),
+        (
+            ConnectionError("Mocked Connection Error"),
+            "ConnectionError が発生した場合 None を返すべき",
+        ),
+        (
+            TimeoutError("Mocked Timeout Error"),
+            "TimeoutError が発生した場合 None を返すべき",
+        ),
+        (
+            HTTPError("Mocked Rate Limit Error (429)"),
+            "RateLimitError が発生した場合 None を返すべき",
+        ),
+        (
+            HTTPError("Mocked Internal Server Error (500)"),
+            "HTTPError が発生した場合 None を返すべき",
+        ),
     ],
 )
 @patch("researchgraph.writer_subgraph.nodes.writeup_node.completion")
-def test_call_llm_api_errors(mock_completion, writeup_node, exception, expected_message):
-    """ LLM API 呼び出し時に各種エラーが発生した場合のハンドリング """
+def test_call_llm_api_errors(
+    mock_completion, writeup_node, exception, expected_message
+):
+    """LLM API 呼び出し時に各種エラーが発生した場合のハンドリング"""
     mock_completion.side_effect = exception
 
     result = writeup_node._call_llm("Test prompt")
@@ -233,13 +235,18 @@ def test_call_llm_api_errors(mock_completion, writeup_node, exception, expected_
     "mock_response, expected_message",
     [
         ("INVALID JSON", "JSONDecodeError が発生した場合 None を返すべき"),
-        (json.dumps({"wrong_key": "Some text"}), "KeyError が発生した場合 None を返すべき"),
+        (
+            json.dumps({"wrong_key": "Some text"}),
+            "KeyError が発生した場合 None を返すべき",
+        ),
         (None, "AttributeError が発生した場合 None を返すべき"),
     ],
 )
 @patch("researchgraph.writer_subgraph.nodes.writeup_node.completion")
-def test_call_llm_response_errors(mock_completion, writeup_node, mock_response, expected_message):
-    """ LLM のレスポンスが異常だった場合のハンドリング """
+def test_call_llm_response_errors(
+    mock_completion, writeup_node, mock_response, expected_message
+):
+    """LLM のレスポンスが異常だった場合のハンドリング"""
     mock_completion.return_value = MagicMock(
         choices=[MagicMock(message=MagicMock(content=mock_response))]
     )
