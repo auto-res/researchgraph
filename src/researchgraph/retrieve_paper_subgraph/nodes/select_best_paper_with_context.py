@@ -4,7 +4,7 @@ from jinja2 import Environment
 import ast
 from typing import List, Optional
 
-from researchgraph.retrieve_paper_subgraph_new.nodes.recursive_paper_search import (
+from researchgraph.retrieve_paper_subgraph.nodes.recursive_paper_search import (
     CandidatePaperInfo,
 )
 

@@ -1,6 +1,6 @@
 from typing import List, Dict, Any
 from datetime import datetime
-from researchgraph.retrieve_paper_subgraph_new.nodes.recursive_paper_search import (
+from researchgraph.retrieve_paper_subgraph.nodes.recursive_paper_search import (
     CandidatePaperInfo,
 )
 

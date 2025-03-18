@@ -1,78 +1,46 @@
-from typing import Annotated
-import operator
-from typing_extensions import TypedDict
-from pydantic import BaseModel
-
+import os
+import json
+import asyncio
+from typing import TypedDict
+from dotenv import load_dotenv
 from langgraph.graph import START, END, StateGraph
 from langgraph.graph.graph import CompiledGraph
 
-from researchgraph.retrieve_paper_subgraph.nodes.extract_github_url_node import (
-    ExtractGithubUrlNode,
-)
-from researchgraph.retrieve_paper_subgraph.nodes.generate_queries_node import (
-    generate_queries_node,
-    generate_queries_prompt_add,
-)
-from researchgraph.retrieve_paper_subgraph.nodes.search_papers_node import (
-    SearchPapersNode,
-)
-from researchgraph.retrieve_paper_subgraph.nodes.select_best_paper_node import (
-    select_best_paper_node,
-    select_base_paper_prompt,
-    select_add_paper_prompt,
-)
-from researchgraph.retrieve_paper_subgraph.nodes.summarize_paper_node import (
-    summarize_paper_node,
-    summarize_paper_prompt_base,
-    # summarize_paper_prompt_add,
-)
-from researchgraph.retrieve_paper_subgraph.nodes.retrieve_arxiv_text_node import (
-    RetrievearXivTextNode,
+from researchgraph.retrieve_paper_subgraph.nodes.select_best_paper_with_context import select_best_paper_with_context
+from researchgraph.retrieve_paper_subgraph.nodes.generate_enhanced_queries import generate_enhanced_queries
+from researchgraph.retrieve_paper_subgraph.nodes.generate_report import generate_markdown_report
+from researchgraph.retrieve_paper_subgraph.nodes.recursive_paper_search import (
+    RecursivePaperSearchNode, 
+    CandidatePaperInfo,
 )
 
+load_dotenv()
 
-class CandidatePaperInfo(BaseModel):
-    arxiv_id: str
-    arxiv_url: str
-    title: str
-    authors: list[str]
-    published_date: str
-    journal: str
-    doi: str
-    summary: str
-    # 途中で取得
-    github_url: str
-    # 最後のサマリーで取得
-    main_contributions: str
-    methodology: str
-    experimental_setup: str
-    limitations: str
-    future_research_directions: str
+class RetrievePaperSubgraphInputState(TypedDict):
+    queries: list[str]
 
-
-class RetrievePaperState(TypedDict):
-    queries: list
-
-    tmp_search_paper_list: list[dict]
-    tmp_search_paper_count: int
-    tmp_paper_full_text: str
-    tmp_github_url: str
-    process_index: int
-
-    candidate_base_papers_info_list: Annotated[list[CandidatePaperInfo], operator.add]
-    selected_base_paper_arxiv_id: str
+class RetrievePaperSubgraphHiddenState(TypedDict):
+    base_paper_learnings: list[str]
+    base_paper_visited_urls: list[str]
+    base_paper_candidates: list[CandidatePaperInfo]
+    enhanced_queries: list[str]
+    add_paper_learnings: list[str]
+    add_paper_visited_urls: list[str]
+    add_paper_candidates: list[CandidatePaperInfo]
     selected_base_paper_info: CandidatePaperInfo
-
-    generate_queries: list[str]
-
-    candidate_add_papers_info_list: Annotated[list[CandidatePaperInfo], operator.add]
-    selected_add_paper_arxiv_id: str
     selected_add_paper_info: CandidatePaperInfo
 
+class RetrievePaperSubgraphOutputState(TypedDict):
     base_github_url: str
     base_method_text: str
     add_github_url: str
     add_method_text: str
+    research_report: str  # Markdown形式の研究レポート
+
+class RetrievePaperSubgraphState(
+    RetrievePaperSubgraphInputState, RetrievePaperSubgraphHiddenState, RetrievePaperSubgraphOutputState
+):
+    pass
 
 
 class RetrievePaperSubgraph:
@@ -80,370 +48,190 @@ class RetrievePaperSubgraph:
         self,
         llm_name: str,
         save_dir: str,
+        breadth: int = 3,
+        depth: int = 2,
     ):
         self.llm_name = llm_name
         self.save_dir = save_dir
-
-    def _initialize_state(self, state: RetrievePaperState) -> dict:
-        print("---RetrievePaperSubgraph---")
-        return {
-            "queries": state["queries"],
-            "process_index": 0,
-            "candidate_base_papers_info_list": [],
-            "candidate_add_papers_info_list": [],
-        }
-
-    # Base Paper
-    def _search_base_papers_node(self, state: RetrievePaperState) -> dict:
-        print("search_papers_node")
+        self.breadth = breadth
+        self.depth = depth
+        
+    async def _recursive_base_paper_search_node(self, state: RetrievePaperSubgraphState) -> dict:
         queries = state["queries"]
-        search_paper_list = SearchPapersNode().execute(queries=queries)
-        print("search_paper_count: ", len(search_paper_list))
+        result = await RecursivePaperSearchNode(
+            llm_name=llm_name,
+            breadth=2,
+            depth=1,
+            save_dir=save_dir,
+        ).execute(queries)
         return {
-            "tmp_search_paper_list": search_paper_list,
-            "tmp_search_paper_count": len(search_paper_list),
+            "base_paper_learnings": result["learnings"],
+            "base_paper_visited_urls": result["visited_urls"],
+            "base_paper_candidates": result["paper_candidates"],
         }
-
-    def _retrieve_arxiv_full_text_node(self, state: RetrievePaperState) -> dict:
-        print("retrieve_arxiv_full_text_node")
-        process_index = state["process_index"]
-        print("process_index: ", process_index)
-        paper_info = state["tmp_search_paper_list"][process_index]
-        arxiv_url = paper_info["arxiv_url"]
-        paper_full_text = RetrievearXivTextNode(
-            save_dir=self.save_dir,
-        ).execute(arxiv_url=arxiv_url)
-        return {"tmp_paper_full_text": paper_full_text}
-
-    def _extract_github_url_node(self, state: RetrievePaperState) -> dict:
-        print("extract_github_url_node")
-        paper_full_text = state["tmp_paper_full_text"]
-        process_index = state["process_index"]
-        paper_summary = state["tmp_search_paper_list"][process_index]["summary"]
-        github_url = ExtractGithubUrlNode(
-            llm_name=self.llm_name,
-        ).execute(
-            paper_full_text=paper_full_text,
-            paper_summary=paper_summary,
-        )
-        # GitHub URLが取得できなかった場合は次の論文を処理するためにProcess Indexを進める
-        process_index = state["process_index"]
-        if github_url == "":
-            process_index += 1
-        return {"tmp_github_url": github_url, "process_index": process_index}
-
-    def _check_github_urls(self, state: RetrievePaperState) -> str:
-        print("check_github_urls")
-        if state["tmp_github_url"] == "":
-            if state["process_index"] < state["tmp_search_paper_count"]:
-                return "Next paper"
-            else:
-                return "All complete"
-        else:
-            return "Generate paper summary"
-
-    def _summarize_base_paper_node(self, state: RetrievePaperState) -> dict:
-        print("summarize_paper_node")
-        paper_full_text = state["tmp_paper_full_text"]
-        (
-            main_contributions,
-            methodology,
-            experimental_setup,
-            limitations,
-            future_research_directions,
-        ) = summarize_paper_node(
-            llm_name=self.llm_name,
-            prompt_template=summarize_paper_prompt_base,
-            paper_text=paper_full_text,
-        )
-
-        process_index = state["process_index"]
-        paper_info = state["tmp_search_paper_list"][process_index]
-        candidate_papers_info = {
-            "arxiv_id": paper_info["arxiv_id"],
-            "arxiv_url": paper_info["arxiv_url"],
-            "title": paper_info.get("title", ""),
-            "authors": paper_info.get("authors", ""),
-            "published_date": paper_info.get("published_date", ""),
-            "journal": paper_info.get("journal", ""),
-            "doi": paper_info.get("doi", ""),
-            "summary": paper_info.get("summary", ""),
-            "github_url": state["tmp_github_url"],
-            "main_contributions": main_contributions,
-            "methodology": methodology,
-            "experimental_setup": experimental_setup,
-            "limitations": limitations,
-            "future_research_directions": future_research_directions,
-        }
+    
+    async def _recursive_add_paper_search_node(self, state: RetrievePaperSubgraphState) -> dict:
+        enhanced_queries = state["enhanced_queries"]
+        result = await RecursivePaperSearchNode(
+            llm_name=llm_name,
+            breadth=2,
+            depth=1,
+            save_dir=save_dir,
+        ).execute(enhanced_queries)
         return {
-            "process_index": process_index + 1,
-            "candidate_base_papers_info_list": [
-                CandidatePaperInfo(**candidate_papers_info)
-            ],
+            "add_paper_learnings": result["learnings"], 
+            "add_paper_visited_urls": result["visited_urls"],
+            "add_paper_candidates": result["paper_candidates"],
         }
 
-    def _check_paper_count(self, state: RetrievePaperState) -> str:
-        print("check_paper_count")
-        if state["process_index"] < state["tmp_search_paper_count"]:
-            return "Next paper"
-        else:
-            return "All complete"
-
-    def _base_select_best_paper_node(self, state: RetrievePaperState) -> dict:
-        print("base_select_best_paper_node")
-        candidate_papers_info_list = state["candidate_base_papers_info_list"]
-        # TODO:論文の検索数の制御がうまくいっていない気がする
-        selected_arxiv_id = select_best_paper_node(
+    def _select_base_paper_node(self, state: RetrievePaperSubgraphState) -> dict:
+        print("select_paper_node")
+        selected_paper = select_best_paper_with_context(
             llm_name=self.llm_name,
-            prompt_template=select_base_paper_prompt,
-            candidate_papers=candidate_papers_info_list,
+            candidate_papers=state["base_paper_candidates"],
+            learnings=state["base_paper_learnings"], 
         )
-
-        # 選択された論文の情報を取得
-        for paper_info in candidate_papers_info_list:
-            if paper_info.arxiv_id == selected_arxiv_id:
-                selected_paper_info = paper_info
-
         return {
-            "selected_base_paper_arxiv_id": selected_arxiv_id,
-            "selected_base_paper_info": selected_paper_info,
+            "selected_base_paper_info": selected_paper
+        }
+    
+    def _select_add_paper_node(self, state: RetrievePaperSubgraphState) -> dict:
+        print("select_paper_node")
+        selected_paper = select_best_paper_with_context(
+            llm_name=self.llm_name,
+            candidate_papers=state["add_paper_candidates"],
+            learnings=state["add_paper_learnings"], 
+            base_paper=state["selected_base_paper_info"],
+        )
+        return {
+            "selected_add_paper_info": selected_paper
         }
 
-    # add paper
-    def _generate_queries_node(self, state: RetrievePaperState) -> dict:
+    def _generate_enhanced_queries_node(self, state: RetrievePaperSubgraphState) -> dict:
         print("generate_queries_node")
-        selected_base_paper_info = state["selected_base_paper_info"]
-        generated_queries_list = generate_queries_node(
+        generated_queries = generate_enhanced_queries(
             llm_name=self.llm_name,
-            prompt_template=generate_queries_prompt_add,
-            selected_base_paper_info=selected_base_paper_info,
+            base_paper=state["selected_base_paper_info"],
+            learnings=["base_paper_learnings"],
         )
         return {
-            "generate_queries": generated_queries_list,
-            "process_index": 0,
+            "enhanced_queries": generated_queries,
         }
 
-    def _search_add_papers_node(self, state: RetrievePaperState) -> dict:
-        print("add_search_papers_node")
-        queries = state["generate_queries"]
-        search_paper_list = SearchPapersNode().execute(queries=queries)
-        # NOTE:検索論文の数が多くなりすぎることがあるためTOP_Nで制限
-        TOP_N = 15
-        search_paper_list = search_paper_list[:TOP_N]
-        print("add_search_paper_count: ", len(search_paper_list))
-        return {
-            "tmp_search_paper_list": search_paper_list,
-            "tmp_search_paper_count": len(search_paper_list),
-        }
+    def _save_report(self, state: RetrievePaperSubgraphState) -> dict:
+        print("Generating research report...")
+        base_paper = state["selected_base_paper_info"]
+        add_paper = state["selected_add_paper_info"]
 
-    def _summarize_add_paper_node(self, state: RetrievePaperState) -> dict:
-        print("summarize_add_paper_node")
-        paper_full_text = state["tmp_paper_full_text"]
-        (
-            main_contributions,
-            methodology,
-            experimental_setup,
-            limitations,
-            future_research_directions,
-        ) = summarize_paper_node(
-            llm_name=self.llm_name,
-            prompt_template=summarize_paper_prompt_base,
-            paper_text=paper_full_text,
+        base_github_url, base_method_text = base_paper.github_url, base_paper.model_dump_json()
+        add_github_url, add_method_text = add_paper.github_url, add_paper.model_dump_json()
+
+        report_data = generate_markdown_report(
+            base_paper=base_paper,
+            add_paper=add_paper,
+            base_learnings=state["base_paper_learnings"],
+            add_learnings=state["add_paper_learnings"],
+            base_visited_urls=state["base_paper_visited_urls"],
+            add_visited_urls=state["add_paper_visited_urls"],
+            max_learnings=10,
         )
+        research_report = report_data["markdown"]
 
-        process_index = state["process_index"]
-        paper_info = state["tmp_search_paper_list"][process_index]
-        candidate_papers_info = {
-            "arxiv_id": paper_info["arxiv_id"],
-            "arxiv_url": paper_info["arxiv_url"],
-            "title": paper_info.get("title", ""),
-            "authors": paper_info.get("authors", ""),
-            "published_date": paper_info.get("published_date", ""),
-            "journal": paper_info.get("journal", ""),
-            "doi": paper_info.get("doi", ""),
-            "summary": paper_info.get("summary", ""),
-            "github_url": state["tmp_github_url"],
-            "main_contributions": main_contributions,
-            "methodology": methodology,
-            "experimental_setup": experimental_setup,
-            "limitations": limitations,
-            "future_research_directions": future_research_directions,
-        }
-        return {
-            "process_index": process_index + 1,
-            "candidate_add_papers_info_list": [
-                CandidatePaperInfo(**candidate_papers_info)
-            ],
-        }
+        # 保存ディレクトリの設定
+        dirs = {key: os.path.join(self.save_dir, key) for key in ["papers", "reports", "json"]}
+        for path in dirs.values():
+            os.makedirs(path, exist_ok=True)
 
-    def _add_select_best_paper_node(self, state: RetrievePaperState) -> dict:
-        print("add_select_best_paper_node")
-        candidate_papers_info_list = state["candidate_add_papers_info_list"]
-        selected_arxiv_id = select_best_paper_node(
-            llm_name=self.llm_name,
-            prompt_template=select_add_paper_prompt,
-            candidate_papers=candidate_papers_info_list,
-            selected_base_paper_info=state["selected_base_paper_info"],
-        )
+        report_path = os.path.join(dirs["reports"], "research_report.md")
+        self._save_text_file(report_path, research_report, "Research report")
 
-        # 選択された論文の情報を取得
-        for paper_info in candidate_papers_info_list:
-            if paper_info.arxiv_id == selected_arxiv_id:
-                selected_paper_info = paper_info
+        base_paper_json_path = os.path.join(dirs["json"], "base_paper_info.json")
+        self._save_text_file(base_paper_json_path, base_method_text, "Base paper info")
 
-        return {
-            "selected_add_paper_arxiv_id": selected_arxiv_id,
-            "selected_add_paper_info": selected_paper_info,
+        add_paper_json_path = os.path.join(dirs["json"], "add_paper_info.json")
+        self._save_text_file(add_paper_json_path, add_method_text, "Additional paper info")
+
+        output_json = {
+            "base_github_url": base_github_url,
+            "add_github_url": add_github_url,
+            "base_paper_info": json.loads(base_method_text),
+            "add_paper_info": json.loads(add_method_text),
+            "learnings": report_data["learnings"],
+            "sources": report_data["sources"],
+            "report_path": report_path,
+            "generated_at": report_data["generated_at"]
         }
 
-    def _prepare_state(self, state: RetrievePaperState) -> dict:
-        base_github_url = state["selected_base_paper_info"].github_url
-        base_method_text = state["selected_base_paper_info"].model_dump_json()
-        add_github_url = state["selected_add_paper_info"].github_url
-        add_method_text = state["selected_add_paper_info"].model_dump_json()
+        output_json_path = os.path.join(dirs["json"], "paper_search_result.json")
+        self._save_json(output_json_path, output_json, "Complete search result")
 
         return {
             "base_github_url": base_github_url,
             "base_method_text": base_method_text,
             "add_github_url": add_github_url,
             "add_method_text": add_method_text,
+            "research_report": research_report,
         }
+    
+    def _save_text_file(self, file_path: str, content: str, description: str) -> None:
+        try:
+            with open(file_path, "w") as f:
+                f.write(content)
+            print(f"{description} saved to: {file_path}")
+        except Exception as e:
+            print(f"Warning: Could not save {description} to file: {e}")
+            
+    def _save_json(self, file_path: str, data: str, description: str) -> None:
+        try:
+            with open(file_path, "w") as f:
+                json.dump(data, f, indent=2)
+            print(f"{description} saved to: {file_path}")
+        except Exception as e:
+            print(f"Warning: Could not save {description} to file: {e}")
 
     def build_graph(self) -> CompiledGraph:
-        graph_builder = StateGraph(RetrievePaperState)
+        graph_builder = StateGraph(RetrievePaperSubgraphState)
 
-        # make nodes
-        graph_builder.add_node("initialize_state", self._initialize_state)
+        graph_builder.add_node("recursive_base_paper_search", self._recursive_base_paper_search_node)
+        graph_builder.add_node("select_base_paper", self._select_base_paper_node)
+        graph_builder.add_node("generate_queries", self._generate_enhanced_queries_node)
+        graph_builder.add_node("recursive_add_paper_search", self._recursive_add_paper_search_node)
+        graph_builder.add_node("select_add_paper", self._select_add_paper_node)
+        graph_builder.add_node("save_report", self._save_report)
 
-        # base paper
-        graph_builder.add_node(
-            "base_search_papers_node", self._search_base_papers_node
-        )  # TODO: 検索結果が空ならEND
-        graph_builder.add_node(
-            "base_retrieve_arxiv_full_text_node",
-            self._retrieve_arxiv_full_text_node,
-        )
-        graph_builder.add_node(
-            "base_extract_github_urls_node", self._extract_github_url_node
-        )
-        graph_builder.add_node(
-            "base_summarize_paper_node", self._summarize_base_paper_node
-        )
-        graph_builder.add_node(
-            "base_select_best_paper_node", self._base_select_best_paper_node
-        )
-
-        # add paper
-        graph_builder.add_node("generate_queries_node", self._generate_queries_node)
-        graph_builder.add_node(
-            "add_search_papers_node", self._search_add_papers_node
-        )  # TODO: 検索結果が空ならEND
-        graph_builder.add_node(
-            "add_retrieve_arxiv_full_text_node", self._retrieve_arxiv_full_text_node
-        )
-        graph_builder.add_node(
-            "add_extract_github_urls_node", self._extract_github_url_node
-        )
-        graph_builder.add_node(
-            "add_summarize_paper_node", self._summarize_add_paper_node
-        )
-        graph_builder.add_node(
-            "add_select_best_paper_node", self._add_select_best_paper_node
-        )
-        graph_builder.add_node("prepare_state", self._prepare_state)
-
-        # make edges
-        # base paper
-        graph_builder.add_edge(START, "initialize_state")
-        graph_builder.add_edge("initialize_state", "base_search_papers_node")
-        graph_builder.add_edge(
-            "base_search_papers_node", "base_retrieve_arxiv_full_text_node"
-        )
-        graph_builder.add_edge(
-            "base_retrieve_arxiv_full_text_node", "base_extract_github_urls_node"
-        )
-        graph_builder.add_conditional_edges(
-            "base_extract_github_urls_node",
-            path=self._check_github_urls,
-            path_map={
-                "Next paper": "base_retrieve_arxiv_full_text_node",
-                "Generate paper summary": "base_summarize_paper_node",
-                "All complete": "base_select_best_paper_node",
-            },
-        )
-        graph_builder.add_conditional_edges(
-            "base_summarize_paper_node",
-            path=self._check_paper_count,
-            path_map={
-                "Next paper": "base_retrieve_arxiv_full_text_node",
-                "All complete": "base_select_best_paper_node",
-            },
-        )
-
-        # add paper
-        graph_builder.add_edge("base_select_best_paper_node", "generate_queries_node")
-        graph_builder.add_edge("generate_queries_node", "add_search_papers_node")
-        graph_builder.add_edge(
-            "add_search_papers_node", "add_retrieve_arxiv_full_text_node"
-        )
-        graph_builder.add_edge(
-            "add_retrieve_arxiv_full_text_node", "add_extract_github_urls_node"
-        )
-        graph_builder.add_conditional_edges(
-            "add_extract_github_urls_node",
-            path=self._check_github_urls,
-            path_map={
-                "Next paper": "add_retrieve_arxiv_full_text_node",
-                "Generate paper summary": "add_summarize_paper_node",
-                "All complete": "add_select_best_paper_node",
-            },
-        )
-        graph_builder.add_conditional_edges(
-            "add_summarize_paper_node",
-            path=self._check_paper_count,
-            path_map={
-                "Next paper": "add_retrieve_arxiv_full_text_node",
-                "All complete": "add_select_best_paper_node",
-            },
-        )
-        graph_builder.add_edge("add_select_best_paper_node", "prepare_state")
-        graph_builder.add_edge("prepare_state", END)
+        graph_builder.add_edge(START, "recursive_base_paper_search")
+        graph_builder.add_edge("recursive_base_paper_search", "select_base_paper")
+        graph_builder.add_edge("select_base_paper", "generate_queries")
+        graph_builder.add_edge("generate_queries", "recursive_add_paper_search")
+        graph_builder.add_edge("recursive_add_paper_search", "select_add_paper")
+        graph_builder.add_edge("select_add_paper", "save_report")
+        graph_builder.add_edge("save_report", END)
 
         return graph_builder.compile()
 
 
 if __name__ == "__main__":
-    save_dir = "/workspaces/researchgraph/data"
-    # llm_name = "gpt-4o-2024-11-20"
+    save_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), "data")
     llm_name = "gpt-4o-mini-2024-07-18"
+
+    breadth = 1  # 最小の幅
+    depth = 1    # 最小の深さ
+
+    print(f"Running with minimal settings: breadth={breadth}, depth={depth}")
 
     subgraph = RetrievePaperSubgraph(
         llm_name=llm_name,
         save_dir=save_dir,
+        breadth=breadth,
+        depth=depth,
     ).build_graph()
 
     state = {
         "queries": ["deep learning"],
     }
     config = {"recursion_limit": 300}
-    result = subgraph.invoke(state, config=config)
 
-    print(result.keys())
+    async def main():
+        result = await subgraph.ainvoke(state, config=config)
 
-    # 複数になるようにしないといけない
-    print("candidate_base_papers_info")
-    candidate_base_papers_info = result["candidate_base_papers_info_list"]
-    # print(candidate_base_papers_info)
-    print(len(candidate_base_papers_info))
-
-    candidate_add_papers_info = result["candidate_add_papers_info_list"]
-    # print(candidate_add_papers_info)
-    print(len(candidate_add_papers_info))
-
-    base_github_url = result["base_github_url"]
-    print(base_github_url)
-    base_method_text = result["base_method_text"]
-    print(base_method_text)
-    add_github_url = result["add_github_url"]
-    print(add_github_url)
-    add_method_text = result["add_method_text"]
+    asyncio.run(main())
