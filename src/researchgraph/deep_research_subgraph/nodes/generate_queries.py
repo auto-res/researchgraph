@@ -31,8 +31,15 @@ async def generate_queries(
 
     prompt_text = f"""
 Given the following user query, generate up to {num_queries} unique SERP queries to research the topic.
-Ensure each query is distinct and not redundant.
-User Query: {query}"""
+
+User Query: {query}
+
+Guidelines:
+- **Maintain topic consistency**: The generated queries should stay focused on the original topic without deviating to other areas.
+- **Avoid applied domains**: Do not generate queries related to industry applications, business applications, healthcare, finance, medical research, or market trends.
+- **Instead, focus on core theoretical concepts, mathematical principles, and model advancements** rather than how they are used in real-world industries.
+- **Ensure each query is distinct** and useful for retrieving high-quality academic papers.
+"""
 
     if learnings:
         prompt_text += "Here are some insights from previous research. Use these to refine the new queries:\n"
@@ -47,7 +54,7 @@ User Query: {query}"""
             {"role": "user", "content": prompt_text},
         ],
         response_format=QueryInfoList,
-        temperature=0.9,
+        temperature=0.5,
     )
     output = response.choices[0].message.content
     output_dict = ast.literal_eval(output)

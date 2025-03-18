@@ -112,7 +112,7 @@ class RetrievePaperSubgraph:
         generated_queries = generate_enhanced_queries(
             llm_name=self.llm_name,
             base_paper=state["selected_base_paper_info"],
-            learnings=["base_paper_learnings"],
+            learnings=state["base_paper_learnings"],
         )
         return {
             "enhanced_queries": generated_queries,
@@ -227,7 +227,7 @@ if __name__ == "__main__":
     ).build_graph()
 
     state = {
-        "queries": ["deep learning"],
+        "queries": ["In-context learning"],
     }
     config = {"recursion_limit": 300}
 

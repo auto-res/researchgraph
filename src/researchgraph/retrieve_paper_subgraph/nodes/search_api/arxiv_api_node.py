@@ -16,7 +16,7 @@ class ArxivResponse(BaseModel):
 
 
 class ArxivNode:
-    def __init__(self, num_retrieve_paper: int = 5, period_days: Optional[int] = 7):
+    def __init__(self, num_retrieve_paper: int = 5, period_days: Optional[int] = 365):
         self.num_retrieve_paper = num_retrieve_paper
         self.period_days = period_days
         self.start_indices: dict[str, int] = {}  # TODO: stateに持たせる？
@@ -59,7 +59,7 @@ class ArxivNode:
             "search_query": search_query,
             "start": start_index,
             "max_results": self.num_retrieve_paper,
-            "sortBy": "submittedDate",
+            "sortBy": "relevance",
             "sortOrder": "descending",
         }
 

@@ -126,6 +126,7 @@ Below is a list of candidate papers (Research B candidates):
 4. **Future Potential:** Consider whether the paper introduces innovative methods or theories that could provide a strong foundation for new research.
 5. **Code Availability:** Papers with accessible and functional GitHub repositories are preferred. Evaluate the quality of the code and documentation if available.
 6. **Context Alignment:** Consider how well the paper aligns with the additional context from research.
+7. **Avoid domain-specific applications:** Do not select papers that focus on specific industries, healthcare, finance, biology, or business applications. Instead, prioritize fundamental advancements in AI/ML theory.
 
 **Instructions:**
 1. Carefully review the details of each candidate paper.
