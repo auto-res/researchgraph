@@ -6,13 +6,23 @@ from typing import Dict, Any, Optional, List
 class FirecrawlApp:
     """Python implementation of FirecrawlApp similar to the TypeScript version."""
 
-    def __init__(self, api_key: Optional[str] = None, api_url: Optional[str] = None):
+    def __init__(
+        self, 
+        api_key: Optional[str] = None, 
+        api_url: Optional[str] = None, 
+        max_retries: int = 20, 
+        initial_wait_time = 1, 
+        max_wait_time = 180, 
+    ):
         """Initialize the FirecrawlApp with API key and optional base URL."""
         self.api_key = api_key or os.getenv("FIRE_CRAWL_API_KEY")  # Note: Using FIRE_CRAWL_API_KEY to match existing env var
         if not self.api_key:
             raise ValueError("FirecrawlApp requires an API key")
 
         self.api_url = api_url or "https://api.firecrawl.dev/v1"
+        self.max_retries = max_retries
+        self.initial_wait_time = initial_wait_time
+        self.max_wait_time = max_wait_time
 
     async def search(self, query: str, timeout: int = 15000, limit: int = 5,
                     scrape_options: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
@@ -95,11 +105,24 @@ class FirecrawlApp:
             **(params or {})
         }
 
-        async with httpx.AsyncClient(timeout=httpx.Timeout(60.0)) as client:
-            response = await client.post(endpoint, json=data, headers=headers)
-            response.raise_for_status()
-            return response.json()
+        retry_count = 0
+        wait_time = self.initial_wait_time
+        while retry_count < self.max_retries:
+            try:
+                async with httpx.AsyncClient(timeout=httpx.Timeout(60.0)) as client:
+                    response = await client.post(endpoint, json=data, headers=headers)
+                response.raise_for_status()
+                return response.json()
+            except httpx.HTTPError as e:
+                print(f"Attempt {retry_count+1} failed with HTTP error: {e}")
+            except Exception as e:
+                print(f"Unexpected error on attempt {retry_count+1}: {e}")
 
+            print(f"Retrying in {wait_time} seconds...")
+            await asyncio.sleep(wait_time)
+            wait_time = min(wait_time * 2, self.max_wait_time)
+            retry_count += 1
+        raise Exception("Max retries reached. Scrape URL API request failed.")
 
 async def main():
     """Test the FirecrawlApp."""

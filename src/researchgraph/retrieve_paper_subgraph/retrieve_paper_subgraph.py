@@ -21,11 +21,9 @@ class RetrievePaperSubgraphInputState(TypedDict):
 
 class RetrievePaperSubgraphHiddenState(TypedDict):
     base_paper_learnings: list[str]
-    base_paper_visited_urls: list[str]
     base_paper_candidates: list[CandidatePaperInfo]
     enhanced_queries: list[str]
     add_paper_learnings: list[str]
-    add_paper_visited_urls: list[str]
     add_paper_candidates: list[CandidatePaperInfo]
     selected_base_paper_info: CandidatePaperInfo
     selected_add_paper_info: CandidatePaperInfo
@@ -48,39 +46,41 @@ class RetrievePaperSubgraph:
         self,
         llm_name: str,
         save_dir: str,
+        scrape_urls: list, 
         breadth: int = 3,
         depth: int = 2,
     ):
         self.llm_name = llm_name
         self.save_dir = save_dir
+        self.scrape_urls = scrape_urls
         self.breadth = breadth
         self.depth = depth
         
     async def _recursive_base_paper_search_node(self, state: RetrievePaperSubgraphState) -> dict:
         queries = state["queries"]
         result = await RecursivePaperSearchNode(
-            llm_name=llm_name,
-            breadth=2,
-            depth=1,
-            save_dir=save_dir,
+            llm_name=self.llm_name,
+            breadth=self.breadth,
+            depth=self.depth,
+            save_dir=self.save_dir,
+            scrape_urls=self.scrape_urls
         ).execute(queries)
         return {
             "base_paper_learnings": result["learnings"],
-            "base_paper_visited_urls": result["visited_urls"],
             "base_paper_candidates": result["paper_candidates"],
         }
     
     async def _recursive_add_paper_search_node(self, state: RetrievePaperSubgraphState) -> dict:
         enhanced_queries = state["enhanced_queries"]
         result = await RecursivePaperSearchNode(
-            llm_name=llm_name,
-            breadth=2,
-            depth=1,
-            save_dir=save_dir,
+            llm_name=self.llm_name,
+            breadth=self.breadth,
+            depth=self.depth,
+            save_dir=self.save_dir,
+            scrape_urls=self.scrape_urls
         ).execute(enhanced_queries)
         return {
             "add_paper_learnings": result["learnings"], 
-            "add_paper_visited_urls": result["visited_urls"],
             "add_paper_candidates": result["paper_candidates"],
         }
 
@@ -131,8 +131,8 @@ class RetrievePaperSubgraph:
             add_paper=add_paper,
             base_learnings=state["base_paper_learnings"],
             add_learnings=state["add_paper_learnings"],
-            base_visited_urls=state["base_paper_visited_urls"],
-            add_visited_urls=state["add_paper_visited_urls"],
+            base_visited_urls=[],
+            add_visited_urls=[],
             max_learnings=10,
         )
         research_report = report_data["markdown"]
@@ -214,20 +214,27 @@ if __name__ == "__main__":
     save_dir = "/workspaces/researchgraph/data"
     llm_name = "gpt-4o-mini-2024-07-18"
 
-    breadth = 1  # 最小の幅
-    depth = 1    # 最小の深さ
+    breadth = 1
+    depth = 1
+    scrape_urls = [
+        "https://icml.cc/virtual/2024/papers.html?filter=titles", 
+        "https://iclr.cc/virtual/2024/papers.html?filter=titles", 
+        # "https://nips.cc/virtual/2024/papers.html?filter=titles", 
+        # "https://cvpr.thecvf.com/virtual/2024/papers.html?filter=titles", 
+    ]
 
     print(f"Running with minimal settings: breadth={breadth}, depth={depth}")
 
     subgraph = RetrievePaperSubgraph(
         llm_name=llm_name,
         save_dir=save_dir,
+        scrape_urls=scrape_urls, 
         breadth=breadth,
         depth=depth,
     ).build_graph()
 
     state = {
-        "queries": ["In-context learning"],
+        "queries": ["deep learning"],
     }
     config = {"recursion_limit": 300}
 

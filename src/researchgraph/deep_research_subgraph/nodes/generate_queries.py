@@ -30,15 +30,15 @@ async def generate_queries(
     system_prompt = "You are an expert research assistant."
 
     prompt_text = f"""
-Given the following user query, generate up to {num_queries} unique SERP queries to research the topic.
+Given the following user query, generate up to {num_queries} unique short queries (1 to 3 words) for academic research.
 
 User Query: {query}
 
 Guidelines:
-- **Maintain topic consistency**: The generated queries should stay focused on the original topic without deviating to other areas.
-- **Avoid applied domains**: Do not generate queries related to industry applications, business applications, healthcare, finance, medical research, or market trends.
+- **Keep queries short**: Each query should be between 1 and 3 words.
+- **Maintain topic relevance**: The generated queries should closely relate to the user's original query.
+- **No applied domains**: Do not generate queries related to industry applications, business applications, healthcare, finance, medical research, or market trends.
 - **Instead, focus on core theoretical concepts, mathematical principles, and model advancements** rather than how they are used in real-world industries.
-- **Ensure each query is distinct** and useful for retrieving high-quality academic papers.
 """
 
     if learnings:
@@ -54,7 +54,7 @@ Guidelines:
             {"role": "user", "content": prompt_text},
         ],
         response_format=QueryInfoList,
-        temperature=0.5,
+        temperature=0.2,
     )
     output = response.choices[0].message.content
     output_dict = ast.literal_eval(output)
