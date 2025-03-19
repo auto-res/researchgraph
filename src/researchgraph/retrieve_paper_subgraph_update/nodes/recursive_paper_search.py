@@ -7,11 +7,11 @@ from litellm import completion
 from researchgraph.deep_research_subgraph.nodes.generate_queries import generate_queries, QueryInfo
 from researchgraph.deep_research_subgraph.nodes.perform_web_scrape import perform_web_scrape 
 from researchgraph.deep_research_subgraph.nodes.process_serp_result import process_serp_result
-from researchgraph.retrieve_paper_subgraph.nodes.search_api.arxiv_api_node import ArxivNode
-from researchgraph.retrieve_paper_subgraph.nodes.retrieve_arxiv_text_node import RetrieveArxivTextNode
-from researchgraph.retrieve_paper_subgraph.nodes.extract_github_url_node import ExtractGithubUrlNode
+from researchgraph.retrieve_paper_subgraph_update.nodes.search_api.arxiv_api_node import ArxivNode
+from researchgraph.retrieve_paper_subgraph_update.nodes.retrieve_arxiv_text_node import RetrieveArxivTextNode
+from researchgraph.retrieve_paper_subgraph_update.nodes.extract_github_url_node import ExtractGithubUrlNode
 from researchgraph.deep_research_subgraph.nodes.request_firecrawl_api import SearchResponseItem
-from researchgraph.retrieve_paper_subgraph.nodes.summarize_paper_node import (
+from researchgraph.retrieve_paper_subgraph_update.nodes.summarize_paper_node import (
     summarize_paper_node,
     summarize_paper_prompt_base,
 )

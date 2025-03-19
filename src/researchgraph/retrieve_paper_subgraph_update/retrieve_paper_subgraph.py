@@ -6,10 +6,10 @@ from dotenv import load_dotenv
 from langgraph.graph import START, END, StateGraph
 from langgraph.graph.graph import CompiledGraph
 
-from researchgraph.retrieve_paper_subgraph.nodes.select_best_paper_with_context import select_best_paper_with_context
-from researchgraph.retrieve_paper_subgraph.nodes.generate_enhanced_queries import generate_enhanced_queries
-from researchgraph.retrieve_paper_subgraph.nodes.generate_report import generate_markdown_report
-from researchgraph.retrieve_paper_subgraph.nodes.recursive_paper_search import (
+from researchgraph.retrieve_paper_subgraph_update.nodes.select_best_paper_with_context import select_best_paper_with_context
+from researchgraph.retrieve_paper_subgraph_update.nodes.generate_enhanced_queries import generate_enhanced_queries
+from researchgraph.retrieve_paper_subgraph_update.nodes.generate_report import generate_markdown_report
+from researchgraph.retrieve_paper_subgraph_update.nodes.recursive_paper_search import (
     RecursivePaperSearchNode, 
     CandidatePaperInfo,
 )
