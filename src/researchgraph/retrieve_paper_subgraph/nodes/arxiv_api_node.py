@@ -1,6 +1,7 @@
 import requests
 import feedparser
 import pytz
+import time
 from datetime import datetime, timedelta
 from typing import Optional
 from pydantic import BaseModel, ValidationError, Field
@@ -16,20 +17,32 @@ class ArxivResponse(BaseModel):
 
 
 class ArxivNode:
-    def __init__(self, num_retrieve_paper: int = 5, period_days: Optional[int] = 7):
+    def __init__(
+        self, 
+        num_retrieve_paper: int = 5, 
+        period_days: Optional[int] = None, 
+        max_retries: int = 20, 
+        initial_wait_time = 1, 
+        max_wait_time = 180, 
+    ):
         self.num_retrieve_paper = num_retrieve_paper
         self.period_days = period_days
         self.start_indices: dict[str, int] = {}  # TODO: stateに持たせる？
+        self.max_retries = max_retries
+        self.initial_wait_time = initial_wait_time
+        self.max_wait_time = max_wait_time
+        
 
     def _build_arxiv_query(self, query: str) -> str:
+        sanitized_query = query.replace(":", "")
         now_utc = datetime.now(pytz.utc)
         if self.period_days is None:
-            return f"all:{query}"
+            return f"all:{sanitized_query}"
 
         from_date = now_utc - timedelta(days=self.period_days)
         from_str = from_date.strftime("%Y-%m-%d")
         to_str = now_utc.strftime("%Y-%m-%d")
-        return f"(all:{query}) AND submittedDate:[{from_str} TO {to_str}]"
+        return f"(all:{sanitized_query}) AND submittedDate:[{from_str} TO {to_str}]"
 
     def _validate_and_convert(self, entry) -> Optional[ArxivResponse]:
         try:
@@ -59,16 +72,24 @@ class ArxivNode:
             "search_query": search_query,
             "start": start_index,
             "max_results": self.num_retrieve_paper,
-            "sortBy": "submittedDate",
+            "sortBy": "relevance",
             "sortOrder": "descending",
         }
 
-        try:
-            response = requests.get(base_url, params=params, timeout=15)
-            response.raise_for_status()
-        except requests.exceptions.RequestException as exc:
-            print(f"Error fetching from arXiv API: {exc}")
-            return []
+        retry_count = 0
+        wait_time = self.initial_wait_time
+        while retry_count < self.max_retries:
+            try:
+                response = requests.get(base_url, params=params, timeout=15)
+                response.raise_for_status()
+                break
+            except requests.exceptions.RequestException as exc:
+                print(f"Error fetching from arXiv API: {exc}. Retrying in {wait_time} seconds...")
+                time.sleep(wait_time)
+                retry_count += 1
+                wait_time = min(wait_time * 2, self.max_wait_time)
+        else:
+            print("Maximum retries reached. Failed to fetch data.")
 
         feed = feedparser.parse(response.text)
 

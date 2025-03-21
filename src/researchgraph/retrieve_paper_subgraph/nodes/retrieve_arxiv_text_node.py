@@ -40,7 +40,7 @@ class RetrievearXivTextNode:
             loader = PyPDFLoader(pdf_path)
             pages = loader.load_and_split()
             full_text = "".join(page.page_content.replace("\n", "") for page in pages)
-            with open(text_path, "w", encoding="utf-8") as text_file:
+            with open(text_path, "w", encoding="utf-8", errors="replace") as text_file:
                 text_file.write(full_text)
 
         return full_text

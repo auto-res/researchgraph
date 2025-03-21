@@ -1,7 +1,7 @@
+import json
 from pydantic import BaseModel
 from litellm import completion
 from jinja2 import Environment
-import ast
 
 
 class LLMOutput(BaseModel):
@@ -13,7 +13,8 @@ def select_best_paper_node(
     prompt_template: str,
     candidate_papers,
     selected_base_paper_info=None,
-) -> tuple[str, str]:
+    add_paper_num: int = 3, 
+) -> list[str]:
     if selected_base_paper_info is None:
         data = {
             "candidate_papers": candidate_papers,
@@ -35,10 +36,11 @@ def select_best_paper_node(
         ],
         response_format=LLMOutput,
     )
-    output = response.choices[0].message.content
-    output_dict = ast.literal_eval(output)
-    selected_arxiv_id = output_dict["selected_arxiv_id"]
-    return selected_arxiv_id
+    structured_output = json.loads(response.choices[0].message.content)
+    arxiv_id_str = structured_output["selected_arxiv_id"]
+    arxiv_id_list = [arxiv_id.strip() for arxiv_id in arxiv_id_str.split('\n') if arxiv_id.strip()]
+    print(f"Selected arxiv ids: {arxiv_id_list}")
+    return arxiv_id_list
 
 
 select_base_paper_prompt = """
@@ -86,7 +88,7 @@ Below is a list of papers with their details:
 
 select_add_paper_prompt = """
 You are an expert research assistant tasked with selecting the most relevant and high-quality research paper from a list of candidate papers. 
-Your goal is to identify a paper (Research B) that can be effectively synthesized with a given foundational paper (Research A) to create a novel and non-trivial research direction.
+Your goal is to identify {{ add_paper_num }} papers that can be effectively synthesized with a given foundational paper (Research A) to create a novel and non-trivial research direction.
 
 **Research A (Base Paper):**
 - **Title:** {{ selected_base_paper.title }}
@@ -102,7 +104,7 @@ Your goal is to identify a paper (Research B) that can be effectively synthesize
 - **Limitations:** {{ selected_base_paper.limitations }}
 - **Future Research Directions:** {{ selected_base_paper.future_research_directions }}
 
-Below is a list of candidate papers (Research B candidates):
+Below is a list of candidate papers (Patch paper candidates):
 
 {% for paper in candidate_papers %}
 **Paper (ID: {{ paper.arxiv_id }})**
@@ -126,8 +128,8 @@ Below is a list of candidate papers (Research B candidates):
 **Instructions:**
 1. Carefully review the details of each candidate paper.
 2. Evaluate each paper based on the selection criteria above.
-3. Select the **single most relevant and high-quality paper (Research B)** that, when synthesized with Research A, enables a non-trivial and novel research direction.
-4. Return the **arxiv_id** of the selected paper.
+3. Select {{ add_paper_num }} papers from the candidate papers that are relevant and of high-quality, when synthesized with Research A, enables a non-trivial and novel research direction.
+4. Output the ""arxiv_id** of the selected paper as a single plain text string, with each title separated by a newline character.
 5. Provide your response in the following JSON format:
 ```json
 {
