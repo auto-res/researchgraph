@@ -101,6 +101,7 @@ class ResearchGraph:
             latex_template_file_path=self.latex_template_file_path,
             figures_dir=self.figures_dir,
             pdf_file_path=self.pdf_file_path,
+            save_dir=self.save_dir,
         ).build_graph()
         # Upload Subgraph
         upload_subgraph = UploadSubgraph(
