@@ -3,7 +3,9 @@ from IPython.display import Image
 from langgraph.graph.graph import CompiledGraph
 
 from researchgraph.research_graph import ResearchGraph
-from researchgraph.generator_subgraph.generator_subgraph import GeneratorSubgraph
+from researchgraph.experimental_plan_subgraph.experimental_plan_subgraph import (
+    ExperimentalPlanSubgraph,
+)
 from researchgraph.executor_subgraph.executor_subgraph import ExecutorSubgraph
 from researchgraph.writer_subgraph.writer_subgraph import WriterSubgraph
 from researchgraph.upload_subgraph.upload_subgraph import UploadSubgraph
@@ -44,7 +46,7 @@ if __name__ == "__main__":
     #     llm_name=llm_name,
     # ).build_graph()
 
-    generator_subgraph = GeneratorSubgraph().build_graph()
+    experimental_plan_subgraph = ExperimentalPlanSubgraph().build_graph()
 
     executor_subgraph = ExecutorSubgraph(
         github_owner="auto-res2",
@@ -79,12 +81,13 @@ if __name__ == "__main__":
 
     # make_image(graph=retrieve_paper_subgraph, file_name="retrieve_paper_subgraph.png")
     # make_image(graph=deep_research_subgraph, file_name="deep_research_subgraph.png")
-    make_image(graph=generator_subgraph, file_name="generator_subgraph.png")
-    make_image(graph=executor_subgraph, file_name="executor_subgraph.png")
-    make_image(graph=writer_graph, file_name="writer_subgraph.png")
-    make_image(graph=upload_subgraph, file_name="upload_subgraph.png")
-    make_image(graph=research_graph, file_name="research_graph.png")
+    # make_image(graph=experimental_plan_subgraph, file_name="experimental_plan_subgraph.png")
+    # make_image(graph=executor_subgraph, file_name="executor_subgraph.png")
+    # make_image(graph=writer_graph, file_name="writer_subgraph.png")
+    # make_image(graph=upload_subgraph, file_name="upload_subgraph.png")
+    # make_image(graph=research_graph, file_name="research_graph.png")
     # print_mermaid(research_graph)
+    print_mermaid(experimental_plan_subgraph)
     # print_mermaid(retrieve_paper_subgraph)
     # print_mermaid(deep_research_subgraph)
     # print_mermaid(integrate_generator_subgraph)

@@ -2,9 +2,9 @@ from langgraph.graph import START, END, StateGraph
 from langgraph.graph.graph import CompiledGraph
 
 
-from researchgraph.generator_subgraph.generator_subgraph import (
-    GeneratorSubgraph,
-    GeneratorSubgraphState,
+from researchgraph.experimental_plan_subgraph.experimental_plan_subgraph import (
+    ExperimentalPlanSubgraph,
+    ExperimentalPlanSubgraphState,
 )
 from researchgraph.executor_subgraph.executor_subgraph import (
     ExecutorSubgraph,
@@ -23,7 +23,7 @@ from researchgraph.input_data import research_graph_input_data
 
 
 class ResearchGraphState(
-    GeneratorSubgraphState,
+    ExperimentalPlanSubgraphState,
     ExecutorSubgraphState,
     WriterSubgraphState,
     UploadSubgraphState,
@@ -62,7 +62,9 @@ class ResearchGraph:
     def build_graph(self) -> CompiledGraph:
         # Search Subgraph
         # Generator Subgraph
-        generator_subgraph = GeneratorSubgraph().build_graph()
+
+        # Experimental Plan Subgraph
+        generator_subgraph = ExperimentalPlanSubgraph().build_graph()
         # Executor Subgraph
         executor_subgraph = ExecutorSubgraph(
             github_owner=self.github_owner,

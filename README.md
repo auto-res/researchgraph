@@ -26,13 +26,16 @@ graph TD;
         executor_subgraph_llm_decide_node(llm_decide_node)
         executor_subgraph_fix_code_with_devin_node(fix_code_with_devin_node)
         executor_subgraph___end__(<p>__end__</p>)
+        writer_subgraph_generate_note_node(generate_note_node)
         writer_subgraph_writeup_node(writeup_node)
         writer_subgraph_latex_node(latex_node)
+        upload_subgraph(upload_subgraph)
         __end__([<p>__end__</p>]):::last
         __start__ --> generator_subgraph_generate_advantage_criteria_node;
-        executor_subgraph___end__ --> writer_subgraph_writeup_node;
+        executor_subgraph___end__ --> writer_subgraph_generate_note_node;
         generator_subgraph_generate_experiment_code_node --> executor_subgraph_generate_code_with_devin_node;
-        writer_subgraph_latex_node --> __end__;
+        upload_subgraph --> __end__;
+        writer_subgraph_latex_node --> upload_subgraph;
         subgraph generator_subgraph
         generator_subgraph_generate_advantage_criteria_node --> generator_subgraph_generate_experiment_details_node;
         generator_subgraph_generate_experiment_details_node --> generator_subgraph_generate_experiment_code_node;
@@ -46,6 +49,7 @@ graph TD;
         executor_subgraph_llm_decide_node -. &nbsp;finish&nbsp; .-> executor_subgraph___end__;
         end
         subgraph writer_subgraph
+        writer_subgraph_generate_note_node --> writer_subgraph_writeup_node;
         writer_subgraph_writeup_node --> writer_subgraph_latex_node;
         end
         classDef default fill:#f2f0ff,line-height:1.2
@@ -55,34 +59,17 @@ graph TD;
 
 </details>
 
+- Retriever Subgraph
+ベースにする研究論文を取得するためのサブグラフです．
 
-
-- Deep Research Subgraph
-Web上から情報を取得するためのサブグラフです．
-
-<details>
-
-<summary>Architecture</summary>
-
-```mermaid
-%%{init: {'flowchart': {'curve': 'linear'}}}%%
-graph TD;
-        __start__([<p>__start__</p>]):::first
-        recursive_search_node(recursive_search_node)
-        generate_report_node(generate_report_node)
-        __end__([<p>__end__</p>]):::last
-        __start__ --> recursive_search_node;
-        generate_report_node --> __end__;
-        recursive_search_node --> generate_report_node;
-        classDef default fill:#f2f0ff,line-height:1.2
-        classDef first fill-opacity:0
-        classDef last fill:#bfb6fc
-```
-</details>
 
 
 - Generator Subgraph
-手法を合成するためのサブグラフです．
+新規手法を生成するためのサブグラフです．
+
+
+- Experimental Plan Subgraph
+実験計画をたて，コーディングを行うためのサブグラフです．
 
 <details>
 
@@ -92,15 +79,14 @@ graph TD;
 %%{init: {'flowchart': {'curve': 'linear'}}}%%
 graph TD;
         __start__([<p>__start__</p>]):::first
-        retrieve_base_paper_code_with_devin(retrieve_base_paper_code_with_devin)
-        retrieve_add_paper_code_with_devin(retrieve_add_paper_code_with_devin)
-        method_integrate_node(method_integrate_node)
+        generate_advantage_criteria_node(generate_advantage_criteria_node)
+        generate_experiment_details_node(generate_experiment_details_node)
+        generate_experiment_code_node(generate_experiment_code_node)
         __end__([<p>__end__</p>]):::last
-        __start__ --> retrieve_add_paper_code_with_devin;
-        __start__ --> retrieve_base_paper_code_with_devin;
-        method_integrate_node --> __end__;
-        retrieve_add_paper_code_with_devin --> method_integrate_node;
-        retrieve_base_paper_code_with_devin --> method_integrate_node;
+        __start__ --> generate_advantage_criteria_node;
+        generate_advantage_criteria_node --> generate_experiment_details_node;
+        generate_experiment_code_node --> __end__;
+        generate_experiment_details_node --> generate_experiment_code_node;
         classDef default fill:#f2f0ff,line-height:1.2
         classDef first fill-opacity:0
         classDef last fill:#bfb6fc
@@ -109,7 +95,7 @@ graph TD;
 
 
 - Executor Subgraph
-新規の手法をコーディングし実行するためのサブグラフです．
+新規の手法を実行するためのサブグラフです．
 
 <details>
 
