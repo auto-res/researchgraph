@@ -59,94 +59,94 @@ graph TD;
 
 </details>
 
-- Retriever Subgraph
+- Retriever Subgraph  
 ベースにする研究論文を取得するためのサブグラフです．
 
 
 
-- Generator Subgraph
+- Generator Subgraph  
 新規手法を生成するためのサブグラフです．
 
 
-- Experimental Plan Subgraph
+- Experimental Plan Subgraph  
 実験計画をたて，コーディングを行うためのサブグラフです．
 
-<details>
+  <details>
 
-<summary>Architecture</summary>
+  <summary>Architecture</summary>
 
-```mermaid
-%%{init: {'flowchart': {'curve': 'linear'}}}%%
-graph TD;
-        __start__([<p>__start__</p>]):::first
-        generate_advantage_criteria_node(generate_advantage_criteria_node)
-        generate_experiment_details_node(generate_experiment_details_node)
-        generate_experiment_code_node(generate_experiment_code_node)
-        __end__([<p>__end__</p>]):::last
-        __start__ --> generate_advantage_criteria_node;
-        generate_advantage_criteria_node --> generate_experiment_details_node;
-        generate_experiment_code_node --> __end__;
-        generate_experiment_details_node --> generate_experiment_code_node;
-        classDef default fill:#f2f0ff,line-height:1.2
-        classDef first fill-opacity:0
-        classDef last fill:#bfb6fc
-```
-</details>
+  ```mermaid
+  %%{init: {'flowchart': {'curve': 'linear'}}}%%
+  graph TD;
+          __start__([<p>__start__</p>]):::first
+          generate_advantage_criteria_node(generate_advantage_criteria_node)
+          generate_experiment_details_node(generate_experiment_details_node)
+          generate_experiment_code_node(generate_experiment_code_node)
+          __end__([<p>__end__</p>]):::last
+          __start__ --> generate_advantage_criteria_node;
+          generate_advantage_criteria_node --> generate_experiment_details_node;
+          generate_experiment_code_node --> __end__;
+          generate_experiment_details_node --> generate_experiment_code_node;
+          classDef default fill:#f2f0ff,line-height:1.2
+          classDef first fill-opacity:0
+          classDef last fill:#bfb6fc
+  ```
+  </details>
 
 
-- Executor Subgraph
+- Executor Subgraph  
 新規の手法を実行するためのサブグラフです．
 
-<details>
+  <details>
 
-<summary>Architecture</summary>
+  <summary>Architecture</summary>
 
-```mermaid
-%%{init: {'flowchart': {'curve': 'linear'}}}%%
-graph TD;
-        __start__([<p>__start__</p>]):::first
-        generate_code_with_devin_node(generate_code_with_devin_node)
-        execute_github_actions_workflow_node(execute_github_actions_workflow_node)
-        retrieve_github_actions_artifacts_node(retrieve_github_actions_artifacts_node)
-        fix_code_with_devin_node(fix_code_with_devin_node)
-        __end__([<p>__end__</p>]):::last
-        __start__ --> generate_code_with_devin_node;
-        execute_github_actions_workflow_node --> retrieve_github_actions_artifacts_node;
-        fix_code_with_devin_node --> execute_github_actions_workflow_node;
-        generate_code_with_devin_node --> execute_github_actions_workflow_node;
-        retrieve_github_actions_artifacts_node -. &nbsp;correction&nbsp; .-> fix_code_with_devin_node;
-        retrieve_github_actions_artifacts_node -. &nbsp;finish&nbsp; .-> __end__;
-        classDef default fill:#f2f0ff,line-height:1.2
-        classDef first fill-opacity:0
-        classDef last fill:#bfb6fc
-```
-</details>
+  ```mermaid
+  %%{init: {'flowchart': {'curve': 'linear'}}}%%
+  graph TD;
+          __start__([<p>__start__</p>]):::first
+          generate_code_with_devin_node(generate_code_with_devin_node)
+          execute_github_actions_workflow_node(execute_github_actions_workflow_node)
+          retrieve_github_actions_artifacts_node(retrieve_github_actions_artifacts_node)
+          fix_code_with_devin_node(fix_code_with_devin_node)
+          __end__([<p>__end__</p>]):::last
+          __start__ --> generate_code_with_devin_node;
+          execute_github_actions_workflow_node --> retrieve_github_actions_artifacts_node;
+          fix_code_with_devin_node --> execute_github_actions_workflow_node;
+          generate_code_with_devin_node --> execute_github_actions_workflow_node;
+          retrieve_github_actions_artifacts_node -. &nbsp;correction&nbsp; .-> fix_code_with_devin_node;
+          retrieve_github_actions_artifacts_node -. &nbsp;finish&nbsp; .-> __end__;
+          classDef default fill:#f2f0ff,line-height:1.2
+          classDef first fill-opacity:0
+          classDef last fill:#bfb6fc
+  ```
+  </details>
 
 
-- Writer Subgraph
+- Writer Subgraph  
 論文を執筆するためのサブグラフです．執筆した論文はGitHub上にアップロードされます．
 
-<details>
+  <details>
 
-<summary>Architecture</summary>
+  <summary>Architecture</summary>
 
-```mermaid
-%%{init: {'flowchart': {'curve': 'linear'}}}%%
-graph TD;
-        __start__([<p>__start__</p>]):::first
-        writeup_node(writeup_node)
-        latex_node(latex_node)
-        github_upload_node(github_upload_node)
-        __end__([<p>__end__</p>]):::last
-        __start__ --> writeup_node;
-        github_upload_node --> __end__;
-        latex_node --> github_upload_node;
-        writeup_node --> latex_node;
-        classDef default fill:#f2f0ff,line-height:1.2
-        classDef first fill-opacity:0
-        classDef last fill:#bfb6fc
-```
-</details>
+  ```mermaid
+  %%{init: {'flowchart': {'curve': 'linear'}}}%%
+  graph TD;
+          __start__([<p>__start__</p>]):::first
+          writeup_node(writeup_node)
+          latex_node(latex_node)
+          github_upload_node(github_upload_node)
+          __end__([<p>__end__</p>]):::last
+          __start__ --> writeup_node;
+          github_upload_node --> __end__;
+          latex_node --> github_upload_node;
+          writeup_node --> latex_node;
+          classDef default fill:#f2f0ff,line-height:1.2
+          classDef first fill-opacity:0
+          classDef last fill:#bfb6fc
+  ```
+  </details>
 
 
 ### Result
@@ -160,22 +160,18 @@ The following is a repository that summarizes the results of ResearchGraph.
 
 ## How to execute
 - Research Graph
-```python
-python src/researchgraph/research_graph.py
-```
-- Deep Research Subgraph
-```python
-python src/researchgraph/deep_research_subgraph/deep_research_subgraph.py
-```
-- Generate Subgraph
-```python
-python src/researchgraph/integrate_generator_subgraph/integrate_generator_subgraph.py
-```
+  ```python
+  uv run python src/researchgraph/research_graph.py
+  ```
+- Experimental Plan Subgraph
+  ```python
+  uv run python /workspaces/researchgraph/src/researchgraph/experimental_plan_subgraph/experimental_plan_subgraph.py
+  ```
 - Executor Subgraph
-```python
-python src/researchgraph/executor_subgraph/executor_subgraph.py
-```
+  ```python
+  uv run python src/researchgraph/executor_subgraph/executor_subgraph.py
+  ```
 - writer subgraph
-```python
-python src/researchgraph/writer_subgraph/writer_subgraph.py
-```
+  ```python
+  uv run python src/researchgraph/writer_subgraph/writer_subgraph.py
+  ```
