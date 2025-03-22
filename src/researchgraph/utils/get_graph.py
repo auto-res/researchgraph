@@ -3,6 +3,10 @@ from IPython.display import Image
 from langgraph.graph.graph import CompiledGraph
 
 from researchgraph.research_graph import ResearchGraph
+
+from researchgraph.retrieve_paper_subgraph.retrieve_paper_subgraph import (
+    RetrievePaperSubgraph,
+)
 from researchgraph.experimental_plan_subgraph.experimental_plan_subgraph import (
     ExperimentalPlanSubgraph,
 )
@@ -31,11 +35,19 @@ if __name__ == "__main__":
     llm_name = "gpt-4o-mini-2024-07-18"
     latex_template_file_path = "/workspaces/researchgraph/data/latex/template.tex"
     figures_dir = "/workspaces/researchgraph/images"
+    scrape_urls = [
+        "https://icml.cc/virtual/2024/papers.html?filter=titles",
+        "https://iclr.cc/virtual/2024/papers.html?filter=titles",
+        # "https://nips.cc/virtual/2024/papers.html?filter=titles",
+        # "https://cvpr.thecvf.com/virtual/2024/papers.html?filter=titles",
+    ]
 
-    # retrieve_paper_subgraph = RetrievePaperSubgraph(
-    #     llm_name=llm_name,
-    #     save_dir=save_dir,
-    # ).build_graph()
+    retrieve_paper_subgraph = RetrievePaperSubgraph(
+        llm_name=llm_name,
+        save_dir=save_dir,
+        scrape_urls=scrape_urls,
+        add_paper_num=3,
+    ).build_graph()
 
     # deep_research_subgraph = DeepResearchSubgraph(
     #     breadth=3,
@@ -79,14 +91,16 @@ if __name__ == "__main__":
         figures_dir=figures_dir,
     ).build_graph()
 
-    # make_image(graph=retrieve_paper_subgraph, file_name="retrieve_paper_subgraph.png")
+    make_image(graph=retrieve_paper_subgraph, file_name="retrieve_paper_subgraph.png")
     # make_image(graph=deep_research_subgraph, file_name="deep_research_subgraph.png")
+    # make_image(graph=generator_subgraph, file_name="generator_subgraph.png")
     # make_image(graph=experimental_plan_subgraph, file_name="experimental_plan_subgraph.png")
     # make_image(graph=executor_subgraph, file_name="executor_subgraph.png")
     # make_image(graph=writer_graph, file_name="writer_subgraph.png")
     # make_image(graph=upload_subgraph, file_name="upload_subgraph.png")
     # make_image(graph=research_graph, file_name="research_graph.png")
     # print_mermaid(research_graph)
+    print_mermaid(retrieve_paper_subgraph)
     print_mermaid(experimental_plan_subgraph)
     # print_mermaid(retrieve_paper_subgraph)
     # print_mermaid(deep_research_subgraph)
