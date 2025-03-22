@@ -7,7 +7,11 @@ def generator_node(
 ) -> str:
     add_method_text = "---".join(add_method_text_list)
     prompt = f"""
-Please create a new research method based on the ideas of some of the methods given in the “Add Method” using the research methods given in the “Base Method”.
+Your task is to propose a genuinely novel method that mitigates one or more challenges in the “Base Method.” This must go beyond a mere partial modification of the Base Method. To achieve this, reason through the following steps and provide the outcome of step 3:
+- Identify multiple potential issues with the “Base Method.”
+- From the “Add Method” approaches, select one that can address at least one of the issues identified in step 1.
+- Drawing inspiration from both the “Base Method” and the selected approach in step 2, devise a truly new method.
+
 # Base Method
 {base_method_text}
 
