@@ -267,17 +267,18 @@ class RetrievePaperSubgraph:
     # add paper
     def _generate_queries_node(self, state: RetrievePaperState) -> dict:
         print("generate_queries_node")
-        queries = state["queries"]
+        all_queries = state["generated_queries"] if "generated_queries" in state else state["queries"]
         selected_base_paper_info = state["selected_base_paper_info"]
-        generated_queries_list = generate_queries_node(
+        new_generated_queries = generate_queries_node(
             llm_name=self.llm_name,
             prompt_template=generate_queries_prompt_add,
             selected_base_paper_info=selected_base_paper_info,
-            queries=queries + state.get("generated_queries", [])
+            queries=all_queries
         )
-        generated_queries_list = queries + generated_queries_list
+        updated_all_queries = all_queries + new_generated_queries
+
         return {
-            "generated_queries": generated_queries_list,
+            "generated_queries": updated_all_queries,
             "process_index": 0,
         }
 
@@ -358,6 +359,13 @@ class RetrievePaperSubgraph:
             "selected_add_paper_arxiv_ids": selected_arxiv_ids,
             "selected_add_paper_info_list": selected_paper_info_list,
         }
+        
+    def _check_add_paper_count(self, state: RetrievePaperState) -> str:
+        print("check_add_paper_count")
+        if len(state["selected_add_paper_arxiv_ids"]) < self.add_paper_num:
+            return "Regenerate queries"
+        else:
+            return "Continue"
 
     def _prepare_state(self, state: RetrievePaperState) -> dict:
         base_github_url = state["selected_base_paper_info"].github_url
@@ -402,9 +410,6 @@ class RetrievePaperSubgraph:
         graph_builder.add_edge(START, "initialize_state")
         graph_builder.add_edge("initialize_state", "base_web_scrape_node")
         graph_builder.add_edge("base_web_scrape_node", "base_extract_paper_title_node")
-        graph_builder.add_edge("base_extract_paper_title_node", "base_search_arxiv_node")
-        graph_builder.add_edge("base_search_arxiv_node", "base_retrieve_arxiv_full_text_node")
-        graph_builder.add_edge("base_retrieve_arxiv_full_text_node", "base_extract_github_urls_node")
         graph_builder.add_conditional_edges(
             "base_extract_paper_title_node", 
             path=self._check_extracted_titles, 
@@ -413,6 +418,8 @@ class RetrievePaperSubgraph:
                 "Continue": "base_search_arxiv_node", 
             }, 
         )
+        graph_builder.add_edge("base_search_arxiv_node", "base_retrieve_arxiv_full_text_node")
+        graph_builder.add_edge("base_retrieve_arxiv_full_text_node", "base_extract_github_urls_node")
         graph_builder.add_conditional_edges(
             "base_extract_github_urls_node",
             path=self._check_github_urls,
@@ -435,9 +442,6 @@ class RetrievePaperSubgraph:
         graph_builder.add_edge("base_select_best_paper_node", "generate_queries_node")
         graph_builder.add_edge("generate_queries_node", "add_web_scrape_node")
         graph_builder.add_edge("add_web_scrape_node", "add_extract_paper_title_node")
-        graph_builder.add_edge("add_extract_paper_title_node", "add_search_arxiv_node")
-        graph_builder.add_edge("add_search_arxiv_node", "add_retrieve_arxiv_full_text_node")
-        graph_builder.add_edge("add_retrieve_arxiv_full_text_node", "add_extract_github_urls_node")
         graph_builder.add_conditional_edges(
             "add_extract_paper_title_node", 
             path=self._check_extracted_titles, 
@@ -446,6 +450,8 @@ class RetrievePaperSubgraph:
                 "Continue": "add_search_arxiv_node", 
             }, 
         )
+        graph_builder.add_edge("add_search_arxiv_node", "add_retrieve_arxiv_full_text_node")
+        graph_builder.add_edge("add_retrieve_arxiv_full_text_node", "add_extract_github_urls_node")
         graph_builder.add_conditional_edges(
             "add_extract_github_urls_node",
             path=self._check_github_urls,
@@ -463,14 +469,25 @@ class RetrievePaperSubgraph:
                 "All complete": "add_select_best_paper_node",
             },
         )
-        graph_builder.add_edge("add_select_best_paper_node", "prepare_state")
+        graph_builder.add_conditional_edges(
+            "add_select_best_paper_node", 
+            path=self._check_add_paper_count, 
+            path_map={
+                "Regenerate queries": "generate_queries_node", 
+                "Continue": "prepare_state", 
+            }, 
+        )
         graph_builder.add_edge("prepare_state", END)
 
         return graph_builder.compile()
 
 
 if __name__ == "__main__":
-    save_dir = "/workspaces/researchgraph/data"
+    import os
+    
+    save_dir = "/workspaces/researchgraph/data/papers"
+    os.makedirs(save_dir, exist_ok=True)
+
     # llm_name = "gpt-4o-2024-11-20"
     llm_name = "gpt-4o-mini-2024-07-18"
     scrape_urls = [
@@ -479,15 +496,17 @@ if __name__ == "__main__":
         # "https://nips.cc/virtual/2024/papers.html?filter=titles", 
         # "https://cvpr.thecvf.com/virtual/2024/papers.html?filter=titles", 
     ]
+    add_paper_num = 3
 
     subgraph = RetrievePaperSubgraph(
         llm_name=llm_name,
         save_dir=save_dir,
-        scrape_urls=scrape_urls
+        scrape_urls=scrape_urls, 
+        add_paper_num=add_paper_num, 
     ).build_graph()
 
     state = {
-        "queries": ["deep learning"],
+        "queries": ["diffusion model"],
     }
     config = {"recursion_limit": 300}
     result = subgraph.invoke(state, config=config)

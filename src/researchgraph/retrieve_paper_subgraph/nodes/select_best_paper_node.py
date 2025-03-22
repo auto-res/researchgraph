@@ -18,11 +18,13 @@ def select_best_paper_node(
     if selected_base_paper_info is None:
         data = {
             "candidate_papers": candidate_papers,
+            "add_paper_num": add_paper_num, 
         }
     else:
         data = {
             "candidate_papers": candidate_papers,
             "selected_base_paper": selected_base_paper_info,
+            "add_paper_num": add_paper_num, 
         }
 
     env = Environment()
@@ -130,10 +132,5 @@ Below is a list of candidate papers (Patch paper candidates):
 2. Evaluate each paper based on the selection criteria above.
 3. Select {{ add_paper_num }} papers from the candidate papers that are relevant and of high-quality, when synthesized with Research A, enables a non-trivial and novel research direction.
 4. Output the ""arxiv_id** of the selected paper as a single plain text string, with each title separated by a newline character.
-5. Provide your response in the following JSON format:
-```json
-{
-"selected_arxiv_id": "{arxiv_id}"
-}
-```
+5. Return your answer in JSON format with a single key "selected_arxiv_id". Do not include any additional commentary or formatting.
 """
