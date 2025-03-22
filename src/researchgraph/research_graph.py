@@ -40,7 +40,7 @@ class ResearchGraphState(
     WriterSubgraphState,
     UploadSubgraphState,
 ):
-    pass
+    execution_logs: dict
 
 
 class ResearchGraph:
@@ -75,6 +75,9 @@ class ResearchGraph:
         self.latex_template_file_path = latex_template_file_path
         self.figures_dir = figures_dir
         self.pdf_file_path = pdf_file_path
+
+    def _make_execution_logs_data(self, state: ResearchGraphState) -> dict:
+        return {"execution_logs": dict(state)}
 
     def build_graph(self) -> CompiledGraph:
         # Search Subgraph
@@ -118,13 +121,17 @@ class ResearchGraph:
         graph_builder.add_node("executor_subgraph", executor_subgraph)
         graph_builder.add_node("writer_subgraph", writer_subgraph)
         graph_builder.add_node("upload_subgraph", upload_subgraph)
+        graph_builder.add_node(
+            "make_execution_logs_data", self._make_execution_logs_data
+        )
         # make edges
         graph_builder.add_edge(START, "retrieve_paper_subgraph")
         graph_builder.add_edge("retrieve_paper_subgraph", "generator_subgraph")
         graph_builder.add_edge("generator_subgraph", "experimental_plan_subgraph")
         graph_builder.add_edge("experimental_plan_subgraph", "executor_subgraph")
         graph_builder.add_edge("executor_subgraph", "writer_subgraph")
-        graph_builder.add_edge("writer_subgraph", "upload_subgraph")
+        graph_builder.add_edge("writer_subgraph", "make_execution_logs_data")
+        graph_builder.add_edge("make_execution_logs_data", "upload_subgraph")
         graph_builder.add_edge("upload_subgraph", END)
 
         return graph_builder.compile()
