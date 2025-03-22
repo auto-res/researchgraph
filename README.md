@@ -17,9 +17,27 @@ ResearchGraphは完全な機械学習研究の自動化および，自動研究�
 %%{init: {'flowchart': {'curve': 'linear'}}}%%
 graph TD;
         __start__([<p>__start__</p>]):::first
-        generator_subgraph_generate_advantage_criteria_node(generate_advantage_criteria_node)
-        generator_subgraph_generate_experiment_details_node(generate_experiment_details_node)
-        generator_subgraph_generate_experiment_code_node(generate_experiment_code_node)
+        retrieve_paper_subgraph_initialize_state(initialize_state)
+        retrieve_paper_subgraph_base_web_scrape_node(base_web_scrape_node)
+        retrieve_paper_subgraph_base_extract_paper_title_node(base_extract_paper_title_node)
+        retrieve_paper_subgraph_base_search_arxiv_node(base_search_arxiv_node)
+        retrieve_paper_subgraph_base_retrieve_arxiv_full_text_node(base_retrieve_arxiv_full_text_node)
+        retrieve_paper_subgraph_base_extract_github_urls_node(base_extract_github_urls_node)
+        retrieve_paper_subgraph_base_summarize_paper_node(base_summarize_paper_node)
+        retrieve_paper_subgraph_base_select_best_paper_node(base_select_best_paper_node)
+        retrieve_paper_subgraph_generate_queries_node(generate_queries_node)
+        retrieve_paper_subgraph_add_web_scrape_node(add_web_scrape_node)
+        retrieve_paper_subgraph_add_extract_paper_title_node(add_extract_paper_title_node)
+        retrieve_paper_subgraph_add_search_arxiv_node(add_search_arxiv_node)
+        retrieve_paper_subgraph_add_retrieve_arxiv_full_text_node(add_retrieve_arxiv_full_text_node)
+        retrieve_paper_subgraph_add_extract_github_urls_node(add_extract_github_urls_node)
+        retrieve_paper_subgraph_add_summarize_paper_node(add_summarize_paper_node)
+        retrieve_paper_subgraph_add_select_best_paper_node(add_select_best_paper_node)
+        retrieve_paper_subgraph_prepare_state(prepare_state)
+        generator_subgraph(generator_subgraph)
+        experimental_plan_subgraph_generate_advantage_criteria_node(generate_advantage_criteria_node)
+        experimental_plan_subgraph_generate_experiment_details_node(generate_experiment_details_node)
+        experimental_plan_subgraph_generate_experiment_code_node(generate_experiment_code_node)
         executor_subgraph_generate_code_with_devin_node(generate_code_with_devin_node)
         executor_subgraph_execute_github_actions_workflow_node(execute_github_actions_workflow_node)
         executor_subgraph_retrieve_github_actions_artifacts_node(retrieve_github_actions_artifacts_node)
@@ -31,14 +49,42 @@ graph TD;
         writer_subgraph_latex_node(latex_node)
         upload_subgraph(upload_subgraph)
         __end__([<p>__end__</p>]):::last
-        __start__ --> generator_subgraph_generate_advantage_criteria_node;
+        __start__ --> retrieve_paper_subgraph_initialize_state;
         executor_subgraph___end__ --> writer_subgraph_generate_note_node;
-        generator_subgraph_generate_experiment_code_node --> executor_subgraph_generate_code_with_devin_node;
+        experimental_plan_subgraph_generate_experiment_code_node --> executor_subgraph_generate_code_with_devin_node;
+        generator_subgraph --> experimental_plan_subgraph_generate_advantage_criteria_node;
+        retrieve_paper_subgraph_prepare_state --> generator_subgraph;
         upload_subgraph --> __end__;
         writer_subgraph_latex_node --> upload_subgraph;
-        subgraph generator_subgraph
-        generator_subgraph_generate_advantage_criteria_node --> generator_subgraph_generate_experiment_details_node;
-        generator_subgraph_generate_experiment_details_node --> generator_subgraph_generate_experiment_code_node;
+        subgraph retrieve_paper_subgraph
+        retrieve_paper_subgraph_add_retrieve_arxiv_full_text_node --> retrieve_paper_subgraph_add_extract_github_urls_node;
+        retrieve_paper_subgraph_add_search_arxiv_node --> retrieve_paper_subgraph_add_retrieve_arxiv_full_text_node;
+        retrieve_paper_subgraph_add_web_scrape_node --> retrieve_paper_subgraph_add_extract_paper_title_node;
+        retrieve_paper_subgraph_base_retrieve_arxiv_full_text_node --> retrieve_paper_subgraph_base_extract_github_urls_node;
+        retrieve_paper_subgraph_base_search_arxiv_node --> retrieve_paper_subgraph_base_retrieve_arxiv_full_text_node;
+        retrieve_paper_subgraph_base_select_best_paper_node --> retrieve_paper_subgraph_generate_queries_node;
+        retrieve_paper_subgraph_base_web_scrape_node --> retrieve_paper_subgraph_base_extract_paper_title_node;
+        retrieve_paper_subgraph_generate_queries_node --> retrieve_paper_subgraph_add_web_scrape_node;
+        retrieve_paper_subgraph_initialize_state --> retrieve_paper_subgraph_base_web_scrape_node;
+        retrieve_paper_subgraph_base_extract_paper_title_node -. &nbsp;Continue&nbsp; .-> retrieve_paper_subgraph_base_search_arxiv_node;
+        retrieve_paper_subgraph_base_extract_github_urls_node -. &nbsp;Next paper&nbsp; .-> retrieve_paper_subgraph_base_retrieve_arxiv_full_text_node;
+        retrieve_paper_subgraph_base_extract_github_urls_node -. &nbsp;Generate paper summary&nbsp; .-> retrieve_paper_subgraph_base_summarize_paper_node;
+        retrieve_paper_subgraph_base_extract_github_urls_node -. &nbsp;All complete&nbsp; .-> retrieve_paper_subgraph_base_select_best_paper_node;
+        retrieve_paper_subgraph_base_summarize_paper_node -. &nbsp;Next paper&nbsp; .-> retrieve_paper_subgraph_base_retrieve_arxiv_full_text_node;
+        retrieve_paper_subgraph_base_summarize_paper_node -. &nbsp;All complete&nbsp; .-> retrieve_paper_subgraph_base_select_best_paper_node;
+        retrieve_paper_subgraph_add_extract_paper_title_node -. &nbsp;Regenerate queries&nbsp; .-> retrieve_paper_subgraph_generate_queries_node;
+        retrieve_paper_subgraph_add_extract_paper_title_node -. &nbsp;Continue&nbsp; .-> retrieve_paper_subgraph_add_search_arxiv_node;
+        retrieve_paper_subgraph_add_extract_github_urls_node -. &nbsp;Next paper&nbsp; .-> retrieve_paper_subgraph_add_retrieve_arxiv_full_text_node;
+        retrieve_paper_subgraph_add_extract_github_urls_node -. &nbsp;Generate paper summary&nbsp; .-> retrieve_paper_subgraph_add_summarize_paper_node;
+        retrieve_paper_subgraph_add_extract_github_urls_node -. &nbsp;All complete&nbsp; .-> retrieve_paper_subgraph_add_select_best_paper_node;
+        retrieve_paper_subgraph_add_summarize_paper_node -. &nbsp;Next paper&nbsp; .-> retrieve_paper_subgraph_add_retrieve_arxiv_full_text_node;
+        retrieve_paper_subgraph_add_summarize_paper_node -. &nbsp;All complete&nbsp; .-> retrieve_paper_subgraph_add_select_best_paper_node;
+        retrieve_paper_subgraph_add_select_best_paper_node -. &nbsp;Regenerate queries&nbsp; .-> retrieve_paper_subgraph_generate_queries_node;
+        retrieve_paper_subgraph_add_select_best_paper_node -. &nbsp;Continue&nbsp; .-> retrieve_paper_subgraph_prepare_state;
+        end
+        subgraph experimental_plan_subgraph
+        experimental_plan_subgraph_generate_advantage_criteria_node --> experimental_plan_subgraph_generate_experiment_details_node;
+        experimental_plan_subgraph_generate_experiment_details_node --> experimental_plan_subgraph_generate_experiment_code_node;
         end
         subgraph executor_subgraph
         executor_subgraph_execute_github_actions_workflow_node --> executor_subgraph_retrieve_github_actions_artifacts_node;
@@ -62,10 +108,86 @@ graph TD;
 - Retriever Subgraph  
 ベースにする研究論文を取得するためのサブグラフです．
 
+  <details>
+
+  <summary>Architecture</summary>
+
+  ```mermaid
+  %%{init: {'flowchart': {'curve': 'linear'}}}%%
+  graph TD;
+          __start__([<p>__start__</p>]):::first
+          initialize_state(initialize_state)
+          base_web_scrape_node(base_web_scrape_node)
+          base_extract_paper_title_node(base_extract_paper_title_node)
+          base_search_arxiv_node(base_search_arxiv_node)
+          base_retrieve_arxiv_full_text_node(base_retrieve_arxiv_full_text_node)
+          base_extract_github_urls_node(base_extract_github_urls_node)
+          base_summarize_paper_node(base_summarize_paper_node)
+          base_select_best_paper_node(base_select_best_paper_node)
+          generate_queries_node(generate_queries_node)
+          add_web_scrape_node(add_web_scrape_node)
+          add_extract_paper_title_node(add_extract_paper_title_node)
+          add_search_arxiv_node(add_search_arxiv_node)
+          add_retrieve_arxiv_full_text_node(add_retrieve_arxiv_full_text_node)
+          add_extract_github_urls_node(add_extract_github_urls_node)
+          add_summarize_paper_node(add_summarize_paper_node)
+          add_select_best_paper_node(add_select_best_paper_node)
+          prepare_state(prepare_state)
+          __end__([<p>__end__</p>]):::last
+          __start__ --> initialize_state;
+          add_retrieve_arxiv_full_text_node --> add_extract_github_urls_node;
+          add_search_arxiv_node --> add_retrieve_arxiv_full_text_node;
+          add_web_scrape_node --> add_extract_paper_title_node;
+          base_retrieve_arxiv_full_text_node --> base_extract_github_urls_node;
+          base_search_arxiv_node --> base_retrieve_arxiv_full_text_node;
+          base_select_best_paper_node --> generate_queries_node;
+          base_web_scrape_node --> base_extract_paper_title_node;
+          generate_queries_node --> add_web_scrape_node;
+          initialize_state --> base_web_scrape_node;
+          prepare_state --> __end__;
+          base_extract_paper_title_node -. &nbsp;Stop&nbsp; .-> __end__;
+          base_extract_paper_title_node -. &nbsp;Continue&nbsp; .-> base_search_arxiv_node;
+          base_extract_github_urls_node -. &nbsp;Next paper&nbsp; .-> base_retrieve_arxiv_full_text_node;
+          base_extract_github_urls_node -. &nbsp;Generate paper summary&nbsp; .-> base_summarize_paper_node;
+          base_extract_github_urls_node -. &nbsp;All complete&nbsp; .-> base_select_best_paper_node;
+          base_summarize_paper_node -. &nbsp;Next paper&nbsp; .-> base_retrieve_arxiv_full_text_node;
+          base_summarize_paper_node -. &nbsp;All complete&nbsp; .-> base_select_best_paper_node;
+          add_extract_paper_title_node -. &nbsp;Regenerate queries&nbsp; .-> generate_queries_node;
+          add_extract_paper_title_node -. &nbsp;Continue&nbsp; .-> add_search_arxiv_node;
+          add_extract_github_urls_node -. &nbsp;Next paper&nbsp; .-> add_retrieve_arxiv_full_text_node;
+          add_extract_github_urls_node -. &nbsp;Generate paper summary&nbsp; .-> add_summarize_paper_node;
+          add_extract_github_urls_node -. &nbsp;All complete&nbsp; .-> add_select_best_paper_node;
+          add_summarize_paper_node -. &nbsp;Next paper&nbsp; .-> add_retrieve_arxiv_full_text_node;
+          add_summarize_paper_node -. &nbsp;All complete&nbsp; .-> add_select_best_paper_node;
+          add_select_best_paper_node -. &nbsp;Regenerate queries&nbsp; .-> generate_queries_node;
+          add_select_best_paper_node -. &nbsp;Continue&nbsp; .-> prepare_state;
+          classDef default fill:#f2f0ff,line-height:1.2
+          classDef first fill-opacity:0
+          classDef last fill:#bfb6fc
+  ```
+  </details>
 
 
 - Generator Subgraph  
 新規手法を生成するためのサブグラフです．
+
+  <details>
+
+  <summary>Architecture</summary>
+
+  ```mermaid
+  %%{init: {'flowchart': {'curve': 'linear'}}}%%
+  graph TD;
+          __start__([<p>__start__</p>]):::first
+          generator_node(generator_node)
+          __end__([<p>__end__</p>]):::last
+          __start__ --> generator_node;
+          generator_node --> __end__;
+          classDef default fill:#f2f0ff,line-height:1.2
+          classDef first fill-opacity:0
+          classDef last fill:#bfb6fc
+  ```
+  </details>
 
 
 - Experimental Plan Subgraph  

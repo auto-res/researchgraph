@@ -1,5 +1,5 @@
 research_graph_input_data = {
-    "queries": ["optimiser"],
+    "queries": ["diffusion model"],
     "objective": "I am researching Optimizers for fine-tuning LLM. The aim is to find a better Optimizer.",
     "github_owner": "auto-res2",
     "repository_name": "auto-research",
