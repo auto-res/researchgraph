@@ -16,6 +16,8 @@ class RetrievearXivTextNode:
 
     def execute(self, arxiv_url: str) -> str:
         # arxiv_url = getattr(state, self.input_key[0])
+        os.makedirs(self.save_dir, exist_ok=True)
+
         arxiv_id = re.sub(r"^https?://arxiv\.org/abs/", "", arxiv_url)
 
         text_path = os.path.join(self.save_dir, f"{arxiv_id}.txt")

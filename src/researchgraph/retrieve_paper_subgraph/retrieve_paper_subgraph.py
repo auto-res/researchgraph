@@ -1,3 +1,5 @@
+import os
+import shutil
 import operator
 from typing import Annotated, TypedDict, Optional
 from pydantic import BaseModel
@@ -101,6 +103,10 @@ class RetrievePaperSubgraph:
         self.arxiv_num_retrieve_paper = arxiv_num_retrieve_paper
         self.arxiv_period_days = arxiv_period_days
         self.add_paper_num = add_paper_num
+        self.papers_dir = os.path.join(self.save_dir, "papers")
+        self.selected_papers_dir = os.path.join(self.save_dir, "selected_papers")
+        os.makedirs(self.papers_dir, exist_ok=True)
+        os.makedirs(self.selected_papers_dir, exist_ok=True)
 
     def _initialize_state(self, state: RetrievePaperState) -> dict:
         print("---RetrievePaperSubgraph---")
@@ -165,7 +171,7 @@ class RetrievePaperSubgraph:
         paper_info = state["search_paper_list"][process_index]
         arxiv_url = paper_info["arxiv_url"]
         paper_full_text = RetrievearXivTextNode(
-            save_dir=self.save_dir,
+            save_dir=self.papers_dir
         ).execute(arxiv_url=arxiv_url)
         return {"paper_full_text": paper_full_text}
 
@@ -259,6 +265,12 @@ class RetrievePaperSubgraph:
             (paper_info for paper_info in candidate_papers_info_list if paper_info.arxiv_id == selected_arxiv_id), 
         None
         )
+        # 選択された論文を別のディレクトリにコピーする
+        for ext in ["txt", "pdf"]:
+            source_path = os.path.join(self.papers_dir, f"{selected_arxiv_id}.{ext}")
+            if os.path.exists(source_path):
+                shutil.copy(source_path, os.path.join(self.selected_papers_dir, f"{selected_arxiv_id}.{ext}"))
+
         return {
             "selected_base_paper_arxiv_id": selected_arxiv_id,
             "selected_base_paper_info": selected_paper_info,
@@ -335,7 +347,6 @@ class RetrievePaperSubgraph:
     def _add_select_best_paper_node(self, state: RetrievePaperState) -> dict:
         print("add_select_best_paper_node")
         candidate_papers_info_list = state["candidate_add_papers_info_list"]
-
         base_arxiv_id = state["selected_base_paper_info"].arxiv_id
         filtered_candidates = [
             paper_info for paper_info in candidate_papers_info_list if paper_info.arxiv_id != base_arxiv_id
@@ -353,7 +364,12 @@ class RetrievePaperSubgraph:
         selected_paper_info_list = [
             paper_info for paper_info in candidate_papers_info_list if paper_info.arxiv_id in selected_arxiv_ids
         ]
-
+        # 選択された論文を別のディレクトリにコピーする
+        for paper_info in selected_paper_info_list:
+            for ext in ["txt", "pdf"]:
+                source_path = os.path.join(self.papers_dir, f"{paper_info.arxiv_id}.{ext}")
+                if os.path.exists(source_path):
+                    shutil.copy(source_path, os.path.join(self.selected_papers_dir, f"{paper_info.arxiv_id}.{ext}"))
 
         return {
             "selected_add_paper_arxiv_ids": selected_arxiv_ids,
@@ -482,10 +498,8 @@ class RetrievePaperSubgraph:
         return graph_builder.compile()
 
 
-if __name__ == "__main__":
-    import os
-    
-    save_dir = "/workspaces/researchgraph/data/papers"
+if __name__ == "__main__":   
+    save_dir = "/workspaces/researchgraph/data"
     os.makedirs(save_dir, exist_ok=True)
 
     # llm_name = "gpt-4o-2024-11-20"
