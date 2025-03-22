@@ -38,6 +38,7 @@ class WriterSubgraph:
         latex_template_file_path: str,
         figures_dir: str,
         pdf_file_path: str,
+        save_dir: str, 
         refine_round: int = 2,
     ):
         self.llm_name = llm_name
@@ -45,6 +46,7 @@ class WriterSubgraph:
         self.latex_template_file_path = latex_template_file_path
         self.figures_dir = figures_dir
         self.pdf_file_path = pdf_file_path
+        self.save_dir = save_dir
 
     def _generate_note_node(self, state: WriterSubgraphState) -> dict:
         print("---WriterSubgraph---")
@@ -69,6 +71,7 @@ class WriterSubgraph:
             latex_template_file_path=self.latex_template_file_path,
             figures_dir=self.figures_dir,
             pdf_file_path=self.pdf_file_path,
+            save_dir=self.save_dir, 
             timeout=30,
         ).execute(
             paper_content=state["paper_content"],
@@ -91,16 +94,21 @@ class WriterSubgraph:
 
 
 if __name__ == "__main__":
-    latex_template_file_path = "/workspaces/researchgraph/data/latex/template.tex"
-    figures_dir = "/workspaces/researchgraph/images"
+    import os
+    latex_template_file_path = "/workspaces/researchgraph/src/researchgraph/writer_subgraph/latex/template.tex"
+    figures_dir = "/workspaces/researchgraph/data/images" #TODO: figure生成時にディレクトリを作成するようにする
+
+    os.makedirs(figures_dir, exist_ok=True)
     pdf_file_path = "/workspaces/researchgraph/data/test_output.pdf"
-    # llm_name = "gpt-4o-2024-11-20"
-    llm_name = "gpt-4o-mini-2024-07-18"
+    llm_name = "gpt-4o-2024-11-20"
+    #llm_name = "gpt-4o-mini-2024-07-18"
+    save_dir= "/workspaces/researchgraph/data"
 
     subgraph = WriterSubgraph(
         llm_name=llm_name,
         latex_template_file_path=latex_template_file_path,
         figures_dir=figures_dir,
         pdf_file_path=pdf_file_path,
+        save_dir=save_dir, 
     ).build_graph()
     result = subgraph.invoke(writer_subgraph_input_data)
