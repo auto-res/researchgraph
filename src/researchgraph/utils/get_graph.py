@@ -54,7 +54,7 @@ def retrieve_paper_subgraph():
 def generator_subgraph():
     graph = GeneratorSubgraph().build_graph()
     make_image(graph, "generator_subgraph.png")
-    print_mermaid(graph)
+    # print_mermaid(graph)
     return
 
 
@@ -113,9 +113,9 @@ def research_graph():
 
 if __name__ == "__main__":
     # retrieve_paper_subgraph()
-    # generator_subgraph()
+    generator_subgraph()
     # experimental_plan_subgraph()
     # executor_subgraph()
     # writer_subgraph()
     # upload_subgraph()
-    research_graph()
+    # research_graph()

@@ -40,11 +40,10 @@ scrape_urls = [
 ]
 
 
-st.markdown("### Research Graphの実行")
 st.markdown("- アーキテクチャ")
 on = st.toggle("表示", key="research_graph_architecture")
 if on:
-    st.image("/workspaces/researchgraph/images/research_graph.png")
+    st.image("images/research_graph.png")
 
 st.markdown("- 設定")
 st.session_state["repository"] = st.text_input(
@@ -94,12 +93,8 @@ if st.button("start", key="research_graph_start"):
             config={"recursion_limit": 500},
         ):
             subgraph_name = list(event.keys())[0]
-            # Generator Subgraph
-            if event[subgraph_name].get("new_method", ""):
-                st.session_state["new_method"] = event[subgraph_name]["new_method"]
-                st.markdown(f"- 新規手法: {st.session_state['new_method']}")
             # Execute Subgraph
-            elif event[subgraph_name].get("experiment_devin_url", ""):
+            if event[subgraph_name].get("experiment_devin_url", ""):
                 st.session_state["experiment_devin_url"] = event[subgraph_name][
                     "experiment_devin_url"
                 ]
@@ -116,6 +111,7 @@ if st.button("start", key="research_graph_start"):
                 st.markdown(
                     f"- GitHub URL: https://github.com/{st.session_state['repository_name']}/tree/{st.session_state['branch_name']}"
                 )
+            st.markdown(f"{subgraph_name}の実行結果")
             st.json(event[subgraph_name], expanded=False)
 else:
     st.write("未実行")
@@ -145,7 +141,7 @@ ret.markdown("Retrieve Paper Subgraphは，研究論文を取得するための�
 ret.markdown("- アーキテクチャ")
 on = ret.toggle("表示", key="retrieve_paper_subgraph_architecture")
 if on:
-    ret.image("/workspaces/researchgraph/images/generator_subgraph.png")
+    ret.image("images/retrieve_paper_subgraph.png")
 
 
 ret.markdown("- 設定")
@@ -207,7 +203,7 @@ gen.markdown("Generator Subgraphは，新規手法を生成するためのサブ
 gen.markdown("- アーキテクチャ")
 on = gen.toggle("表示", key="generator_subgraph_architecture")
 if on:
-    gen.image("/workspaces/researchgraph/images/generator_subgraph.png")
+    gen.image("images/generator_subgraph.png")
 
 
 gen.markdown("- 実行")
@@ -241,7 +237,7 @@ expe.markdown(
 expe.markdown("- アーキテクチャ")
 on = expe.toggle("表示", key="experimental_plan_subgraph_architecture")
 if on:
-    expe.image("/workspaces/researchgraph/images/generator_subgraph.png")
+    expe.image("images/experimental_plan_subgraph.png")
 
 
 expe.markdown("- 実行")
@@ -293,7 +289,7 @@ exec.markdown("- アーキテクチャ")
 on = exec.toggle("表示", key="executor_subgraph_architecture")
 if on:
     exec.image(
-        "https://github.com/auto-res/researchgraph/blob/main/images/executor_subgraph.png",
+        "images/executor_subgraph.png",
         caption="Web上の画像",
     )
 
@@ -360,7 +356,7 @@ write.markdown("Writer Subgraphは，論文を執筆するためのサブグラ�
 write.markdown("- アーキテクチャ")
 on = write.toggle("表示", key="writer_subgraph_architecture")
 if on:
-    write.image("/workspaces/researchgraph/images/writer_subgraph.png")
+    write.image("images/writer_subgraph.png")
 
 write.markdown("- 設定")
 llm_name = write.selectbox(
@@ -403,7 +399,7 @@ up.markdown("Uploader Subgraphは，論文をアップロードするための�
 up.markdown("- アーキテクチャ")
 on = up.toggle("表示", key="uploader_subgraph_architecture")
 if on:
-    up.image("/workspaces/researchgraph/images/upload_subgraph.png")
+    up.image("images/upload_subgraph.png")
 
 up.markdown("- 実行")
 if up.button("start", key="uploader_subgraph_start"):
