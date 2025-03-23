@@ -16,6 +16,8 @@ class RetrievearXivTextNode:
 
     def execute(self, arxiv_url: str) -> str:
         # arxiv_url = getattr(state, self.input_key[0])
+        os.makedirs(self.save_dir, exist_ok=True)
+
         arxiv_id = re.sub(r"^https?://arxiv\.org/abs/", "", arxiv_url)
 
         text_path = os.path.join(self.save_dir, f"{arxiv_id}.txt")
@@ -40,7 +42,7 @@ class RetrievearXivTextNode:
             loader = PyPDFLoader(pdf_path)
             pages = loader.load_and_split()
             full_text = "".join(page.page_content.replace("\n", "") for page in pages)
-            with open(text_path, "w", encoding="utf-8") as text_file:
+            with open(text_path, "w", encoding="utf-8", errors="replace") as text_file:
                 text_file.write(full_text)
 
         return full_text

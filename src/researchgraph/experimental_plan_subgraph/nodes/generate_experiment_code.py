@@ -1,8 +1,11 @@
 from researchgraph.utils.openai_client import openai_client
 
 
-def generate_experiment_code(model_name: str, experiment_details: str) -> str:
+def generate_experiment_code(
+    model_name: str, experiment_details: str, experiment_info_of_source_research: str
+) -> str:
     prompt = f"""
+# Introduction
 Please follow the instructions below to tell us the detailed code for conducting the experiment.
 - Please output the detailed experiment code for each experiment.
 - As you will be checking the results of the experiment from the standard output, please include print statements, etc. in your implementation so that the contents of the experiment and its results, etc. can be accurately understood from the standard output.
@@ -10,10 +13,11 @@ Please follow the instructions below to tell us the detailed code for conducting
 - Please implement all frameworks used for deep learning in pytorch.
 - When conducting experiments, please prepare multiple patterns of data and create an experimental code that demonstrates the robustness of the new method.
 - Please also output the names of the python libraries that you think are necessary for running the experiment.
+- The section 'Experimental information from the research on which it is based' includes details about the experiments conducted in the original research. Please use this information to implement the experiment as closely as possible to the original.
 # Experiment Details
-----------------------------------------
 {experiment_details}
-----------------------------------------"""
+# Experimental information from the research on which it is based
+{experiment_info_of_source_research}"""
     output = openai_client(
         model_name=model_name,
         prompt=prompt,
