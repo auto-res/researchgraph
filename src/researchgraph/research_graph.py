@@ -63,6 +63,7 @@ class ResearchGraph:
         self.github_owner, self.repository_name = repository.split("/", 1)
         self.max_code_fix_iteration = max_code_fix_iteration
 
+    # NOTE:自作のデータクラスのデータをdictに変換するためのメソッド．githubにアップロードするためにjsonに変換する際に必要．
     @staticmethod
     def to_serializable(obj):
         if isinstance(obj, dict):
