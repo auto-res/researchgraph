@@ -37,7 +37,8 @@ class GeneratorSubgraph:
         pass
 
     def _generator_node(self, state: GeneratorSubgraphState) -> dict:
-        print("---GeneratorSubgrap---")
+        print("---GeneratorSubgraph---")
+        print("generator_node")
         new_method = generator_node(
             base_method_text=state["base_method_text"],
             add_method_text_list=state["add_method_texts"],

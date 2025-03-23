@@ -2,9 +2,6 @@ from typing import TypedDict
 from langgraph.graph import START, END, StateGraph
 from langgraph.graph.graph import CompiledGraph
 
-from researchgraph.experimental_plan_subgraph.nodes.generate_new_method import (
-    generate_new_method,
-)
 from researchgraph.experimental_plan_subgraph.nodes.generate_advantage_criteria import (
     generate_advantage_criteria,
 )
@@ -40,18 +37,10 @@ class ExperimentalPlanSubgraph:
     def __init__(self):
         pass
 
-    def _generate_new_method_node(self, state: ExperimentalPlanSubgraphState) -> dict:
-        print("---ExperimentalPlanSubgraph---")
-        print("generate_new_method_node")
-        new_method = generate_new_method(
-            model_name="o3-mini-2025-01-31",
-            new_method=state["new_method"],
-        )
-        return {"new_method": new_method}
-
     def _generate_advantage_criteria_node(
         self, state: ExperimentalPlanSubgraphState
     ) -> dict:
+        print("---ExperimentalPlanSubgraph---")
         print("generate_advantage_criteria_node")
         verification_policy = generate_advantage_criteria(
             model_name="o3-mini-2025-01-31",
@@ -82,7 +71,6 @@ class ExperimentalPlanSubgraph:
     def build_graph(self) -> CompiledGraph:
         graph_builder = StateGraph(ExperimentalPlanSubgraphState)
         # make nodes
-        # graph_builder.add_node("generate_new_method_node", self._generate_new_method_node)
         graph_builder.add_node(
             "generate_advantage_criteria_node", self._generate_advantage_criteria_node
         )
@@ -118,7 +106,3 @@ if __name__ == "__main__":
         node_name = list(event.keys())[0]
         print(node_name)
         print(event[node_name])
-
-    # pprint.pprint(output["verification_policy"])
-    # pprint.pprint(output["experiment_details"])
-    # pprint.pprint(output["experiment_code"])
