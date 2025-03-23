@@ -1,3 +1,4 @@
+import os
 import json
 
 from typing import TypedDict
@@ -30,11 +31,12 @@ class UploadSubgraph:
         self,
         github_owner: str,
         repository_name: str,
-        pdf_file_path: str,
+        save_dir: str,
     ) -> None:
         self.github_owner = github_owner
         self.repository_name = repository_name
-        self.pdf_file_path = pdf_file_path
+        self.save_dir = save_dir
+        self.pdf_file_path = os.path.join(self.save_dir, "paper.pdf")
 
     def _github_upload_node(self, state: UploadSubgraphState) -> dict:
         completion = github_upload(
@@ -66,6 +68,6 @@ if __name__ == "__main__":
     subgraph = UploadSubgraph(
         github_owner="auto-res2",
         repository_name="auto-research",
-        pdf_file_path="/workspaces/researchgraph/data/test_output.pdf",
+        save_dir="/workspaces/researchgraph/data",
     ).build_graph()
     result = subgraph.invoke(upload_subgraph_input_data)

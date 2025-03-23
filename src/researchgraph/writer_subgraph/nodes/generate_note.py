@@ -3,7 +3,12 @@ from jinja2 import Template
 
 corresponding_section: dict[str, list[str]] = {
     "Title": [],
-    "Methods": ["new_method", "verification_policy", "experiment_details"],
+    "Methods": [
+        "base_method_text",
+        "new_method",
+        "verification_policy",
+        "experiment_details",
+    ],
     "Codes": ["experiment_code"],
     "Results": ["output_text_data"],
     "Analysis": [],

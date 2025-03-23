@@ -18,11 +18,11 @@ class LatexNode:
     def __init__(
         self,
         llm_name: str,
-        latex_template_file_path: str,
         figures_dir: str,
         pdf_file_path: str,
-        save_dir: str, 
+        save_dir: str,
         timeout: int = 30,
+        latex_template_file_path: str = "/workspaces/researchgraph/src/researchgraph/writer_subgraph/latex/template.tex",
     ):
         self.llm_name = llm_name
         self.latex_template_file_path = latex_template_file_path
@@ -71,7 +71,9 @@ class LatexNode:
         try:
             shutil.copytree(self.template_dir, self.latex_save_dir, dirs_exist_ok=True)
         except Exception as e:
-            raise RuntimeError(f"Failed to copy directory {self.template_dir} to {self.latex_save_dir}: {e}")
+            raise RuntimeError(
+                f"Failed to copy directory {self.template_dir} to {self.latex_save_dir}: {e}"
+            )
 
     def _fill_template(self, content: dict) -> str:
         # Read the copied template, replace placeholders with content, and save the updated file
@@ -362,8 +364,10 @@ if __name__ == "__main__":
     paper_content = state["paper_content"]
     tex_text = state["tex_text"]
     llm_name = "gpt-4o-mini-2024-07-18"
-    latex_template_file_path = "/workspaces/researchgraph/src/researchgraph/writer_subgraph/latex/template.tex"
-    save_dir= "/workspaces/researchgraph/data"
+    latex_template_file_path = (
+        "/workspaces/researchgraph/src/researchgraph/writer_subgraph/latex/template.tex"
+    )
+    save_dir = "/workspaces/researchgraph/data"
     figures_dir = "/workspaces/researchgraph/data/images"
     os.makedirs(figures_dir, exist_ok=True)
 
@@ -371,7 +375,7 @@ if __name__ == "__main__":
     tex_text = LatexNode(
         llm_name=llm_name,
         latex_template_file_path=latex_template_file_path,
-        save_dir=save_dir, 
+        save_dir=save_dir,
         figures_dir=figures_dir,
         pdf_file_path=pdf_file_path,
         timeout=30,
