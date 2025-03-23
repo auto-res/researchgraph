@@ -31,7 +31,7 @@ st.markdown("[実行結果一覧](https://github.com/auto-res2/auto-research)")
 
 
 # 共通の設定項目
-save_dir = "/workspaces/researchgraph/data"
+save_dir = "/tmp/data"
 scrape_urls = [
     "https://icml.cc/virtual/2024/papers.html?filter=titles",
     "https://iclr.cc/virtual/2024/papers.html?filter=titles",
