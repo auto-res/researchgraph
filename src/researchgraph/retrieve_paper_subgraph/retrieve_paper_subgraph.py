@@ -31,6 +31,9 @@ from researchgraph.retrieve_paper_subgraph.nodes.summarize_paper_node import (
 from researchgraph.retrieve_paper_subgraph.nodes.retrieve_arxiv_text_node import (
     RetrievearXivTextNode,
 )
+from researchgraph.retrieve_paper_subgraph.input_data import (
+    retrieve_paper_subgraph_input_data,
+)
 
 
 class CandidatePaperInfo(BaseModel):
@@ -576,11 +579,8 @@ if __name__ == "__main__":
         add_paper_num=add_paper_num,
     ).build_graph()
 
-    state = {
-        "queries": ["diffusion model"],
-    }
     config = {"recursion_limit": 300}
-    result = subgraph.invoke(state, config=config)
+    result = subgraph.invoke(retrieve_paper_subgraph_input_data, config=config)
 
     print(result.keys())
 
