@@ -13,7 +13,7 @@ class UploadSubgraphInputState(TypedDict):
     paper_content: dict
     output_text_data: str
     branch_name: str
-    devin_url: str
+    experiment_devin_url: str
     base_method_text: str
     execution_logs: dict
 
@@ -48,7 +48,7 @@ class UploadSubgraph:
             abstract=state["paper_content"]["Abstract"],
             base_paper_url=json.loads(state["base_method_text"])["arxiv_url"],
             experimental_results=state["output_text_data"],
-            devin_url=state["devin_url"],
+            devin_url=state["experiment_devin_url"],
             all_logs=state["execution_logs"],
         )
         return {"completion": completion}

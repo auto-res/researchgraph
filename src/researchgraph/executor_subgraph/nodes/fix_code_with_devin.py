@@ -1,9 +1,4 @@
-import os
-import time
-
 from researchgraph.utils.api_request_handler import fetch_api_data, retry_request
-
-API_KEY = os.getenv("DEVIN_API_KEY")
 
 
 def _request_revision_to_devin(
@@ -38,37 +33,38 @@ Also, if there is no or little content in “Standard Output”, please modify m
     )
 
 
-def _get_devin_response(headers, session_id):
-    url = f"https://api.devin.ai/v1/session/{session_id}"
+# def _get_devin_response(headers, session_id):
+#     url = f"https://api.devin.ai/v1/session/{session_id}"
 
-    def should_retry(response):
-        # Describe the process so that it is True if you want to retry
-        return response.get("status_enum") not in ["blocked", "stopped"]
+#     def should_retry(response):
+#         # Describe the process so that it is True if you want to retry
+#         return response.get("status_enum") not in ["blocked", "stopped"]
 
-    return retry_request(
-        fetch_api_data,
-        url,
-        headers=headers,
-        method="GET",
-        check_condition=should_retry,
-    )
+#     return retry_request(
+#         fetch_api_data,
+#         url,
+#         headers=headers,
+#         method="GET",
+#         check_condition=should_retry,
+#     )
 
 
 def fix_code_with_devin(
+    headers: dict,
     session_id: str,
     output_text_data: str,
     error_text_data: str,
     fix_iteration_count: int,
 ) -> int:
-    headers = {
-        "Authorization": f"Bearer {API_KEY}",
-        "Content-Type": "application/json",
-    }
-    print("Execute code fixes in Devin")
+    # headers = {
+    #     "Authorization": f"Bearer {API_KEY}",
+    #     "Content-Type": "application/json",
+    # }
+    # print("Execute code fixes in Devin")
     _request_revision_to_devin(headers, session_id, output_text_data, error_text_data)
-    time.sleep(60)
-    print("Check to see if Devin execution is complete")
-    _get_devin_response(headers, session_id)
+    # time.sleep(60)
+    # print("Check to see if Devin execution is complete")
+    # _get_devin_response(headers, session_id)
     return fix_iteration_count + 1
 
 

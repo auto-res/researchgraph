@@ -50,7 +50,12 @@ def _encoded_pdf_file(pdf_file_path: str):
 
 
 def _encoded_markdown_data(
-    title: str, abstract: str, paper_url: str, base_paper_url: str, devin_url: str
+    title: str,
+    abstract: str,
+    paper_url: str,
+    base_paper_url: str,
+    research_graph_execution_log: str,
+    devin_url: str,
 ):
     markdown_text = f"""
 # {title}
@@ -60,6 +65,7 @@ def _encoded_markdown_data(
 
 - [Full paper]({paper_url})
 - [Related work]({base_paper_url})
+- [Research Graph execution log]({research_graph_execution_log})
 - [Devin execution log]({devin_url})"""
     encoded_markdown_data = base64.b64encode(markdown_text.encode("utf-8")).decode(
         "utf-8"
@@ -99,8 +105,14 @@ def github_upload(
     }
     encoded_pdf_data = _encoded_pdf_file(pdf_file_path)
     paper_url = f"https://github.com/{github_owner}/{repository_name}/blob/{branch_name}/paper/paper.pdf"
+    research_graph_execution_log = f"https://github.com/{github_owner}/{repository_name}/blob/{branch_name}/logs/research_graph_log.json"
     encoded_markdown_data = _encoded_markdown_data(
-        title, abstract, paper_url, base_paper_url, devin_url
+        title,
+        abstract,
+        paper_url,
+        base_paper_url,
+        research_graph_execution_log,
+        devin_url,
     )
     encoded_experimental_results = _encoding_experimental_results_data(
         experimental_results

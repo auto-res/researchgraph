@@ -33,10 +33,14 @@ graph TD;
         retrieve_paper_subgraph_add_select_best_paper_node(add_select_best_paper_node)
         retrieve_paper_subgraph_prepare_state(prepare_state)
         generator_subgraph(generator_subgraph)
+        experimental_plan_subgraph___start__(<p>__start__</p>)
+        experimental_plan_subgraph_retrieve_code_with_devin_node(retrieve_code_with_devin_node)
+        experimental_plan_subgraph_check_devin_completion_node(check_devin_completion_node)
         experimental_plan_subgraph_generate_advantage_criteria_node(generate_advantage_criteria_node)
         experimental_plan_subgraph_generate_experiment_details_node(generate_experiment_details_node)
         experimental_plan_subgraph_generate_experiment_code_node(generate_experiment_code_node)
         executor_subgraph_generate_code_with_devin_node(generate_code_with_devin_node)
+        executor_subgraph_check_devin_completion_node(check_devin_completion_node)
         executor_subgraph_execute_github_actions_workflow_node(execute_github_actions_workflow_node)
         executor_subgraph_retrieve_github_actions_artifacts_node(retrieve_github_actions_artifacts_node)
         executor_subgraph_llm_decide_node(llm_decide_node)
@@ -46,14 +50,16 @@ graph TD;
         writer_subgraph_writeup_node(writeup_node)
         writer_subgraph_latex_node(latex_node)
         upload_subgraph(upload_subgraph)
+        make_execution_logs_data(make_execution_logs_data)
         __end__([<p>__end__</p>]):::last
         __start__ --> retrieve_paper_subgraph_initialize_state;
         executor_subgraph___end__ --> writer_subgraph_generate_note_node;
         experimental_plan_subgraph_generate_experiment_code_node --> executor_subgraph_generate_code_with_devin_node;
-        generator_subgraph --> experimental_plan_subgraph_generate_advantage_criteria_node;
+        generator_subgraph --> experimental_plan_subgraph___start__;
+        make_execution_logs_data --> upload_subgraph;
         retrieve_paper_subgraph_prepare_state --> generator_subgraph;
         upload_subgraph --> __end__;
-        writer_subgraph_latex_node --> upload_subgraph;
+        writer_subgraph_latex_node --> make_execution_logs_data;
         subgraph retrieve_paper_subgraph
         retrieve_paper_subgraph_add_retrieve_arxiv_full_text_node --> retrieve_paper_subgraph_add_extract_github_urls_node;
         retrieve_paper_subgraph_add_search_arxiv_node --> retrieve_paper_subgraph_add_retrieve_arxiv_full_text_node;
@@ -81,13 +87,18 @@ graph TD;
         retrieve_paper_subgraph_add_select_best_paper_node -. &nbsp;Continue&nbsp; .-> retrieve_paper_subgraph_prepare_state;
         end
         subgraph experimental_plan_subgraph
+        experimental_plan_subgraph___start__ --> experimental_plan_subgraph_generate_advantage_criteria_node;
+        experimental_plan_subgraph___start__ --> experimental_plan_subgraph_retrieve_code_with_devin_node;
+        experimental_plan_subgraph_check_devin_completion_node --> experimental_plan_subgraph_generate_experiment_details_node;
         experimental_plan_subgraph_generate_advantage_criteria_node --> experimental_plan_subgraph_generate_experiment_details_node;
         experimental_plan_subgraph_generate_experiment_details_node --> experimental_plan_subgraph_generate_experiment_code_node;
+        experimental_plan_subgraph_retrieve_code_with_devin_node --> experimental_plan_subgraph_check_devin_completion_node;
         end
         subgraph executor_subgraph
+        executor_subgraph_check_devin_completion_node --> executor_subgraph_execute_github_actions_workflow_node;
         executor_subgraph_execute_github_actions_workflow_node --> executor_subgraph_retrieve_github_actions_artifacts_node;
-        executor_subgraph_fix_code_with_devin_node --> executor_subgraph_execute_github_actions_workflow_node;
-        executor_subgraph_generate_code_with_devin_node --> executor_subgraph_execute_github_actions_workflow_node;
+        executor_subgraph_fix_code_with_devin_node --> executor_subgraph_check_devin_completion_node;
+        executor_subgraph_generate_code_with_devin_node --> executor_subgraph_check_devin_completion_node;
         executor_subgraph_retrieve_github_actions_artifacts_node --> executor_subgraph_llm_decide_node;
         executor_subgraph_llm_decide_node -. &nbsp;correction&nbsp; .-> executor_subgraph_fix_code_with_devin_node;
         executor_subgraph_llm_decide_node -. &nbsp;finish&nbsp; .-> executor_subgraph___end__;
