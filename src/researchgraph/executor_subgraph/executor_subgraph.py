@@ -1,3 +1,5 @@
+import os
+import time
 from typing import TypedDict
 from langgraph.graph import START, END, StateGraph
 from langgraph.graph.graph import CompiledGraph
@@ -14,11 +16,16 @@ from researchgraph.executor_subgraph.nodes.retrieve_github_actions_artifacts imp
 from researchgraph.executor_subgraph.nodes.fix_code_with_devin import (
     fix_code_with_devin,
 )
+from researchgraph.executor_subgraph.nodes.check_devin_completion import (
+    check_devin_completion,
+)
 from researchgraph.executor_subgraph.nodes.llm_decide import llm_decide
 
 from researchgraph.executor_subgraph.input_data import (
     executor_subgraph_input_data,
 )
+
+DEVIN_API_KEY = os.getenv("DEVIN_API_KEY")
 
 
 class ExecutorSubgraphInputState(TypedDict):
@@ -27,7 +34,8 @@ class ExecutorSubgraphInputState(TypedDict):
 
 
 class ExecutorSubgraphHiddenState(TypedDict):
-    session_id: str
+    experiment_session_id: str
+    devin_completion: bool
     fix_iteration_count: int
     error_text_data: str
     judgment_result: bool
@@ -35,7 +43,7 @@ class ExecutorSubgraphHiddenState(TypedDict):
 
 
 class ExecutorSubgraphOutputState(TypedDict):
-    devin_url: str
+    experiment_devin_url: str
     branch_name: str
     output_text_data: str
 
@@ -58,11 +66,16 @@ class ExecutorSubgraph:
         self.repository_name = repository_name
         self.save_dir = save_dir
         self.max_code_fix_iteration = max_code_fix_iteration
+        self.headers = {
+            "Authorization": f"Bearer {DEVIN_API_KEY}",
+            "Content-Type": "application/json",
+        }
 
     def _generate_code_with_devin_node(self, state: ExecutorSubgraphState) -> dict:
         print("---ExecutorSubgraph---")
         print("generate_code_with_devin_node")
-        session_id, branch_name, devin_url = generate_code_with_devin(
+        experiment_session_id, experiment_devin_url = generate_code_with_devin(
+            headers=self.headers,
             github_owner=self.github_owner,
             repository_name=self.repository_name,
             new_method=state["new_method"],
@@ -70,9 +83,20 @@ class ExecutorSubgraph:
         )
 
         return {
-            "session_id": session_id,
-            "branch_name": branch_name,
-            "devin_url": devin_url,
+            "experiment_session_id": experiment_session_id,
+            "branch_name": experiment_session_id,
+            "experiment_devin_url": experiment_devin_url,
+        }
+
+    def _check_devin_completion_node(self, state: ExecutorSubgraphState) -> dict:
+        time.sleep(120)
+        print("check_devin_completion_node")
+        check_devin_completion(
+            headers=self.headers,
+            session_id=state["experiment_session_id"],
+        )
+        return {
+            "devin_completion": True,
         }
 
     def _execute_github_actions_workflow_node(
@@ -118,7 +142,8 @@ class ExecutorSubgraph:
     def _fix_code_with_devin_node(self, state: ExecutorSubgraphState) -> dict:
         print("fix_code_with_devin_node")
         fix_iteration_count = fix_code_with_devin(
-            session_id=state["session_id"],
+            headers=self.headers,
+            session_id=state["experiment_session_id"],
             output_text_data=state["output_text_data"],
             error_text_data=state["error_text_data"],
             fix_iteration_count=state["fix_iteration_count"],
@@ -143,6 +168,9 @@ class ExecutorSubgraph:
             "generate_code_with_devin_node", self._generate_code_with_devin_node
         )
         graph_builder.add_node(
+            "check_devin_completion_node", self._check_devin_completion_node
+        )
+        graph_builder.add_node(
             "execute_github_actions_workflow_node",
             self._execute_github_actions_workflow_node,
         )
@@ -158,7 +186,11 @@ class ExecutorSubgraph:
         # make edges
         graph_builder.add_edge(START, "generate_code_with_devin_node")
         graph_builder.add_edge(
-            "generate_code_with_devin_node", "execute_github_actions_workflow_node"
+            "generate_code_with_devin_node", "check_devin_completion_node"
+        )
+        graph_builder.add_edge(
+            "check_devin_completion_node",
+            "execute_github_actions_workflow_node",
         )
         graph_builder.add_edge(
             "execute_github_actions_workflow_node",
@@ -176,7 +208,10 @@ class ExecutorSubgraph:
             },
         )
         graph_builder.add_edge(
-            "fix_code_with_devin_node", "execute_github_actions_workflow_node"
+            "fix_code_with_devin_node", "check_devin_completion_node"
+        )
+        graph_builder.add_edge(
+            "check_devin_completion_node", "execute_github_actions_workflow_node"
         )
         return graph_builder.compile()
 
@@ -189,5 +224,11 @@ if __name__ == "__main__":
         max_code_fix_iteration=3,
     ).build_graph()
 
+    for event in graph.stream(executor_subgraph_input_data, stream_mode="updates"):
+        # print(node)
+        node_name = list(event.keys())[0]
+        print(node_name)
+        print(event[node_name])
+
     # executor_subgraph.output_mermaid
-    result = graph.invoke(executor_subgraph_input_data)
+    # result = graph.invoke(executor_subgraph_input_data)
