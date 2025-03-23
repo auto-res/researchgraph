@@ -32,7 +32,9 @@ from researchgraph.upload_subgraph.upload_subgraph import (
     UploadSubgraphState,
 )
 
-from researchgraph.input_data import research_graph_input_data
+from researchgraph.retrieve_paper_subgraph.input_data import (
+    retrieve_paper_subgraph_input_data,
+)
 
 
 class ResearchGraphState(
@@ -153,8 +155,15 @@ if __name__ == "__main__":
         max_code_fix_iteration=max_code_fix_iteration,
     ).build_graph()
 
-    config = {"recursion_limit": 500}
-    result = research_graph.invoke(
-        research_graph_input_data,
-        config=config,
-    )
+    # config = {"recursion_limit": 500}
+    # result = research_graph.invoke(
+    #     retrieve_paper_subgraph_input_data,
+    #     config=config,
+    # )
+    for event in research_graph.stream(
+        retrieve_paper_subgraph_input_data,
+        stream_mode="updates",
+        config={"recursion_limit": 500},
+    ):
+        node_name = list(event.keys())[0]
+        print("Node Name: ", node_name)

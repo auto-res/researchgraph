@@ -83,6 +83,7 @@ class ExecutorSubgraph:
         )
 
         return {
+            "fix_iteration_count": 0,
             "experiment_session_id": experiment_session_id,
             "branch_name": experiment_session_id,
             "experiment_devin_url": experiment_devin_url,
