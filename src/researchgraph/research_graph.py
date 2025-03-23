@@ -4,6 +4,7 @@ import datetime
 from langgraph.graph import START, END, StateGraph
 from langgraph.graph.graph import CompiledGraph
 
+from researchgraph.utils.check_api_key import check_api_key
 
 from researchgraph.retrieve_paper_subgraph.retrieve_paper_subgraph import (
     RetrievePaperSubgraph,
@@ -57,6 +58,7 @@ class ResearchGraph:
         repository: str,
         max_code_fix_iteration: int,
     ):
+        check_api_key()
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
         self.save_dir = os.path.join(save_dir, timestamp)
         os.makedirs(self.save_dir)

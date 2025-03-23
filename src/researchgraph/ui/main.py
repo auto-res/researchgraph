@@ -1,6 +1,7 @@
 import streamlit as st
 
 import sys
+import logging
 
 sys.path.append("/mount/src/researchgraph/src")
 
@@ -15,6 +16,8 @@ from researchgraph.experimental_plan_subgraph.experimental_plan_subgraph import 
 from researchgraph.executor_subgraph.executor_subgraph import ExecutorSubgraph
 from researchgraph.writer_subgraph.writer_subgraph import WriterSubgraph
 from researchgraph.upload_subgraph.upload_subgraph import UploadSubgraph
+
+logger = logging.getLogger(__name__)
 
 
 st.markdown("# Research Graph")
@@ -31,8 +34,8 @@ st.markdown("[実行結果一覧](https://github.com/auto-res2/auto-research)")
 
 
 # 共通の設定項目
-save_dir = "/tmp/data"
-scrape_urls = [
+st.session_state["save_dir"] = "/tmp/data"
+st.session_state["scrape_urls"] = [
     "https://icml.cc/virtual/2024/papers.html?filter=titles",
     "https://iclr.cc/virtual/2024/papers.html?filter=titles",
     # "https://nips.cc/virtual/2024/papers.html?filter=titles",
@@ -56,9 +59,7 @@ st.session_state["github_owner"], st.session_state["repository_name"] = (
 st.session_state["query"] = st.text_input(
     "何の研究をしますか？", "diffusion model", key="research_graph_query"
 )
-st.session_state["research_graph_input_data"] = {
-    "queries": [st.session_state["query"]],
-}
+
 st.session_state["add_paper_num"] = st.slider(
     label="ベース論文をアップデートする際に使用する論文数",
     min_value=1,
@@ -79,16 +80,19 @@ st.session_state["max_code_fix_iteration"] = st.slider(
 st.markdown("- 実行")
 if st.button("start", key="research_graph_start"):
     st.write("実行中")
+    research_graph_input_data = {
+        "queries": [st.session_state["query"]],
+    }
     research_graph = ResearchGraph(
-        save_dir=save_dir,
-        scrape_urls=scrape_urls,
+        save_dir=st.session_state["save_dir"],
+        scrape_urls=st.session_state["scrape_urls"],
         add_paper_num=st.session_state["add_paper_num"],
         repository=st.session_state["repository"],
         max_code_fix_iteration=st.session_state["max_code_fix_iteration"],
     ).build_graph()
     with st.spinner("Wait for it...", show_time=True):
         for event in research_graph.stream(
-            st.session_state["research_graph_input_data"],
+            research_graph_input_data,
             stream_mode="updates",
             config={"recursion_limit": 500},
         ):
@@ -148,9 +152,7 @@ ret.markdown("- 設定")
 st.session_state["query"] = ret.text_input(
     "何の研究をしますか？", "diffusion model", key="retrieve_paper_subgraph_query"
 )
-st.session_state["retrieve_paper_subgraph_input_data"] = {
-    "queries": [st.session_state["query"]],
-}
+
 st.session_state["add_paper_num"] = ret.slider(
     label="ベース論文をアップデートする際に使用する論文数",
     min_value=1,
@@ -164,10 +166,13 @@ st.session_state["add_paper_num"] = ret.slider(
 ret.markdown("- 実行")
 if ret.button("start", key="retrieve_paper_subgraph_start"):
     ret.write("実行中")
+    retrieve_paper_subgraph_input_data = {
+        "queries": [st.session_state["query"]],
+    }
     retrieve_paper_subgraph = RetrievePaperSubgraph(
         llm_name="gpt-4o-mini-2024-07-18",
-        save_dir=save_dir,
-        scrape_urls=scrape_urls,
+        save_dir=st.session_state["save_dir"],
+        scrape_urls=st.session_state["scrape_urls"],
         add_paper_num=st.session_state["add_paper_num"],
     ).build_graph()
     with st.spinner("Wait for it...", show_time=True):
@@ -298,8 +303,10 @@ exec.markdown("- 設定")
 repository = exec.text_input(
     "新規手法の実装を管理するGitHubリポジトリを設定", value="auto-res2/auto-research"
 )
-github_owner, repository_name = repository.split("/", 1)
-max_code_fix_iteration = exec.slider(
+st.session_state["github_owner"], st.session_state["repository_name"] = (
+    repository.split("/", 1)
+)
+st.session_state["max_code_fix_iteration"] = exec.slider(
     label="コードの修正回数",
     min_value=0,
     max_value=10,
@@ -318,10 +325,10 @@ if exec.button("start", key="executor_subgraph_start"):
         "experiment_code": st.session_state["experiment_code"],
     }
     executor_subgraph = ExecutorSubgraph(
-        github_owner=github_owner,
-        repository_name=repository_name,
-        save_dir=save_dir,
-        max_code_fix_iteration=max_code_fix_iteration,
+        github_owner=st.session_state["github_owner"],
+        repository_name=st.session_state["repository_name"],
+        save_dir=st.session_state["save_dir"],
+        max_code_fix_iteration=st.session_state["max_code_fix_iteration"],
     ).build_graph()
     with st.spinner("Wait for it...", show_time=True):
         for event in executor_subgraph.stream(
@@ -359,7 +366,7 @@ if on:
     write.image("images/writer_subgraph.png")
 
 write.markdown("- 設定")
-llm_name = write.selectbox(
+st.session_state["writer_llm_name"] = write.selectbox(
     "「論文執筆」「Texへの変換」に使用するLLM",
     ("gpt-4o-mini-2024-07-18", "gpt-4o-2024-11-20"),
 )
@@ -376,8 +383,8 @@ if write.button("start", key="writer_subgraph_start"):
         "output_text_data": st.session_state["output_text_data"],
     }
     writer_subgraph = WriterSubgraph(
-        llm_name=llm_name,
-        save_dir=save_dir,
+        llm_name=st.session_state["writer_llm_name"],
+        save_dir=st.session_state["save_dir"],
     ).build_graph()
     with st.spinner("Wait for it...", show_time=True):
         for event in writer_subgraph.stream(
@@ -416,9 +423,9 @@ if up.button("start", key="uploader_subgraph_start"):
         "execution_logs": st.session_state["execution_logs"],
     }
     upload_subgraph = UploadSubgraph(
-        github_owner=github_owner,
-        repository_name=repository_name,
-        save_dir=save_dir,
+        github_owner=st.session_state["github_owner"],
+        repository_name=st.session_state["repository_name"],
+        save_dir=st.session_state["save_dir"],
     ).build_graph()
     upload_output = upload_subgraph.invoke(upload_subgraph_input_data)
     if upload_output["completion"]:
