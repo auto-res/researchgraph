@@ -19,6 +19,10 @@ from researchgraph.upload_subgraph.upload_subgraph import UploadSubgraph
 
 logger = logging.getLogger(__name__)
 
+password = st.secrets.PASSWORD
+
+if st.text_input("Enter password", type="password") != password:
+    st.stop()
 
 st.markdown("# Research Graph")
 st.markdown("Research Graphは，機械学習研究の完全な自動化目的に開発しています．")
