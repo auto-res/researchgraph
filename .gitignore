@@ -167,3 +167,4 @@ cython_debug/
 data/*
 src/researchgraph.egg-info
 .gitmessage.txt
+.streamlit/*
