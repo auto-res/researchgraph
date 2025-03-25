@@ -33,6 +33,13 @@ def llm_decide(
     env = Environment()
     template = env.from_string(prompt_template)
     prompt = template.render(data)
+    if (
+        len(prompt) > 80000
+    ):  # TODO: tiktokenでトークン数を厳密に計算できるように変更する
+        print(
+            "Prompt length exceeds 100,000 characters. Truncating."
+        )  # TODO：Loggerでwarningを出力するように変更する
+        prompt = prompt[:80000]
 
     for attempt in range(max_retries):
         try:
