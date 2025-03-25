@@ -1,8 +1,9 @@
 # ResearchGraph
 ResearchGraph is created by [AutoRes](https://www.autores.one/english).
 ResearchGraph is an OSS that aims to automate complete machine learning research and to self-improve the automatic research system.  
-ResearchGraphは[AutoRes](https://www.autores.one/japanese)というプロジェクトで作成しています．
-ResearchGraphは完全な機械学習研究の自動化および，自動研究システムの自己改善を目的としたOSSになります．
+
+You can try it right away below!  
+<a href="https://colab.research.google.com/github/auto-res/researchgraph/blob/main/notebook/research_graph.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
 
 
 ## Architecture
