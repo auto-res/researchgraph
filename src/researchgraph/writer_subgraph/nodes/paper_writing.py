@@ -116,6 +116,7 @@ Here is the context of the entire paper:
     - When beneficial for clarity, utilize tables or pseudocode to describe mathematical equations, parameter settings, and procedural steps.
     - Avoid overly explanatory or repetitive descriptions that would be self-evident to readers familiar with standard machine learning notation.
     - **Figures and images are ONLY allowed in the "Results" section**. 
+    - Use LaTeX float options like `[htbp]` for figure placement to ensure natural flow while maintaining layout quality.
 - Avoid editor instructions, placeholders, speculative text, or comments like "details are missing."
     - Example: Remove phrases like "Here’s a refined version of the '{{ section }}'," as they are not part of the final document.
     - These phrases are found at the beginning of sections, introducing edits or refinements. Carefully review the start of each section for such instructions and ensure they are eliminated while preserving the actual content.
@@ -158,6 +159,7 @@ Here is the context of the entire paper:
     - When beneficial for clarity, utilize tables or pseudocode to describe mathematical equations, parameter settings, and procedural steps.
     - Avoid overly explanatory or repetitive descriptions that would be self-evident to readers familiar with standard machine learning notation.
     - **Figures and images are ONLY allowed in the "Results" section**. 
+    - Use LaTeX float options like `[htbp]` for figure placement to ensure natural flow while maintaining layout quality.
 - Avoid editor instructions, placeholders, speculative text, or comments like "details are missing."
     - Example: Remove phrases like "Here’s a refined version of the '{{ section }}'," as they are not part of the final document.
     - These phrases are found at the beginning of sections, introducing edits or refinements. Carefully review the start of each section for such instructions and ensure they are eliminated while preserving the actual content.
