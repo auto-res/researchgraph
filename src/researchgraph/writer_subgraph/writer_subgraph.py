@@ -50,7 +50,7 @@ class WriterSubgraph:
     def _generate_note_node(self, state: WriterSubgraphState) -> dict:
         print("---WriterSubgraph---")
         print("generate_note_node")
-        note = generate_note(state=dict(state))
+        note = generate_note(state=dict(state), figures_dir=self.figures_dir)
         return {"note": note}
 
     def _writeup_node(self, state: WriterSubgraphState) -> dict:

@@ -1,3 +1,6 @@
+import os
+import glob
+from typing import Optional
 from jinja2 import Template
 
 
@@ -16,7 +19,7 @@ corresponding_section: dict[str, list[str]] = {
 }
 
 
-def generate_note(state: dict) -> str:
+def generate_note(state: dict, figures_dir: Optional[str] = None) -> str:
     template = Template("""
     {% for section, items in sections.items() %}
     # {{ section }}
@@ -24,6 +27,16 @@ def generate_note(state: dict) -> str:
     {{ key }}: {{ value }}
     {% endfor %}
     {% endfor %}
+    
+    # Figures
+    {% if figures %}
+    The following figures are available in the 'images/' directory and may be included in the paper:
+    {% for fig in figures %}
+    - {{ fig }}
+    {% endfor %}
+    {% else %}
+    No figures available.
+    {% endif %}
     """)
 
     sections: dict[str, dict] = {}
@@ -32,4 +45,8 @@ def generate_note(state: dict) -> str:
         for state_name in state_name_list:
             matched_items[state_name] = state[state_name]
         sections[section] = matched_items
-    return template.render(sections=sections)
+
+    figures = []
+    if figures_dir is not None:
+        figures.extend(glob.glob(os.path.join(figures_dir, "*.pdf")))
+    return template.render(sections=sections, figures=figures)
