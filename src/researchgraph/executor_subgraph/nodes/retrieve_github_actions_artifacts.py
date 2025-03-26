@@ -1,4 +1,6 @@
 import os
+import glob
+import shutil
 import zipfile
 
 from researchgraph.utils.api_request_handler import fetch_api_data, retry_request
@@ -45,6 +47,17 @@ def _zip_to_txt(response, iteration_save_dir, key):
         os.remove(zip_file_path)
         print(f"ZIP file deleted: {zip_file_path}")
 
+def _copy_images_to_latest_dir(source_dir: str, dest_dir: str):
+    if os.path.exists(dest_dir):
+        shutil.rmtree(dest_dir)
+        print(f"Removed exisiting images/ directory: {dest_dir}")
+    os.makedirs(dest_dir, exist_ok=True)
+    
+    for file_path in glob.glob(os.path.join(source_dir, "*.pdf")):
+        filename = os.path.basename(file_path)
+        dest_path = os.path.join(dest_dir, filename)
+        shutil.copyfile(file_path, dest_path)
+        print(f"Copied image to: {dest_path}")
 
 def retrieve_github_actions_artifacts(
     github_owner,
@@ -77,6 +90,9 @@ def retrieve_github_actions_artifacts(
         output_text_data = f.read()
     with open(os.path.join(iteration_save_dir, "error.txt"), "r") as f:
         error_text_data = f.read()
+
+    _copy_images_to_latest_dir(iteration_save_dir, os.path.join(save_dir, "images"))
+
     return (
         output_text_data,
         error_text_data,

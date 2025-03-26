@@ -22,7 +22,7 @@ class LatexNode:
         pdf_file_path: str,
         save_dir: str,
         timeout: int = 30,
-        latex_template_file_path: str = "/workspaces/researchgraph/src/researchgraph/writer_subgraph/latex/template.tex",
+        latex_template_file_path: str = "writer_subgraph/latex/template.tex",
     ):
         self.llm_name = llm_name
         self.latex_template_file_path = latex_template_file_path
@@ -145,7 +145,7 @@ class LatexNode:
         pattern: str = r"\\includegraphics.*?{(.*?)}",
     ) -> str:
         # Verify all referenced figures in the LaTeX content exist in the figures directory
-        all_figs = [f for f in os.listdir(self.figures_dir) if f.endswith(".png")]
+        all_figs = [f for f in os.listdir(self.figures_dir) if f.endswith(".pdf")]
         if not all_figs:
             print("論文生成に使える図がありません")
             return tex_text
