@@ -7,16 +7,6 @@ from typing import Optional
 
 env = Environment()
 
-# NOTE: These regex rules are used to classify the keys in state[""] into specific sections.
-# regex_rules = {
-#     "Title": r"^(title|objective)$",
-#     "Methods": r"^(new_method|verification_policy|experiment_details)$",
-#     "Codes": r"^(experiment_code)$",
-#     "Results": r"^(output_text_data)$",
-#     "Analysis": r".*_analysis$",
-#     # "Related Work": r"^(arxiv_url|github_url)$"
-# }
-
 
 class LLMOutput(BaseModel):
     generated_paper_text: str
@@ -125,6 +115,7 @@ Here is the context of the entire paper:
     - **Ensure all mathematical equations, pseudocode, experimental setups, configurations, numerical results, and figures/tables are fully incorporated.**
     - When beneficial for clarity, utilize tables or pseudocode to describe mathematical equations, parameter settings, and procedural steps.
     - Avoid overly explanatory or repetitive descriptions that would be self-evident to readers familiar with standard machine learning notation.
+    - **Figures and images are ONLY allowed in the "Results" section**. 
 - Avoid editor instructions, placeholders, speculative text, or comments like "details are missing."
     - Example: Remove phrases like "Here’s a refined version of the '{{ section }}'," as they are not part of the final document.
     - These phrases are found at the beginning of sections, introducing edits or refinements. Carefully review the start of each section for such instructions and ensure they are eliminated while preserving the actual content.
@@ -166,6 +157,7 @@ Here is the context of the entire paper:
     - **Ensure all mathematical equations, pseudocode, experimental setups, configurations, numerical results, and figures/tables are fully incorporated.**
     - When beneficial for clarity, utilize tables or pseudocode to describe mathematical equations, parameter settings, and procedural steps.
     - Avoid overly explanatory or repetitive descriptions that would be self-evident to readers familiar with standard machine learning notation.
+    - **Figures and images are ONLY allowed in the "Results" section**. 
 - Avoid editor instructions, placeholders, speculative text, or comments like "details are missing."
     - Example: Remove phrases like "Here’s a refined version of the '{{ section }}'," as they are not part of the final document.
     - These phrases are found at the beginning of sections, introducing edits or refinements. Carefully review the start of each section for such instructions and ensure they are eliminated while preserving the actual content.
@@ -196,28 +188,6 @@ Pay particular attention to fixing any errors such as:
 - Unescaped symbols, e.g. shakespeare_char should be shakespeare\\_char in text
 - Incorrect closing of environments, e.g. </end{{figure}}> instead of \\end{{figure}}
 """
-
-    # def _generate_note(self, state: dict) -> str:
-    #     template = Template("""
-    #     {% for section, items in sections.items() %}
-    #     # {{ section }}
-    #     {% for key, value in items.items() %}
-    #     {{ key }}: {{ value }}
-    #     {% endfor %}
-    #     {% endfor %}
-    #     """)
-
-    #     sections: dict[str, dict] = {}
-    #     for section, pattern in regex_rules.items():
-    #         matched_items: dict[str, str] = {}
-    #         for key, value in state.items():
-    #             if re.search(pattern, key):
-    #                 matched_items[key] = (
-    #                     ", ".join(value) if isinstance(value, list) else value
-    #                 )
-    #         sections[section] = matched_items
-    #     # print(f"note: {template.render(sections=sections)}")
-    #     return template.render(sections=sections)
 
     def _call_llm(self, prompt: str, max_retries: int = 3) -> Optional[str]:
         for attempt in range(max_retries):
@@ -287,7 +257,6 @@ Pay particular attention to fixing any errors such as:
         )
 
     def execute(self, note: str) -> dict:
-        # note = self._generate_note(state)
         paper_content = {}
         for section in self.target_sections:
             print(f"section: {section}")
@@ -295,16 +264,13 @@ Pay particular attention to fixing any errors such as:
                 # generate and refine
                 initial_content = self._write(note, section)
                 # initial_content = self._relate_work(initial_content)
-                # cleaned_initial_content = self._clean_meta_information(initial_content)
                 refined_content = self._refine(note, section, initial_content)
-                # refined_content = self._refine(note, section, initial_content)
             else:
                 # refine only
                 initial_content = paper_content.get(section, "")
                 # initial_content = getattr(state, section)
                 refined_content = self._refine(note, section, initial_content)
 
-            # final_content = self._clean_meta_information(refined_content)
             paper_content[section] = refined_content
         return paper_content
 
