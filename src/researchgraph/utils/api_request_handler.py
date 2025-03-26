@@ -72,7 +72,7 @@ def fetch_api_data(
 def retry_request(
     fetch_function,
     *args,
-    max_retries=20,
+    max_retries=50,
     initial_wait_time=1,
     max_wait_time=180,
     check_condition=None,

@@ -22,7 +22,7 @@ class LatexNode:
         pdf_file_path: str,
         save_dir: str,
         timeout: int = 30,
-        latex_template_file_path: str = "/workspaces/researchgraph/src/researchgraph/writer_subgraph/latex/template.tex",
+        latex_template_file_path: str = "writer_subgraph/latex/template.tex",
     ):
         self.llm_name = llm_name
         self.latex_template_file_path = latex_template_file_path
