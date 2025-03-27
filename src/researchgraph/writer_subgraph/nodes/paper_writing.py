@@ -92,14 +92,11 @@ class WritingNode:
 - To keep going with the analogy, you can think of future work as (potential) academic offspring.""",
         }
 
-        self.write_prompt_template = """
-You are tasked with filling in the '{{ section }}' section of a research paper.
-
+        self.system_prompt = """
 A complete LaTeX template is already in place.
-Your role is to generate the LaTeX content specifically for the designated section, such as text, equations, figures, tables, and citations—all within the existing document structure.
+Your role is to generate or refine the LaTeX content specifically for the '{{ section }}' section, such as text, equations, figures, tables, and citations—all within the existing document structure.
 
-The generated text should be output as a value for the key “generated_paper_text”.
-The value of "generated_paper_text" should be the content of the '{{ section }}' section in LaTeX format.
+The final LaTeX content should be returned as the value of the key “generated_paper_text”.
 
 Some tips are provided below:
 {{ tips }}
@@ -116,7 +113,8 @@ Here is the context of the entire paper:
     - When beneficial for clarity, utilize tables or pseudocode to describe mathematical equations, parameter settings, and procedural steps.
     - Avoid overly explanatory or repetitive descriptions that would be self-evident to readers familiar with standard machine learning notation.
     - **Figures and images are ONLY allowed in the "Results" section**. 
-    - Use LaTeX float options like `[htbp]` for figure placement to ensure natural flow while maintaining layout quality.
+        - Use LaTeX float options like `[htbp]` for figure placement to ensure natural flow while maintaining layout quality.
+        - All figures are stored in the `images/` directory. Always include the full ude the full relative path like `\\includegraphics{images/filename.pdf}` instead of just the filename.**
 - Avoid editor instructions, placeholders, speculative text, or comments like "details are missing."
     - Example: Remove phrases like "Here’s a refined version of the '{{ section }}'," as they are not part of the final document.
     - These phrases are found at the beginning of sections, introducing edits or refinements. Carefully review the start of each section for such instructions and ensure they are eliminated while preserving the actual content.
@@ -132,48 +130,19 @@ Here is the context of the entire paper:
 - The full paper should be **about 8 pages long**, meaning **each section should contain substantial content**.
 """
 
+        self.write_prompt_template = """
+You are tasked with filling in the '{{ section }}' section of a research paper.
+"""
+
         self.refinement_template = """
-You are tasked with refining in the '{{ section }}' section of a research paper.
-
-A complete LaTeX template is already in place.
-Your role is to refine the LaTeX content specifically for the designated section, such as text, equations, figures, tables, and citations—all within the existing document structure.
-
-The refined text should be output as a value for the key “generated_paper_text”.
-The value of "generated_paper_text" should be the refined content of the '{{ section }}' section in LaTeX format.
+You are tasked with refining the '{{ section }}' section of a research paper.
 
 Here is the content that needs refinement:
 {{ content }}
 
-Some tips are provided below:
-{{ tips }}
-
-Here is the context of the entire paper:
-{{ note }}
-
-**Instructions**:
-- Use ONLY the provided information in the context. 
-    - **DO NOT add any assumptions, invented data, or details that are not explicitly mentioned in the context.
-- **Use ALL information from '{{ note }}'.** However, you are free to organize and structure the content in a natural and logical way, rather than directly following the order or format of `{{ note }}`
-    - **It is mandatory to include all details related to methods, experiments, and results.**
-    - **Ensure all mathematical equations, pseudocode, experimental setups, configurations, numerical results, and figures/tables are fully incorporated.**
-    - When beneficial for clarity, utilize tables or pseudocode to describe mathematical equations, parameter settings, and procedural steps.
-    - Avoid overly explanatory or repetitive descriptions that would be self-evident to readers familiar with standard machine learning notation.
-    - **Figures and images are ONLY allowed in the "Results" section**. 
-    - Use LaTeX float options like `[htbp]` for figure placement to ensure natural flow while maintaining layout quality.
-- Avoid editor instructions, placeholders, speculative text, or comments like "details are missing."
-    - Example: Remove phrases like "Here’s a refined version of the '{{ section }}'," as they are not part of the final document.
-    - These phrases are found at the beginning of sections, introducing edits or refinements. Carefully review the start of each section for such instructions and ensure they are eliminated while preserving the actual content.
-- **Use \\subsection{...} for any subsections within this section.**
-    - Subsection titles should be distinct from the '{{ section }}' title. 
-    - **Do not use '\\subsection{ {{ section }} }', or other slight variations. Use more descriptive and unique titles.
-    - Avoid creating too many subsections. If the content of a subsection is brief or overlaps significantly with other subsections, merge them to streamline the document. Focus on clarity and brevity over excessive structural division.
-- Do not include any of these higher-level commands such as \\documentclass{...}, \\begin{document}, and \\end{document}.
-    - Additionally, avoid including section-specific commands such as \\begin{abstract}, \\section{ {{ section }} }, or any other similar environment definitions.
-- Identify any redundancies (e.g. repeated figures or repeated text), if there are any, decide where in the paper things should be cut.
-- Identify where we can save space, and be more concise without weakening the message of the text.
-- The full paper should be **about 8 pages long**, meaning **each section should contain substantial content**.
 Pay particular attention to fixing any errors such as:
-{{ error_list_prompt }}"""
+{{ error_list_prompt }}
+"""
 
         self.error_list_prompt = """
 - Unenclosed math symbols
@@ -191,12 +160,13 @@ Pay particular attention to fixing any errors such as:
 - Incorrect closing of environments, e.g. </end{{figure}}> instead of \\end{{figure}}
 """
 
-    def _call_llm(self, prompt: str, max_retries: int = 3) -> Optional[str]:
+    def _call_llm(self, prompt: str, system_prompt: str, max_retries: int = 3) -> Optional[str]:
         for attempt in range(max_retries):
             try:
                 response = completion(
                     model=self.llm_name,
                     messages=[
+                        {"role": "system", "content": system_prompt},
                         {"role": "user", "content": prompt},
                     ],
                     response_format=LLMOutput,
@@ -210,7 +180,8 @@ Pay particular attention to fixing any errors such as:
 
     def _write(self, note: str, section_name: str) -> str:
         prompt = self._generate_write_prompt(section_name, note)
-        content = self._call_llm(prompt)
+        system_prompt = self._render_system_prompt(section_name, note)
+        content = self._call_llm(prompt=prompt, system_prompt=system_prompt)
         if not content:
             raise RuntimeError(
                 f"Failed to generate content for section: {section_name}. The LLM returned None."
@@ -220,7 +191,8 @@ Pay particular attention to fixing any errors such as:
     def _refine(self, note: str, section_name: str, content: str) -> str:
         for round_num in range(self.refine_round):
             prompt = self._generate_refinement_prompt(section_name, note, content)
-            refine_content = self._call_llm(prompt)
+            system_prompt = self._render_system_prompt(section_name, note)
+            refine_content = self._call_llm(prompt=prompt, system_prompt=system_prompt)
             if not refine_content:
                 print(
                     f"Refinement failed for {section_name} at round {round_num + 1}. Keeping previous content."
@@ -233,6 +205,14 @@ Pay particular attention to fixing any errors such as:
         self, content: str
     ) -> str:  # TODO: Implement functionality to manage retrieved papers in a centralized references file (e.g., references.bib).
         return content  #       Generate descriptions based on information in RelatedWorkNode.
+
+    def _render_system_prompt(self, section: str, note: str) -> str:
+        template = env.from_string(self.system_prompt)
+        return template.render(
+            section=section,
+            note=note,
+            tips=self.per_section_tips_prompt_dict.get(section, ""),
+        )
 
     def _generate_write_prompt(self, section: str, note: str) -> str:
         """

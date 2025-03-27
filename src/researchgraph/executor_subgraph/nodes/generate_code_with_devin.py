@@ -22,6 +22,7 @@ Please create code that can run on NVIDIA Tesla T4 · 16 GB VRAM.
 - Experimental scripts should be given a simple test run to make sure they work. The test run should not be too long.
 - Install and use the necessary python packages as needed.
 - Please also list the python packages required for the experiment in the requirements.txt file.
+- All figures and plots (e.g., accuracy curves, loss plots, confusion matrix) must be saved in high-quality PDF format suitable for academic papers.
 - The roles of directories and scripts are listed below. Follow the roles to complete your implementation.
 - .github/workflows/run_experiment.yml...Under no circumstances should the contents or folder structure of the “run_experiment.yml” file be altered. This rule must be observed.
 - config...If you want to set parameters for running the experiment, place the file that completes the parameters under this directory.

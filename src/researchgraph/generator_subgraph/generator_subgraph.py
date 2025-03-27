@@ -7,6 +7,7 @@ from researchgraph.generator_subgraph.nodes.generator_node import generator_node
 from researchgraph.generator_subgraph.input_data import (
     generator_subgraph_input_data,
 )
+from researchgraph.utils.execution_timers import time_node, ExecutionTimeState
 
 
 class GeneratorSubgraphInputState(TypedDict):
@@ -26,6 +27,7 @@ class GeneratorSubgraphState(
     GeneratorSubgraphInputState,
     GeneratorSubgraphHiddenState,
     GeneratorSubgraphOutputState,
+    ExecutionTimeState, 
 ):
     pass
 
@@ -36,9 +38,9 @@ class GeneratorSubgraph:
     ):
         pass
 
+    @time_node("generator_subgraph", "_generator_node")
     def _generator_node(self, state: GeneratorSubgraphState) -> dict:
         print("---GeneratorSubgraph---")
-        print("generator_node")
         new_method = generator_node(
             base_method_text=state["base_method_text"],
             add_method_text_list=state["add_method_texts"],

@@ -4,4 +4,5 @@ Adaptive Curvature Momentum (ACM) Optimizer Overview Existing adaptive optimizer
 """,
     "github_url": "",
     "base_method_text": "",
+    "execution_time": {}, 
 }

@@ -7,6 +7,7 @@ from langgraph.graph.graph import CompiledGraph
 
 from researchgraph.upload_subgraph.nodes.github_upload import github_upload
 from researchgraph.upload_subgraph.input_data import upload_subgraph_input_data
+from researchgraph.utils.execution_timers import time_node, ExecutionTimeState
 
 
 class UploadSubgraphInputState(TypedDict):
@@ -22,7 +23,11 @@ class UploadSubgraphOutputState(TypedDict):
     completion: bool
 
 
-class UploadSubgraphState(UploadSubgraphInputState, UploadSubgraphOutputState):
+class UploadSubgraphState(
+    UploadSubgraphInputState, 
+    UploadSubgraphOutputState, 
+    ExecutionTimeState, 
+):
     pass
 
 
@@ -38,6 +43,7 @@ class UploadSubgraph:
         self.save_dir = save_dir
         self.pdf_file_path = os.path.join(self.save_dir, "paper.pdf")
 
+    @time_node("upload_subgraph", "_github_upload_node")
     def _github_upload_node(self, state: UploadSubgraphState) -> dict:
         completion = github_upload(
             pdf_file_path=self.pdf_file_path,
