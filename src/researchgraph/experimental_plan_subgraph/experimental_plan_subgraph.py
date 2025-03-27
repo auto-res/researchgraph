@@ -24,6 +24,7 @@ from researchgraph.executor_subgraph.nodes.check_devin_completion import (
 from researchgraph.experimental_plan_subgraph.input_data import (
     experimental_subgraph_input_data,
 )
+from researchgraph.utils.execution_timers import time_node, ExecutionTimeState
 
 API_KEY = os.getenv("DEVIN_API_KEY")
 
@@ -50,6 +51,7 @@ class ExperimentalPlanSubgraphState(
     ExperimentalPlanSubgraphInputState,
     ExperimentalPlanSubgraphHiddenState,
     ExperimentalPlanSubgraphOutputState,
+    ExecutionTimeState, 
 ):
     pass
 
@@ -61,11 +63,11 @@ class ExperimentalPlanSubgraph:
             "Content-Type": "application/json",
         }
 
+    @time_node("experimental_plan_subgraph", "_retrieve_code_with_devin_node")
     def _retrieve_code_with_devin_node(
         self, state: ExperimentalPlanSubgraphState
     ) -> dict:
         print("---ExperimentalPlanSubgraph---")
-        print("retrieve_code_with_devin_node")
         retrieve_session_id, retrieve_devin_url = retrieve_code_with_devin(
             headers=self.headers,
             github_url=state["base_github_url"],
@@ -76,10 +78,10 @@ class ExperimentalPlanSubgraph:
             "retrieve_devin_url": retrieve_devin_url,
         }
 
+    @time_node("experimental_plan_subgraph", "_check_devin_completion_node")
     def _check_devin_completion_node(
         self, state: ExperimentalPlanSubgraphState
     ) -> dict:
-        print("check_devin_completion_node")
         time.sleep(120)
         devin_output_response = check_devin_completion(
             headers=self.headers,
@@ -95,20 +97,20 @@ class ExperimentalPlanSubgraph:
             "experiment_info_of_source_research": experiment_info_of_source_research,
         }
 
+    @time_node("experimental_plan_subgraph", "_generate_advantage_criteria_node")
     def _generate_advantage_criteria_node(
         self, state: ExperimentalPlanSubgraphState
     ) -> dict:
-        print("generate_advantage_criteria_node")
         verification_policy = generate_advantage_criteria(
             model_name="o3-mini-2025-01-31",
             new_method=state["new_method"],
         )
         return {"verification_policy": verification_policy}
 
+    @time_node("experimental_plan_subgraph", "_generate_experiment_details_node")
     def _generate_experiment_details_node(
         self, state: ExperimentalPlanSubgraphState
     ) -> dict:
-        print("generate_experiment_details_node")
         experimet_details = generate_experiment_details(
             model_name="o3-mini-2025-01-31",
             verification_policy=state["verification_policy"],
@@ -118,10 +120,10 @@ class ExperimentalPlanSubgraph:
         )
         return {"experiment_details": experimet_details}
 
+    @time_node("experimental_plan_subgraph", "_generate_experiment_code_node")
     def _generate_experiment_code_node(
         self, state: ExperimentalPlanSubgraphState
     ) -> dict:
-        print("generate_experiment_code_node")
         experiment_code = generate_experiment_code(
             model_name="o3-mini-2025-01-31",
             experiment_details=state["experiment_details"],

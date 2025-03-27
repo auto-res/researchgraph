@@ -24,6 +24,7 @@ from researchgraph.executor_subgraph.nodes.llm_decide import llm_decide
 from researchgraph.executor_subgraph.input_data import (
     executor_subgraph_input_data,
 )
+from researchgraph.utils.execution_timers import time_node, ExecutionTimeState
 
 DEVIN_API_KEY = os.getenv("DEVIN_API_KEY")
 
@@ -49,7 +50,10 @@ class ExecutorSubgraphOutputState(TypedDict):
 
 
 class ExecutorSubgraphState(
-    ExecutorSubgraphInputState, ExecutorSubgraphHiddenState, ExecutorSubgraphOutputState
+    ExecutorSubgraphInputState, 
+    ExecutorSubgraphHiddenState, 
+    ExecutorSubgraphOutputState, 
+    ExecutionTimeState, 
 ):
     pass
 
@@ -71,9 +75,9 @@ class ExecutorSubgraph:
             "Content-Type": "application/json",
         }
 
+    @time_node("executor_subgraph", "_generate_code_with_devin_node")
     def _generate_code_with_devin_node(self, state: ExecutorSubgraphState) -> dict:
         print("---ExecutorSubgraph---")
-        print("generate_code_with_devin_node")
         experiment_session_id, experiment_devin_url = generate_code_with_devin(
             headers=self.headers,
             github_owner=self.github_owner,
@@ -89,9 +93,9 @@ class ExecutorSubgraph:
             "experiment_devin_url": experiment_devin_url,
         }
 
+    @time_node("executor_subgraph", "_check_devin_completion_node")
     def _check_devin_completion_node(self, state: ExecutorSubgraphState) -> dict:
         time.sleep(120)
-        print("check_devin_completion_node")
         check_devin_completion(
             headers=self.headers,
             session_id=state["experiment_session_id"],
@@ -100,10 +104,10 @@ class ExecutorSubgraph:
             "devin_completion": True,
         }
 
+    @time_node("executor_subgraph", "_execute_github_actions_workflow_node")
     def _execute_github_actions_workflow_node(
         self, state: ExecutorSubgraphState
     ) -> dict:
-        print("execute_github_actions_workflow_node")
         workflow_run_id = execute_github_actions_workflow(
             github_owner=self.github_owner,
             repository_name=self.repository_name,
@@ -113,10 +117,10 @@ class ExecutorSubgraph:
             "workflow_run_id": workflow_run_id,
         }
 
+    @time_node("executor_subgraph", "_retrieve_github_actions_artifacts_node")
     def _retrieve_github_actions_artifacts_node(
         self, state: ExecutorSubgraphState
     ) -> dict:
-        print("retrieve_github_actions_artifacts_node")
         output_text_data, error_text_data = retrieve_github_actions_artifacts(
             github_owner=self.github_owner,
             repository_name=self.repository_name,
@@ -129,8 +133,8 @@ class ExecutorSubgraph:
             "error_text_data": error_text_data,
         }
 
+    @time_node("executor_subgraph", "_llm_decide_node")
     def _llm_decide_node(self, state: ExecutorSubgraphState) -> dict:
-        print("llm_decide_node")
         judgment_result = llm_decide(
             llm_name="gpt-4o-mini-2024-07-18",
             output_text_data=state["output_text_data"],
@@ -140,8 +144,8 @@ class ExecutorSubgraph:
             "judgment_result": judgment_result,
         }
 
+    @time_node("executor_subgraph", "_fix_code_with_devin_node")
     def _fix_code_with_devin_node(self, state: ExecutorSubgraphState) -> dict:
-        print("fix_code_with_devin_node")
         fix_iteration_count = fix_code_with_devin(
             headers=self.headers,
             session_id=state["experiment_session_id"],

@@ -15,7 +15,8 @@ Please follow the instructions below to tell us the detailed code for conducting
 - Please also output the names of the python libraries that you think are necessary for running the experiment.
 - The section 'Experimental information from the research on which it is based' includes details about the experiments conducted in the original research. Please use this information to implement the experiment as closely as possible to the original.
 - Please use matplotlib or seaborn to plot the results (e.g., accuracy, loss curves, confusion matrix), 
-and save the figures as high-quality vector graphics in PDF format. These plots should be suitable for inclusion in academic papers.
+and **explicitly save all plots as `.pdf` files using `plt.savefig("filename.pdf")` or equivalent.
+    - Do not use `.png` or other formats—output must be `.pdf` only. These plots should be suitable for inclusion in academic papers.
 
 # Experiment Details
 {experiment_details}
