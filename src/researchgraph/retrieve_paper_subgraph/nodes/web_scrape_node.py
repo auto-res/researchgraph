@@ -77,7 +77,7 @@ def firecrawl_scrape(
 
 if __name__ == "__main__":
     queries = ["deep learning"]
-    scrape_urls = ["https://iclr.cc/virtual/2024/papers.html?filter=titles"]
+    scrape_urls = ["https://iclr.cc/virtual/2024/papers.html?filter=title"]
 
     scraped_results = web_scrape_node(queries, scrape_urls=scrape_urls)
     print(f"Scraped results: {scraped_results}")
