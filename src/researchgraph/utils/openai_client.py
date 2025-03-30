@@ -1,6 +1,6 @@
 import tiktoken
 from openai import OpenAI
-from typing import Optional, Dict
+from typing import Optional, Dict, List
 import json
 
 # モデルごとの最大トークン数定義
@@ -24,23 +24,30 @@ def count_tokens(model_name: str, text: str) -> int:
     enc = tiktoken.encoding_for_model(model_name)
     return len(enc.encode(text))
 
-def truncate_prompt(model_name: str, prompt: str) -> str:
+def truncate_prompt(model_name: str, prompt: List[Dict[str, str]]) -> List[Dict[str, str]]:
     """最大トークン数を超えないようにプロンプトを短縮"""
     max_tokens = MODEL_MAX_TOKENS.get(model_name, 4096)  # デフォルト4096
     enc = tiktoken.encoding_for_model(model_name)
-    tokens = enc.encode(prompt)
-    if len(tokens) > max_tokens:
+    total_tokens = sum(len(enc.encode(msg["content"])) for msg in prompt)
+    
+    if total_tokens > max_tokens:
         print("警告: プロンプトが最大トークン数を超えています。短縮します。")
-        tokens = tokens[:max_tokens]
-    return enc.decode(tokens)
+        
+        # content のトークン数が多いものから順に削る
+        for msg in prompt[::-1]:
+            if total_tokens <= max_tokens:
+                break
+            tokens = enc.encode(msg["content"])
+            if len(tokens) > max_tokens // len(prompt):
+                msg["content"] = enc.decode(tokens[:max_tokens // len(prompt)])
+            total_tokens = sum(len(enc.encode(m["content"])) for m in prompt)
+    
+    return prompt
 
-def openai_client(model_name: str, prompt: str, schema: Optional[Dict] = None) -> str:
+def openai_client(model_name: str, prompt: List[Dict[str, str]], schema: Optional[Dict] = None) -> str:
     client = OpenAI()
     prompt = truncate_prompt(model_name, prompt)
-    messages = [
-        {"role": "user", "content": prompt},
-    ]
-    
+
     text_format = (
         {
             "format": {
@@ -55,7 +62,7 @@ def openai_client(model_name: str, prompt: str, schema: Optional[Dict] = None) -
     
     response = client.responses.create(
         model=model_name,
-        input=messages,
+        input=prompt,
         text=text_format
     )
     
