@@ -36,7 +36,6 @@ def truncate_prompt(model_name: str, prompt: str) -> str:
 
 def openai_client(model_name: str, prompt: str, schema: Optional[Dict] = None) -> str:
     client = OpenAI()
-    max_tokens = MODEL_MAX_TOKENS.get(model_name, 4096)  # デフォルト4096
     prompt = truncate_prompt(model_name, prompt)
     messages = [
         {"role": "user", "content": prompt},
