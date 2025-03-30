@@ -40,7 +40,10 @@ def extract_paper_title_node(
                 )
                 structured_output = json.loads(response.choices[0].message.content)
                 titles_str = structured_output["paper_titles"]
-                titles_list = [title.strip() for title in titles_str.split('\n') if title.strip()]
+                if isinstance(titles_str, list):
+                    titles_list = [title.strip() for title in titles_str if title.strip()]
+                else:
+                    titles_list = [title.strip() for title in titles_str.split('\n') if title.strip()]
                 print(f"Extracted paper titles: {titles_list}")
                 aggregated_titles.extend(titles_list)
                 break
