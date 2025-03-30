@@ -7,7 +7,7 @@ import json
 import tempfile
 from pydantic import BaseModel
 from typing import Optional
-from openai import OpenAI
+from litellm import completion
 
 
 class LLMOutput(BaseModel):
@@ -51,18 +51,16 @@ class LatexNode:
 
         for attempt in range(max_retries):
             try:
-                client = OpenAI()
-                response = client.chat.completions.create(
+                response = completion(
                     model=self.llm_name,
                     messages=[
                         {"role": "system", "content": system_prompt},
                         {"role": "user", "content": prompt},
                     ],
                     temperature=0,
-                    response_format={"type": "json_object"},
+                    response_format=LLMOutput,
                 )
-                content = response.choices[0].message.content
-                structured_output = json.loads(content)
+                structured_output = json.loads(response.choices[0].message.content)
                 return structured_output["latex_full_text"]
             except Exception as e:
                 print(f"[Attempt {attempt+1}/{max_retries}] Error calling LLM: {e}")

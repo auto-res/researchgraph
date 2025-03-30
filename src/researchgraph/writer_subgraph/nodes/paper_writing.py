@@ -1,7 +1,7 @@
 import json
 from pydantic import BaseModel
 from jinja2 import Environment
-from openai import OpenAI
+from litellm import completion
 from typing import Optional
 
 
@@ -194,13 +194,12 @@ Pay particular attention to fixing any errors such as:
     def _call_llm(self, prompt: str, max_retries: int = 3) -> Optional[str]:
         for attempt in range(max_retries):
             try:
-                client = OpenAI()
-                response = client.chat.completions.create(
+                response = completion(
                     model=self.llm_name,
                     messages=[
                         {"role": "user", "content": prompt},
                     ],
-                    response_format={"type": "json_object"},
+                    response_format=LLMOutput,
                 )
                 structured_output = json.loads(response.choices[0].message.content)
                 return structured_output["generated_paper_text"]

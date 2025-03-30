@@ -1,4 +1,4 @@
-from openai import AsyncOpenAI
+from litellm import acompletion
 import asyncio
 from pydantic import BaseModel
 import ast
@@ -40,18 +40,17 @@ User Query: {query}"""
 
     prompt_text += "Return the queries in JSON format as a list of objects with keys 'query' and 'research_goal'."
 
-    client = AsyncOpenAI()
-    response = await client.chat.completions.create(
+    response = await acompletion(
         model=llm_name,
         messages=[
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": prompt_text},
         ],
-        response_format={"type": "json_object"},
+        response_format=QueryInfoList,
         temperature=0.9,
     )
-    content = response.choices[0].message.content
-    output_dict = ast.literal_eval(content)
+    output = response.choices[0].message.content
+    output_dict = ast.literal_eval(output)
     # queries_list = output_dict["queries_list"]
     queries_list = QueryInfoList(**output_dict)
     return queries_list  # [:num_queries]

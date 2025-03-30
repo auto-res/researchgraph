@@ -1,6 +1,6 @@
 import json
 from pydantic import BaseModel
-from openai import OpenAI
+from litellm import completion
 from jinja2 import Environment
 
 
@@ -31,20 +31,16 @@ def select_best_paper_node(
     template = env.from_string(prompt_template)
     prompt = template.render(data)
 
-    client = OpenAI()
-    response = client.chat.completions.create(
+    response = completion(
         model=llm_name,
         messages=[
             {"role": "user", "content": f"{prompt}"},
         ],
-        response_format={"type": "json_object"},
+        response_format=LLMOutput,
     )
     structured_output = json.loads(response.choices[0].message.content)
     arxiv_id_str = structured_output["selected_arxiv_id"]
-    if isinstance(arxiv_id_str, list):
-        arxiv_id_list = [arxiv_id.strip() for arxiv_id in arxiv_id_str if arxiv_id.strip()]
-    else:
-        arxiv_id_list = [arxiv_id.strip() for arxiv_id in arxiv_id_str.split('\n') if arxiv_id.strip()]
+    arxiv_id_list = [arxiv_id.strip() for arxiv_id in arxiv_id_str.split('\n') if arxiv_id.strip()]
     print(f"Selected arxiv ids: {arxiv_id_list}")
     return arxiv_id_list
 

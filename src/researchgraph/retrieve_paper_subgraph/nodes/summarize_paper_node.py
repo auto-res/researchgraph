@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from openai import OpenAI
+from litellm import completion
 from jinja2 import Environment
 import ast
 
@@ -27,13 +27,12 @@ def summarize_paper_node(
     template = env.from_string(prompt_template)
     prompt = template.render(data)
 
-    client = OpenAI()
-    response = client.chat.completions.create(
+    response = completion(
         model=llm_name,
         messages=[
             {"role": "user", "content": f"{prompt}"},
         ],
-        response_format={"type": "json_object"},
+        response_format=LLMOutput,
     )
     output = response.choices[0].message.content
     output_dict = ast.literal_eval(output)

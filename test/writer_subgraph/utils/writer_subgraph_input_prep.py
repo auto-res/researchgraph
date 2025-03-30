@@ -2,7 +2,7 @@ import os
 import json
 from typing import Optional
 from pydantic import BaseModel
-from openai import OpenAI
+from litellm import completion
 from jinja2 import Environment
 from langchain_community.document_loaders import PyPDFLoader
 
@@ -32,13 +32,12 @@ class WriterSubgraphInputPrep:
 
         for attempt in range(max_retries): 
             try:
-                client = OpenAI()
-                response = client.chat.completions.create(
+                response = completion(
                     model=self.llm_name,
                     messages=[
                         {"role": "user", "content": prompt},
                     ],
-                    response_format={"type": "json_object"},
+                    response_format=LLMOutput,
                 )
                 structured_output = json.loads(response.choices[0].message.content)
                 return structured_output

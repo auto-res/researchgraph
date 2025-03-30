@@ -1,4 +1,4 @@
-from openai import OpenAI
+from litellm import completion
 
 
 def generator_node(
@@ -19,8 +19,7 @@ Your task is to propose a genuinely novel method that mitigates one or more chal
 {add_method_text}
 """
 
-    client = OpenAI()
-    response = client.chat.completions.create(
+    response = completion(
         model="o3-mini-2025-01-31",
         messages=[
             {"role": "user", "content": f"{prompt}"},
