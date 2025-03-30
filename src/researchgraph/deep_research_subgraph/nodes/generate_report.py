@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import List
-from litellm import completion
+from openai import OpenAI
 from jinja2 import Environment
 from pydantic import BaseModel
 import json
@@ -48,12 +48,13 @@ Please do not use any information other than that provided by “Knowledge”.
     env = Environment()
     template = env.from_string(prompt_template)
     prompt = template.render(data)
-    response = completion(
+    client = OpenAI()
+    response = client.chat.completions.create(
         model="gpt-4o-mini-2024-07-18",
         messages=[
             {"role": "user", "content": f"{prompt}"},
         ],
-        response_format=ReportSummary,
+        response_format={"type": "json_object"},
     )
     output = response.choices[0].message.content
     output_dict = json.loads(output)
@@ -73,12 +74,13 @@ Please do not use any information other than that provided by “Knowledge”.
     env = Environment()
     template = env.from_string(prompt_template)
     prompt = template.render(data)
-    response = completion(
+    client = OpenAI()
+    response = client.chat.completions.create(
         model="gpt-4o-mini-2024-07-18",
         messages=[
             {"role": "user", "content": f"{prompt}"},
         ],
-        response_format=DetailedFindings,
+        response_format={"type": "json_object"},
     )
     output = response.choices[0].message.content
     output_dict = json.loads(output)

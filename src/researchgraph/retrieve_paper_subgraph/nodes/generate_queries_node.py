@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from litellm import completion
+from openai import OpenAI
 from jinja2 import Environment
 import ast
 
@@ -27,13 +27,14 @@ def generate_queries_node(
     template = env.from_string(prompt_template)
     prompt = template.render(data)
 
-    response = completion(
+    client = OpenAI()
+    response = client.chat.completions.create(
         model=llm_name,
         messages=[
             {"role": "user", "content": f"{prompt}"},
         ],
         temperature=0.2, 
-        response_format=LLMOutput,
+        response_format={"type": "json_object"},
     )
     output = response.choices[0].message.content
     output_dict = ast.literal_eval(output)

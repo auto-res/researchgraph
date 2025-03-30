@@ -1,4 +1,4 @@
-from litellm import acompletion
+from openai import AsyncOpenAI
 import asyncio
 from pydantic import BaseModel
 import json
@@ -59,13 +59,14 @@ async def generate_object(
     List of follow-up questions to research the topic further, max of {num_followups}
     """
 
-    response = await acompletion(
+    client = AsyncOpenAI()
+    response = await client.chat.completions.create(
         model=llm_name,
         messages=[
             {"role": "system", "content": "You are a helpful research assistant."},
             {"role": "user", "content": prompt},
         ],
-        response_format=ResearchResult,
+        response_format={"type": "json_object"},
     )
     output = response.choices[0].message.content
     output_dict = json.loads(output)

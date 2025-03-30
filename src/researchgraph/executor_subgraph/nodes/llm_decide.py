@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from litellm import completion
+from openai import OpenAI
 from jinja2 import Environment
 import json
 
@@ -43,12 +43,13 @@ def llm_decide(
 
     for attempt in range(max_retries):
         try:
-            response = completion(
+            client = OpenAI()
+            response = client.chat.completions.create(
                 model=llm_name,
                 messages=[
                     {"role": "user", "content": f"{prompt}"},
                 ],
-                response_format=LLMOutput,
+                response_format={"type": "json_object"},
             )
             output = response.choices[0].message.content
             output_dict = json.loads(output)

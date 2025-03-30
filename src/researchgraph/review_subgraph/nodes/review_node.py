@@ -3,7 +3,7 @@ import os.path as osp
 import time
 import json
 from pydantic import BaseModel, create_model
-from litellm import completion
+from openai import OpenAI
 from jinja2 import Environment
 from typing import Optional
 
@@ -119,14 +119,15 @@ class ReviewNode:
         max_retries = 3
         for attempt in range(max_retries): 
             try:
-                response = completion(
+                client = OpenAI()
+                response = client.chat.completions.create(
                     model=self.llm_name,
                     messages=[
                         {"role": "system", "content": self.review_system_prompt},
                         {"role": "user", "content": prompt},
                     ],
                     temperature=0,
-                    response_format=self.dynamic_model,
+                    response_format={"type": "json_object"},
                 )
                 structured_output = json.loads(response.choices[0].message.content)
                 review_feedback = structured_output.get("review_feedback", "")

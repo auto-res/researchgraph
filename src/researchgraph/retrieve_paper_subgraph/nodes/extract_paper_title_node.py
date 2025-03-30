@@ -1,6 +1,6 @@
 import json
 from jinja2 import Environment
-from litellm import completion
+from openai import OpenAI
 from pydantic import BaseModel
 from typing import Optional
 
@@ -29,13 +29,14 @@ def extract_paper_title_node(
 
         for attempt in range(max_retries):
             try:
-                response = completion(
+                client = OpenAI()
+                response = client.chat.completions.create(
                     model=llm_name,
                     messages=[
                         {"role": "user", "content": prompt},
                     ],
                     temperature=0,
-                    response_format=LLMOutput,
+                    response_format={"type": "json_object"},
                 )
                 structured_output = json.loads(response.choices[0].message.content)
                 titles_str = structured_output["paper_titles"]
