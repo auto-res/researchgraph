@@ -9,7 +9,7 @@ class LLMOutput(BaseModel):
     paper_titles: str
 
 
-def extract_paper_title_node(
+def select_best_paper_node(
     llm_name: str, 
     queries: list, 
     scraped_results: list, 
