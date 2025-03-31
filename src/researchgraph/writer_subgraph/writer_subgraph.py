@@ -7,6 +7,7 @@ from researchgraph.writer_subgraph.nodes.generate_note import generate_note
 from researchgraph.writer_subgraph.nodes.paper_writing import WritingNode
 from researchgraph.writer_subgraph.nodes.convert_to_latex import LatexNode
 from researchgraph.writer_subgraph.input_data import writer_subgraph_input_data
+from researchgraph.utils.execution_timers import time_node, ExecutionTimeState
 
 
 class WriterSubgraphInputState(TypedDict):
@@ -28,7 +29,10 @@ class WriterSubgraphOutputState(TypedDict):
 
 
 class WriterSubgraphState(
-    WriterSubgraphInputState, WriterSubgraphHiddenState, WriterSubgraphOutputState
+    WriterSubgraphInputState, 
+    WriterSubgraphHiddenState, 
+    WriterSubgraphOutputState, 
+    ExecutionTimeState
 ):
     pass
 
@@ -47,14 +51,14 @@ class WriterSubgraph:
         os.makedirs(self.figures_dir, exist_ok=True)
         self.pdf_file_path = os.path.join(self.save_dir, "paper.pdf")
 
+    @time_node("writer_subgraph", "_generate_note_node")
     def _generate_note_node(self, state: WriterSubgraphState) -> dict:
         print("---WriterSubgraph---")
-        print("generate_note_node")
         note = generate_note(state=dict(state), figures_dir=self.figures_dir)
         return {"note": note}
 
+    @time_node("writer_subgraph", "_writeup_node")
     def _writeup_node(self, state: WriterSubgraphState) -> dict:
-        print("writing_node")
         paper_content = WritingNode(
             llm_name=self.llm_name,
             refine_round=self.refine_round,
@@ -63,8 +67,8 @@ class WriterSubgraph:
         )
         return {"paper_content": paper_content}
 
+    @time_node("writer_subgraph", "_latex_node")
     def _latex_node(self, state: WriterSubgraphState) -> dict:
-        print("latex_node")
         tex_text = LatexNode(
             llm_name=self.llm_name,
             figures_dir=self.figures_dir,
@@ -92,12 +96,13 @@ class WriterSubgraph:
 
 
 if __name__ == "__main__":
-    llm_name = "gpt-4o-2024-11-20"
-    # llm_name = "gpt-4o-mini-2024-07-18"
+    #llm_name = "gpt-4o-2024-11-20"
+    llm_name = "gpt-4o-mini-2024-07-18"
     save_dir = "/workspaces/researchgraph/data"
 
     subgraph = WriterSubgraph(
         save_dir=save_dir,
         llm_name=llm_name,
+        refine_round=1, 
     ).build_graph()
     result = subgraph.invoke(writer_subgraph_input_data)

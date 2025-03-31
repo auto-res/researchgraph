@@ -1,4 +1,5 @@
 import os
+import time
 import datetime
 
 from langgraph.graph import START, END, StateGraph
@@ -36,6 +37,7 @@ from researchgraph.upload_subgraph.upload_subgraph import (
 from researchgraph.retrieve_paper_subgraph.input_data import (
     retrieve_paper_subgraph_input_data,
 )
+from researchgraph.utils.execution_timers import time_subgraph, ExecutionTimeState
 
 
 class ResearchGraphState(
@@ -45,7 +47,9 @@ class ResearchGraphState(
     ExecutorSubgraphState,
     WriterSubgraphState,
     UploadSubgraphState,
+    ExecutionTimeState
 ):
+    start_timestamp: float
     execution_logs: dict
 
 
@@ -81,56 +85,102 @@ class ResearchGraph:
 
     def _make_execution_logs_data(self, state: ResearchGraphState) -> dict:
         return {"execution_logs": ResearchGraph.to_serializable(state)}
+    
+    def _init_state(self, state: dict) -> dict:
+        state["start_timestamp"] = time.time()
+        return state
+    
+    def _set_total_execution_time(self, state: ResearchGraphState) -> ResearchGraphState:
+        start = state.get("start_timestamp", None)
+        if start is not None:
+            total_duration = round(time.time() - start, 4)
+            timings = state.get("execution_time", {})
+            timings["__total__"] = [total_duration]
+            state["execution_time"] = timings
+        return state
 
     def build_graph(self) -> CompiledGraph:
         # Search Subgraph
-        retrieve_paper_subgraph = RetrievePaperSubgraph(
-            llm_name="gpt-4o-mini-2024-07-18",
-            save_dir=self.save_dir,
-            scrape_urls=self.scrape_urls,
-            add_paper_num=self.add_paper_num,
-        ).build_graph()
+        @time_subgraph("retrieve_paper_subgraph")
+        def retrieve_paper_subgraph(state: dict):
+            subgraph = RetrievePaperSubgraph(
+                llm_name="gpt-4o-mini-2024-07-18",
+                save_dir=self.save_dir,
+                scrape_urls=self.scrape_urls,
+                add_paper_num=self.add_paper_num,
+            ).build_graph()
+            return subgraph.invoke(state)
         # Generator Subgraph
-        generator_subgraph = GeneratorSubgraph().build_graph()
+        @time_subgraph("generator_subgraph")
+        def generator_subgraph(state: dict):
+            subgraph = GeneratorSubgraph().build_graph()
+            return subgraph.invoke(state)
         # Experimental Plan Subgraph
-        experimental_plan_subgraph = ExperimentalPlanSubgraph().build_graph()
+        @time_subgraph("experimental_plan_subgraph")
+        def experimental_plan_subgraph(state: dict):
+            subgraph = ExperimentalPlanSubgraph().build_graph()
+            return subgraph.invoke(state)
         # Executor Subgraph
-        executor_subgraph = ExecutorSubgraph(
-            github_owner=self.github_owner,
-            repository_name=self.repository_name,
-            save_dir=self.save_dir,
-            max_code_fix_iteration=self.max_code_fix_iteration,
-        ).build_graph()
-        # Witer Subgraph
-        writer_subgraph = WriterSubgraph(
-            save_dir=self.save_dir,
-            llm_name="gpt-4o-2024-11-20",
-        ).build_graph()
+        @time_subgraph("executor_subgraph")
+        def executor_subgraph(state: dict):
+            subgraph = ExecutorSubgraph(
+                github_owner=self.github_owner,
+                repository_name=self.repository_name,
+                save_dir=self.save_dir,
+                max_code_fix_iteration=self.max_code_fix_iteration,
+            ).build_graph()
+            return subgraph.invoke(state)
+        # Writer Subgraph
+        @time_subgraph("writer_subgraph")
+        def writer_subgraph(state: dict):
+            subgraph = WriterSubgraph(
+                save_dir=self.save_dir,
+                llm_name="gpt-4o-2024-11-20",
+            ).build_graph()
+            return subgraph.invoke(state)
         # Upload Subgraph
-        upload_subgraph = UploadSubgraph(
-            github_owner=self.github_owner,
-            repository_name=self.repository_name,
-            save_dir=self.save_dir,
-        ).build_graph()
+        @time_subgraph("upload_subgraph")
+        def upload_subgraph(state: dict):
+            subgraph = UploadSubgraph(
+                github_owner=self.github_owner,
+                repository_name=self.repository_name,
+                save_dir=self.save_dir,
+            ).build_graph()
+            return subgraph.invoke(state)
+        
+        def _check_if_base_paper_found(state: ResearchGraphState) -> str:
+            if not state.get("selected_base_paper_arxiv_id"):
+                print("No base paper was found. The process will be terminated.")
+                return "Stop"
+            return "Continue"
 
         graph_builder = StateGraph(ResearchGraphState)
         # make nodes
+        graph_builder.add_node("init_state", self._init_state)
         graph_builder.add_node("retrieve_paper_subgraph", retrieve_paper_subgraph)
         graph_builder.add_node("generator_subgraph", generator_subgraph)
         graph_builder.add_node("experimental_plan_subgraph", experimental_plan_subgraph)
         graph_builder.add_node("executor_subgraph", executor_subgraph)
         graph_builder.add_node("writer_subgraph", writer_subgraph)
         graph_builder.add_node("upload_subgraph", upload_subgraph)
-        graph_builder.add_node(
-            "make_execution_logs_data", self._make_execution_logs_data
-        )
+        graph_builder.add_node("make_execution_logs_data", self._make_execution_logs_data)
+        graph_builder.add_node("set_total_execution_time", self._set_total_execution_time)
         # make edges
-        graph_builder.add_edge(START, "retrieve_paper_subgraph")
-        graph_builder.add_edge("retrieve_paper_subgraph", "generator_subgraph")
+        graph_builder.add_edge(START, "init_state")
+        graph_builder.add_edge("init_state", "retrieve_paper_subgraph")
+        graph_builder.add_conditional_edges(
+            "retrieve_paper_subgraph",
+            path=_check_if_base_paper_found,
+            path_map={
+                "Stop": END, 
+                "Continue": "generator_subgraph"
+                },
+        )
         graph_builder.add_edge("generator_subgraph", "experimental_plan_subgraph")
         graph_builder.add_edge("experimental_plan_subgraph", "executor_subgraph")
         graph_builder.add_edge("executor_subgraph", "writer_subgraph")
-        graph_builder.add_edge("writer_subgraph", "make_execution_logs_data")
+        graph_builder.add_edge("writer_subgraph", "set_total_execution_time")
+        graph_builder.add_edge("set_total_execution_time", "make_execution_logs_data")
         graph_builder.add_edge("make_execution_logs_data", "upload_subgraph")
         graph_builder.add_edge("upload_subgraph", END)
 
@@ -140,14 +190,15 @@ class ResearchGraph:
 if __name__ == "__main__":
     save_dir = "/workspaces/researchgraph/data"
     scrape_urls = [
-        "https://icml.cc/virtual/2024/papers.html?filter=titles",
-        "https://iclr.cc/virtual/2024/papers.html?filter=titles",
+        # "https://icml.cc/virtual/2024/papers.html?filter=titles",
+        # "https://iclr.cc/virtual/2024/papers.html?filter=titles",
         # "https://nips.cc/virtual/2024/papers.html?filter=titles",
         # "https://cvpr.thecvf.com/virtual/2024/papers.html?filter=titles",
+        "https://eccv.ecva.net/virtual/2024/papers.html?filter=titles", 
     ]
-    add_paper_num = 5
-    repository = "auto-res2/auto-research"
-    max_code_fix_iteration = 3
+    add_paper_num = 1
+    repository = "auto-res2/experiment_script_matsuzawa"
+    max_code_fix_iteration = 1
 
     research_graph = ResearchGraph(
         save_dir=save_dir,
