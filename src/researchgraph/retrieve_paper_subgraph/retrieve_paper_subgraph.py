@@ -85,10 +85,10 @@ class RetrievePaperOutputState(TypedDict):
 
 
 class RetrievePaperState(
-    RetrievePaperInputState, 
-    RetrievePaperHiddenState, 
-    RetrievePaperOutputState, 
-    ExecutionTimeState
+    RetrievePaperInputState,
+    RetrievePaperHiddenState,
+    RetrievePaperOutputState,
+    ExecutionTimeState,
 ):
     pass
 
@@ -571,11 +571,10 @@ if __name__ == "__main__":
     # llm_name = "gpt-4o-2024-11-20"
     llm_name = "gpt-4o-mini-2024-07-18"
     scrape_urls = [
-        # "https://icml.cc/virtual/2024/papers.html?filter=titles",
-        # "https://iclr.cc/virtual/2024/papers.html?filter=titles",
-        # "https://nips.cc/virtual/2024/papers.html?filter=titles",
-        # "https://cvpr.thecvf.com/virtual/2024/papers.html?filter=titles",
-        "https://eccv.ecva.net/virtual/2024/papers.html?filter=titles", 
+        "https://icml.cc/virtual/2024/papers.html?filter=title",
+        "https://iclr.cc/virtual/2024/papers.html?filter=title",
+        # "https://nips.cc/virtual/2024/papers.html?filter=title",
+        # "https://cvpr.thecvf.com/virtual/2024/papers.html?filter=title",
     ]
     add_paper_num = 1
 
