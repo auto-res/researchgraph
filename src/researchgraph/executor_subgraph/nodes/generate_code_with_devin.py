@@ -53,22 +53,6 @@ Please create code that can run on NVIDIA Tesla T4 · 16 GB VRAM.
     return retry_request(fetch_api_data, url, headers=headers, data=data, method="POST")
 
 
-# def _request_devin_output(headers, session_id):
-#     url = f"https://api.devin.ai/v1/session/{session_id}"
-
-#     def should_retry(response):
-#         # Describe the process so that it is True if you want to retry
-#         return response.get("status_enum") not in ["blocked", "stopped"]
-
-#     return retry_request(
-#         fetch_api_data,
-#         url,
-#         headers=headers,
-#         method="GET",
-#         check_condition=should_retry,
-#     )
-
-
 def generate_code_with_devin(
     headers: dict,
     github_owner: str,
@@ -88,11 +72,6 @@ def generate_code_with_devin(
         experiment_session_id = response["session_id"]
         experiment_devin_url = response["url"]
         print("Devin URL: ", experiment_devin_url)
-        # NOTE: Devin takes a while to complete its execution, so it does not send unnecessary requests.
-        # time.sleep(120)
-        # response = _request_devin_output(headers, session_id)
-        # print(response)
-        # branch_name = session_id
         return (
             experiment_session_id,
             experiment_devin_url,
