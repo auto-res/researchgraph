@@ -2,6 +2,7 @@ import re
 import json
 import requests
 from litellm import completion
+from researchgraph.utils.openai_client import openai_client
 
 from pydantic import BaseModel
 
@@ -62,9 +63,12 @@ You carefully read the contents of the “Paper Outline” and select one GitHub
       
 # GitHub URLs List
 {extract_github_url_list}""",
-            },
+            }
+        
         ]
 
+        
+        response = openai_client(self.llm_name, messate, schema=schema)
         response = completion(
             model=self.llm_name,
             messages=messate,

@@ -1,5 +1,4 @@
 import os
-import os.path as osp
 import re
 import subprocess
 import shutil
@@ -8,6 +7,9 @@ import tempfile
 from pydantic import BaseModel
 from typing import Optional
 from litellm import completion
+
+
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 class LLMOutput(BaseModel):
@@ -30,12 +32,12 @@ class LatexNode:
         self.pdf_file_path = pdf_file_path
         self.save_dir = save_dir
         self.timeout = timeout
+        self.template_dir = os.path.join(SCRIPT_DIR, "..", "latex")
+        self.template_dir = os.path.abspath(self.template_dir)
 
-        self.template_dir = osp.dirname(self.latex_template_file_path)
-
-        self.latex_save_dir = osp.join(self.save_dir, "latex")
+        self.latex_save_dir = os.path.join(self.save_dir, "latex")
         os.makedirs(self.latex_save_dir, exist_ok=True)
-        self.template_copy_file = osp.join(self.latex_save_dir, "template.tex")
+        self.template_copy_file = os.path.join(self.latex_save_dir, "template.tex")
 
     def _call_llm(self, prompt: str, max_retries: int = 3) -> Optional[str]:
         system_prompt = """
@@ -247,7 +249,7 @@ class LatexNode:
         print("GENERATING LATEX")
         commands = [
             ["pdflatex", "-interaction=nonstopmode", self.template_copy_file],
-            ["bibtex", osp.splitext(self.template_copy_file)[0]],
+            ["bibtex", os.path.splitext(self.template_copy_file)[0]],
             ["pdflatex", "-interaction=nonstopmode", self.template_copy_file],
             ["pdflatex", "-interaction=nonstopmode", self.template_copy_file],
         ]
@@ -278,9 +280,11 @@ class LatexNode:
                 print(f"An unexpected error occurred: {e}")
 
         print("FINISHED GENERATING LATEX")
-        pdf_filename = f"{osp.splitext(osp.basename(self.template_copy_file))[0]}.pdf"
+        pdf_filename = (
+            f"{os.path.splitext(os.path.basename(self.template_copy_file))[0]}.pdf"
+        )
         try:
-            shutil.move(osp.join(cwd, pdf_filename), self.pdf_file_path)
+            shutil.move(os.path.join(cwd, pdf_filename), self.pdf_file_path)
         except FileNotFoundError:
             print("Failed to rename PDF.")
 
@@ -344,7 +348,7 @@ class LatexNode:
             f.write(tex_text)
 
         try:
-            self._compile_latex(osp.dirname(self.template_copy_file))
+            self._compile_latex(os.path.dirname(self.template_copy_file))
             return tex_text
 
         except Exception as e:
