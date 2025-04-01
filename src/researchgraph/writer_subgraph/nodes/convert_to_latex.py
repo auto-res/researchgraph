@@ -5,9 +5,10 @@ import shutil
 import json
 import tempfile
 from pydantic import BaseModel
-from typing import Optional
-from litellm import completion
+from researchgraph.utils.openai_client import openai_client
+from logging import getLogger
 
+logger = getLogger(__name__)
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -39,35 +40,22 @@ class LatexNode:
         os.makedirs(self.latex_save_dir, exist_ok=True)
         self.template_copy_file = os.path.join(self.latex_save_dir, "template.tex")
 
-    def _call_llm(self, prompt: str, max_retries: int = 3) -> Optional[str]:
-        system_prompt = """
-        You are a helpful LaTeX rewriting assistant.
-        Please respond ONLY in valid JSON format with a single key "latex_full_text" and no other keys.
-        Example:
-        {
-        "latex_full_text": "..."
-        }
-        The value of "latex_full_text" must contain the complete LaTeX text.
-        Do not add extra keys or text outside the JSON.
-        """.strip()
+    def _call_llm(self, prompt: str) -> str | None:
+        system_prompt = """\n
+You are a helpful LaTeX rewriting assistant.
+The value of "latex_full_text" must contain the complete LaTeX text."""
 
-        for attempt in range(max_retries):
-            try:
-                response = completion(
-                    model=self.llm_name,
-                    messages=[
-                        {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": prompt},
-                    ],
-                    temperature=0,
-                    response_format=LLMOutput,
-                )
-                structured_output = json.loads(response.choices[0].message.content)
-                return structured_output["latex_full_text"]
-            except Exception as e:
-                print(f"[Attempt {attempt+1}/{max_retries}] Error calling LLM: {e}")
-        print("Exceeded maximum retries for LLM call.")
-        return None
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": prompt},
+        ]
+
+        response = openai_client(self.llm_name, message=messages, data_class=LLMOutput)
+        if response is not None:
+            response = json.loads(response)
+            return response["latex_full_text"]
+        else:
+            return None
 
     def _copy_template(self):
         try:
@@ -87,9 +75,9 @@ class LatexNode:
             placeholder = f"{section.upper()} HERE"
             if placeholder in tex_text:
                 tex_text = tex_text.replace(placeholder, value)
-                print(f"置換完了: {placeholder}")
+                logger.info(f"置換完了: {placeholder}")
             else:
-                print(f"プレースホルダーが見つかりませんでした: {placeholder}")
+                logger.info(f"プレースホルダーが見つかりませんでした: {placeholder}")
 
         with open(self.template_copy_file, "w") as f:
             f.write(tex_text)
@@ -97,7 +85,7 @@ class LatexNode:
         with open(self.template_copy_file, "r") as f:
             updated_tex_text = f.read()
 
-        print("更新後の `template_copy.tex` 内容:\n", updated_tex_text)
+        logger.info("更新後の `template_copy.tex` 内容:\n", updated_tex_text)
 
         return tex_text
 
@@ -115,27 +103,24 @@ class LatexNode:
         bib_text = references_bib.group(1)
         missing_cites = [cite for cite in cites if cite.strip() not in bib_text]
         if not missing_cites:
-            print("No missing references found.")
+            logger.info("No missing references found.")
             return tex_text
 
-        print(f"Missing references found: {missing_cites}")
-        prompt = f""""
-        LaTeX text:
-        {tex_text}
-
-        
-        References.bib content:
-        {bib_text}
-
-
-        The following reference is missing from references.bib: {missing_cites}.
-        Please provide the complete corrected LaTeX text, ensuring the reference issue is fixed.
-        
-        Return the complete LaTeX document, including any bibtex changes.
-        """
-        print("LLMの実行")
+        logger.info(f"Missing references found: {missing_cites}")
+        prompt = f""""\n
+# LaTeX text
+--------
+{tex_text}
+--------
+# References.bib content
+--------
+{bib_text}
+--------
+The following reference is missing from references.bib: {missing_cites}.
+Please provide the complete corrected LaTeX text, ensuring the reference issue is fixed.
+Return the complete LaTeX document, including any bibtex changes."""
         llm_response = self._call_llm(prompt)
-        if not llm_response:
+        if llm_response is None:
             raise RuntimeError(
                 f"LLM failed to respond for missing references: {missing_cites}"
             )
@@ -149,29 +134,32 @@ class LatexNode:
         # Verify all referenced figures in the LaTeX content exist in the figures directory
         all_figs = [f for f in os.listdir(self.figures_dir) if f.endswith(".pdf")]
         if not all_figs:
-            print("論文生成に使える図がありません")
+            logger.info("論文生成に使える図がありません")
             return tex_text
 
         referenced_figs = re.findall(pattern, tex_text)
         fig_to_use = [fig for fig in referenced_figs if fig in all_figs]
         if not fig_to_use:
-            print("論文内で利用している図はありません")
+            logger.info("論文内で利用している図はありません")
             return tex_text
 
-        prompt = f"""
-        LaTeX Text:
-        {tex_text}
-        Available Images:
-        {fig_to_use}
-        Please modify and output the above Latex text based on the following instructions.
-        - Only “Available Images” are available. 
-        - If a figure is mentioned on Latex Text, please rewrite the content of Latex Text to cite it.
-        - Do not use diagrams that do not exist in “Available Images”.
-        - Return the complete LaTeX text."""
-        print("LLMの実行")
+        prompt = f"""\n
+# LaTeX Text
+--------
+{tex_text}
+--------
+# Available Images
+--------
+{fig_to_use}
+--------
+Please modify and output the above Latex text based on the following instructions.
+- Only “Available Images” are available. 
+- If a figure is mentioned on Latex Text, please rewrite the content of Latex Text to cite it.
+- Do not use diagrams that do not exist in “Available Images”.
+- Return the complete LaTeX text."""
         llm_response = self._call_llm(prompt)
-        # if not llm_response:
-        #     raise RuntimeError(f"LLM failed to respond for missing figures: {missing_figs}")
+        if llm_response is None:
+            raise RuntimeError("LLM failed to respond for missing figures")
         return llm_response
 
     def _check_duplicates(self, tex_text: str, patterns: dict) -> str:
@@ -180,21 +168,17 @@ class LatexNode:
             items = re.findall(pattern, tex_text)
             duplicates = {x for x in items if items.count(x) > 1}
             if duplicates:
-                print(f"Duplicate {element_type} found: {duplicates}.")
-                prompt = f"""
-                LaTeX text:
-                {tex_text}
-
-
-                Duplicate {element_type} found: {', '.join(duplicates)}. Ensure any {element_type} is only included once. 
-                If duplicated, identify the best location for the {element_type} and remove any other.
-                
-                Return the complete corrected LaTeX text with the duplicates fixed.
-                """
-                print("LLMの実行")
-
+                logger.info(f"Duplicate {element_type} found: {duplicates}.")
+                prompt = f"""\n
+# LaTeX text
+--------
+{tex_text}
+--------
+Duplicate {element_type} found: {', '.join(duplicates)}. Ensure any {element_type} is only included once. 
+If duplicated, identify the best location for the {element_type} and remove any other.
+Return the complete corrected LaTeX text with the duplicates fixed."""
                 llm_response = self._call_llm(prompt)
-                if not llm_response:
+                if llm_response is None:
                     raise RuntimeError(
                         f"LLM failed to respond for missing figures: {duplicates}"
                     )
@@ -219,34 +203,32 @@ class LatexNode:
                     formatted_errors = "\n".join(
                         f"- {msg}" for msg in error_messages if msg
                     )
-                    print(f"LaTeX エラー検出: {formatted_errors}")
+                    logger.info(f"LaTeX エラー検出: {formatted_errors}")
 
-                    prompt = f"""
-                    LaTeX text:
-                    {tex_text}
+                    prompt = f"""\n
+# LaTeX text
+--------
+{tex_text}
+--------
+Please fix the following LaTeX errors: {formatted_errors}.      
+Make the minimal fix required and do not remove or change any packages unnecessarily.
+Pay attention to any accidental uses of HTML syntax, e.g. </end instead of \\end.
 
-                    Please fix the following LaTeX errors: {formatted_errors}.      
-                    Make the minimal fix required and do not remove or change any packages unnecessarily.
-                    Pay attention to any accidental uses of HTML syntax, e.g. </end instead of \\end.
-
-                    Return the complete corrected LaTeX text.
-                    """
-                    print("LLMの実行")
-
+Return the complete corrected LaTeX text."""
                     llm_response = self._call_llm(prompt)
-                    if not llm_response:
+                    if llm_response is None:
                         raise RuntimeError("LLM failed to fix LaTeX errors")
                     return llm_response
                 else:
-                    print("No LaTex errors found by chktex.")
+                    logger.error("No LaTex errors found by chktex.")
                     return tex_text
         except FileNotFoundError:
-            print("chktex command not found. Skipping LaTeX checks.")
+            logger.error("chktex command not found. Skipping LaTeX checks.")
             return tex_text
 
     def _compile_latex(self, cwd: str):
         # Compile the LaTeX document to PDF using pdflatex and bibtex commands
-        print("GENERATING LATEX")
+        logger.info("GENERATING LATEX")
         commands = [
             ["pdflatex", "-interaction=nonstopmode", self.template_copy_file],
             ["bibtex", os.path.splitext(self.template_copy_file)[0]],
@@ -265,28 +247,28 @@ class LatexNode:
                     timeout=self.timeout,
                     check=True,
                 )
-                print("Standard Output:\n", result.stdout)
-                print("Standard Error:\n", result.stderr)
+                logger.info("Standard Output:\n", result.stdout)
+                logger.info("Standard Error:\n", result.stderr)
             except subprocess.TimeoutExpired as e:
-                print(f"Latex command timed out: {e}")
+                logger.error(f"Latex command timed out: {e}")
             except subprocess.CalledProcessError as e:
-                print(f"Error running command {' '.join(command)}: {e}")
+                logger.error(f"Error running command {' '.join(command)}: {e}")
             except FileNotFoundError:
-                print(
+                logger.error(
                     f"Command not found: {' '.join(command)}. "
                     "Make sure pdflatex and bibtex are installed and on your PATH."
                 )
             except Exception as e:
-                print(f"An unexpected error occurred: {e}")
+                logger.error(f"An unexpected error occurred: {e}")
 
-        print("FINISHED GENERATING LATEX")
+        logger.info("FINISHED GENERATING LATEX")
         pdf_filename = (
             f"{os.path.splitext(os.path.basename(self.template_copy_file))[0]}.pdf"
         )
         try:
             shutil.move(os.path.join(cwd, pdf_filename), self.pdf_file_path)
         except FileNotFoundError:
-            print("Failed to rename PDF.")
+            logger.info("Failed to rename PDF.")
 
     def execute(self, paper_content: dict) -> str:
         """
@@ -302,23 +284,23 @@ class LatexNode:
         iteration_count = 0
 
         while iteration_count < max_iterations:
-            print(f"Start iteration: {iteration_count}")
+            logger.info(f"Start iteration: {iteration_count}")
 
-            print("Check references...")
+            logger.info("Check references...")
             original_tex_text = tex_text
             tex_text = self._check_references(tex_text)
             if tex_text != original_tex_text:
                 iteration_count += 1
                 continue
 
-            print("Check figures...")
+            logger.info("Check figures...")
             original_tex_text = tex_text
             tex_text = self._check_figures(tex_text)
             if tex_text != original_tex_text:
                 iteration_count += 1
                 continue
 
-            print("Check duplicates...")
+            logger.info("Check duplicates...")
             original_tex_text = tex_text
             tex_text = self._check_duplicates(
                 tex_text,
@@ -331,18 +313,18 @@ class LatexNode:
                 iteration_count += 1
                 continue
 
-            print("Check LaTeX errors...")
+            logger.info("Check LaTeX errors...")
             original_tex_text = tex_text
             tex_text = self._fix_latex_errors(tex_text)
             if tex_text != original_tex_text:
                 iteration_count += 1
                 continue
 
-            print("No changes detected, exiting loop.")
+            logger.info("No changes detected, exiting loop.")
             break
 
         if iteration_count == max_iterations:
-            print(f"Maximum iterations reached ({max_iterations}), exiting loop.")
+            logger.info(f"Maximum iterations reached ({max_iterations}), exiting loop.")
 
         with open(self.template_copy_file, "w") as f:
             f.write(tex_text)
@@ -352,7 +334,7 @@ class LatexNode:
             return tex_text
 
         except Exception as e:
-            print(f"Error occurred during compiling: {e}")
+            logger.info(f"Error occurred during compiling: {e}")
             return tex_text
 
 

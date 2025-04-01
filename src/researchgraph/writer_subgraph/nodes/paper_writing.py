@@ -1,9 +1,11 @@
 import json
 from pydantic import BaseModel
 from jinja2 import Environment
-from litellm import completion
 from typing import Optional
+from researchgraph.utils.openai_client import openai_client
+from logging import getLogger
 
+logger = getLogger(__name__)
 
 env = Environment()
 
@@ -35,13 +37,13 @@ class WritingNode:
             "Conclusions",
         ]
         self.per_section_tips_prompt_dict = {
-            "Title": """
+            "Title": """\n
 - Write only the title of the paper in one single line, as plain text with no quotation marks.
     - Example of correct output: Efficient Adaptation of Large Language Models via Low-Rank Optimization
     - Incorrect output: "Efficient Adaptation of Large Language Models via Low-Rank Optimization"
 - The title must be concise and descriptive of the paper's concept, but try by creative with it.
 - Do not include any explanations, subsections, LaTeX commands (\\title{...}, etc.)""",
-            "Abstract": """
+            "Abstract": """\n
 - Expected length: about 1000 words
 - TL;DR of the paper
 - What are we trying to do and why is it relevant?
@@ -49,7 +51,7 @@ class WritingNode:
 - How do we solve it (i.e. our contribution!)
 - How do we verify that we solved it (e.g. Experiments and results)
 - Please make sure the abstract reads smoothly and is well-motivated. This should be one continuous paragraph with no breaks between the lines.""",
-            "Introduction": """
+            "Introduction": """\n
 - Expected length: about 4000 words (~1–1.5 pages)
 - Longer version of the Abstract, i.e. of the entire paper
 - What are we trying to do and why is it relevant?
@@ -58,17 +60,17 @@ class WritingNode:
 - How do we verify that we solved it (e.g. Experiments and results)
 - New trend: specifically list your contributions as bullet points
 - Extra space? Future work!""",
-            "Related Work": """
+            "Related Work": """\n
 - Expected length: about 3000 words (~1 pages)
 - Academic siblings of our work, i.e. alternative attempts in literature at trying to solve the same problem. 
 - Goal is to “Compare and contrast” - how does their approach differ in either assumptions or method? If their method is applicable to our Problem Setting I expect a comparison in the experimental section. If not, there needs to be a clear statement why a given method is not applicable. 
 - Note: Just describing what another paper is doing is not enough. We need to compare and contrast.""",
-            "Background": """
+            "Background": """\n
 - Expected length: about 3000 words (~1 pages)
 - Academic Ancestors of our work, i.e. all concepts and prior work that are required for understanding our method. 
 - Usually includes a subsection, Problem Setting, which formally introduces the problem setting and notation (Formalism) for our method. Highlights any specific assumptions that are made that are unusual. 
 - Note: If our paper introduces a novel problem setting as part of its contributions, it's best to have a separate Section.""",
-            "Method": """
+            "Method": """\n
 - Expected length: about 4000 words (~1–1.5 pages)
 - What we do. Why we do it. All described using the general Formalism introduced in the Problem Setting and building on top of the concepts / foundations introduced in Background.""",
             "Experimental Setup": """
@@ -76,7 +78,7 @@ class WritingNode:
 - How do we test that our stuff works? Introduces a specific instantiation of the Problem Setting and specific implementation details of our Method for this Problem Setting.
 - Do not imagine unknown hardware details.
 - Includes a description of the dataset, evaluation metrics, important hyperparameters, and implementation details.""",
-            "Results": """
+            "Results": """\n
 - Expected length: about 4000 words (~1–1.5 pages)
 - Shows the results of running Method on our problem described in Experimental Setup.
 - Includes statements on hyperparameters and other potential issues of fairness.
@@ -85,14 +87,14 @@ class WritingNode:
 - If results exist: includes ablation studies to show that specific parts of the method are relevant.
 - Discusses limitations of the method.
 - Make sure to include all the results from the experiments, and include all relevant figures.""",
-            "Conclusions": """
+            "Conclusions": """\n
 - Expected length: about 2000 words (~0.5 pages)
 - Do not include \section{...} or \subsection{...}.
 - Brief recap of the entire paper.
 - To keep going with the analogy, you can think of future work as (potential) academic offspring.""",
         }
 
-        self.system_prompt = """
+        self.system_prompt = """\n
 A complete LaTeX template is already in place.
 Your role is to generate or refine the LaTeX content specifically for the '{{ section }}' section, such as text, equations, figures, tables, and citations—all within the existing document structure.
 
@@ -131,24 +133,21 @@ Here is the context of the entire paper:
 - Be sure to use \cite or \citet where relevant, referring to the works provided in the file.
     - **Do not cite anything that is not already in `references.bib`. Do not add any new entries to this.
 - Keep the experimental results (figures and tables) only in the Results section, and make sure that any captions are filled in.
-- The full paper should be **about 8 pages long**, meaning **each section should contain substantial content**.
-"""
+- The full paper should be **about 8 pages long**, meaning **each section should contain substantial content**."""
 
-        self.write_prompt_template = """
-You are tasked with filling in the '{{ section }}' section of a research paper.
-"""
+        self.write_prompt_template = """\n
+You are tasked with filling in the '{{ section }}' section of a research paper."""
 
-        self.refinement_template = """
+        self.refinement_template = """\n
 You are tasked with refining the '{{ section }}' section of a research paper.
 
 Here is the content that needs refinement:
 {{ content }}
 
 Pay particular attention to fixing any errors such as:
-{{ error_list_prompt }}
-"""
+{{ error_list_prompt }}"""
 
-        self.error_list_prompt = """
+        self.error_list_prompt = """\n
 - Unenclosed math symbols
 - Only reference figures that exist in our directory
 - LaTeX syntax errors
@@ -161,32 +160,25 @@ Pay particular attention to fixing any errors such as:
 - Closing any \\begin{{figure}} with a \\end{{figure}} and \\begin{{table}} with a \\end{{table}}, etc.
 - Duplicate headers, e.g. duplicated \\section{{Introduction}} or \\end{{document}}
 - Unescaped symbols, e.g. shakespeare_char should be shakespeare\\_char in text
-- Incorrect closing of environments, e.g. </end{{figure}}> instead of \\end{{figure}}
-"""
+- Incorrect closing of environments, e.g. </end{{figure}}> instead of \\end{{figure}}"""
 
-    def _call_llm(self, prompt: str, system_prompt: str, max_retries: int = 3) -> Optional[str]:
-        for attempt in range(max_retries):
-            try:
-                response = completion(
-                    model=self.llm_name,
-                    messages=[
-                        {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": prompt},
-                    ],
-                    response_format=LLMOutput,
-                )
-                structured_output = json.loads(response.choices[0].message.content)
-                return structured_output["generated_paper_text"]
-            except Exception as e:
-                print(f"[Attempt {attempt+1}/{max_retries}] Unexpected error: {e}")
-        print("Exceeded maximum retries for LLM call.")
-        return None
+    def _call_llm(self, prompt: str, system_prompt: str) -> Optional[str]:
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": prompt},
+        ]
+        response = openai_client(self.llm_name, message=messages, data_class=LLMOutput)
+        if response is not None:
+            response = json.loads(response)
+            return response["generated_paper_text"]
+        else:
+            return None
 
     def _write(self, note: str, section_name: str) -> str:
         prompt = self._generate_write_prompt(section_name, note)
         system_prompt = self._render_system_prompt(section_name, note)
         content = self._call_llm(prompt=prompt, system_prompt=system_prompt)
-        if not content:
+        if content is None:
             raise RuntimeError(
                 f"Failed to generate content for section: {section_name}. The LLM returned None."
             )
@@ -197,8 +189,8 @@ Pay particular attention to fixing any errors such as:
             prompt = self._generate_refinement_prompt(section_name, note, content)
             system_prompt = self._render_system_prompt(section_name, note)
             refine_content = self._call_llm(prompt=prompt, system_prompt=system_prompt)
-            if not refine_content:
-                print(
+            if refine_content is None:
+                logger.info(
                     f"Refinement failed for {section_name} at round {round_num + 1}. Keeping previous content."
                 )
                 break
@@ -245,7 +237,7 @@ Pay particular attention to fixing any errors such as:
     def execute(self, note: str) -> dict:
         paper_content = {}
         for section in self.target_sections:
-            print(f"section: {section}")
+            logger.info(f"Writing {section}")
             if not self.refine_only:
                 # generate and refine
                 initial_content = self._write(note, section)
