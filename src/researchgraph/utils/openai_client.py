@@ -30,7 +30,7 @@ MODEL_MAX_TOKENS = {
 def count_tokens(model_name: str, text: str) -> int:
     """モデルに応じたトークン数を計算"""
     enc = tiktoken.encoding_for_model(model_name)
-    return len(enc.encode(text))
+    return len(enc.encode(text, disallowed_special=()))
 
 
 def truncate_prompt(
