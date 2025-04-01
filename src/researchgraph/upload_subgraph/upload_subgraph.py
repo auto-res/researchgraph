@@ -1,13 +1,18 @@
 import os
 import json
-
+import logging
 from typing import TypedDict
 from langgraph.graph import START, END, StateGraph
 from langgraph.graph.graph import CompiledGraph
 
+from researchgraph.utils.logging_utils import setup_logging
+
 from researchgraph.upload_subgraph.nodes.github_upload import github_upload
 from researchgraph.upload_subgraph.input_data import upload_subgraph_input_data
 from researchgraph.utils.execution_timers import time_node, ExecutionTimeState
+
+setup_logging()
+logger = logging.getLogger(__name__)
 
 
 class UploadSubgraphInputState(TypedDict):
@@ -24,9 +29,9 @@ class UploadSubgraphOutputState(TypedDict):
 
 
 class UploadSubgraphState(
-    UploadSubgraphInputState, 
-    UploadSubgraphOutputState, 
-    ExecutionTimeState, 
+    UploadSubgraphInputState,
+    UploadSubgraphOutputState,
+    ExecutionTimeState,
 ):
     pass
 
@@ -45,6 +50,7 @@ class UploadSubgraph:
 
     @time_node("upload_subgraph", "_github_upload_node")
     def _github_upload_node(self, state: UploadSubgraphState) -> dict:
+        logger.info("---UploadeSubgraph---")
         completion = github_upload(
             pdf_file_path=self.pdf_file_path,
             github_owner=self.github_owner,

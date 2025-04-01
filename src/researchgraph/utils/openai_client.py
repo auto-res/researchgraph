@@ -1,12 +1,17 @@
 import tiktoken
 from openai import OpenAI
 from typing import Dict, List, Type
-import json
 from pydantic import BaseModel
+import time
+from logging import getLogger
 
+logger = getLogger(__name__)
 
-# モデルごとの最大トークン数定義
+# Maximum number of tokens per model definition
 MODEL_MAX_TOKENS = {
+    "o3-mini-2025-01-31": 200000,  # context window(100000 max output tokens)
+    "o1-2024-12-17": 128000,  # context window(32768 max output tokens)
+    "o1-mini-2024-09-12": 128000,  # context window(65536 max output tokens)
     "gpt-4.5-preview-2025-02-27": 16384,
     "gpt-4o-mini-2024-07-18": 16384,
     "gpt-4o-2024-11-20": 16384,
@@ -37,7 +42,7 @@ def truncate_prompt(
     total_tokens = sum(len(enc.encode(msg["content"])) for msg in message)
 
     if total_tokens > max_tokens:
-        print("警告: プロンプトが最大トークン数を超えています。短縮します。")
+        logger.warning(f"Prompt length exceeds {max_tokens} tokens. Truncating.")
 
         # content のトークン数が多いものから順に削る
         for msg in message[::-1]:
@@ -52,15 +57,42 @@ def truncate_prompt(
 
 
 def openai_client(
-    model_name: str, message: List[Dict[str, str]], data_class: Type[BaseModel]
-) -> dict:
+    model_name: str,
+    message: List[Dict[str, str]],
+    data_class: Type[BaseModel] | None = None,
+    max_retries: int = 3,
+    delay: int = 1,
+) -> str:
     client = OpenAI()
     message = truncate_prompt(model_name, message)
 
-    response = client.responses.create(
-        model=model_name,
-        input=message,
-        response_format=data_class,
-    )
-    output = json.loads(response.choices[0].message.content)
-    return output
+    while True:
+        try:
+            if data_class is None:
+                response = client.responses.create(
+                    model=model_name,
+                    input=message,
+                )
+                output = response.output_text
+            else:
+                response = client.beta.chat.completions.parse(
+                    model=model_name,
+                    messages=message,
+                    response_format=data_class,
+                )
+                output = response.choices[0].message.content
+            break
+        except Exception as e:
+            logger.warning(f"Error calling OpenAI API: {e}")
+            if max_retries > 0:
+                logger.info(f"Retrying... ({max_retries} retries left)")
+                max_retries -= 1
+                time.sleep(delay)
+            else:
+                logger.error("Max retries reached. Exiting.")
+                raise
+    if output:
+        return output
+    else:
+        logger.error("Empty response from OpenAI API.")
+        return ""

@@ -1,6 +1,9 @@
 import time
 import requests
 from requests.exceptions import HTTPError, ConnectionError, Timeout, RequestException
+from logging import getLogger
+
+logger = getLogger(__name__)
 
 
 def fetch_api_data(
@@ -13,7 +16,7 @@ def fetch_api_data(
     - バイナリデータ: `response.content`
     - `stream=True` の場合は `requests.Response` オブジェクトをそのまま返す
     """
-    print(f"Requests to endpoints:{url}")
+    logger.info(f"Requests to endpoints:{url}")
     try:
         method = method.upper()
         if method == "GET":
@@ -59,13 +62,13 @@ def fetch_api_data(
 
         # 不明なフォーマットの場合
         else:
-            print(
-                f"Warning: Unknown response format ({content_type}). Returning raw content."
+            logger.warning(
+                f"Unknown response format ({content_type}). Returning raw content."
             )
             return response.content  # バイナリデータの可能性があるので `content` を返す
 
     except requests.exceptions.RequestException as e:
-        print(f"Error during API request: {e}")
+        logger.warning(f"Error during API request: {e}")
         return None  # 例外発生時は `None` を返す
 
 
@@ -90,31 +93,41 @@ def retry_request(
 
             # NOTE:Conditions are set for repeating responses from outside the system.
             if check_condition and check_condition(response):
-                print(
+                logger.warning(
                     f"Condition not met, retrying in {wait_time} seconds... (Attempt {retry_count + 1})"
                 )
             # elif response is None:
             #     print(f"API request failed on attempt {retry_count + 1}.")
             else:
-                print(f"API request successful on attempt {retry_count + 1}.")
+                logger.info(f"API request successful on attempt {retry_count + 1}.")
                 return response
 
         except HTTPError as http_err:
-            print(f"HTTP error occurred on attempt {retry_count + 1}: {http_err}")
+            logger.warning(
+                f"HTTP error occurred on attempt {retry_count + 1}: {http_err}"
+            )
         except ConnectionError as conn_err:
-            print(f"Connection error occurred on attempt {retry_count + 1}: {conn_err}")
+            logger.warning(
+                f"Connection error occurred on attempt {retry_count + 1}: {conn_err}"
+            )
         except Timeout as timeout_err:
-            print(f"Timeout error occurred on attempt {retry_count + 1}: {timeout_err}")
+            logger.warning(
+                f"Timeout error occurred on attempt {retry_count + 1}: {timeout_err}"
+            )
         except RequestException as req_err:
-            print(f"Request error occurred on attempt {retry_count + 1}: {req_err}")
+            logger.warning(
+                f"Request error occurred on attempt {retry_count + 1}: {req_err}"
+            )
         except Exception as err:
-            print(f"An unexpected error occurred on attempt {retry_count + 1}: {err}")
+            logger.warning(
+                f"An unexpected error occurred on attempt {retry_count + 1}: {err}"
+            )
 
         wait_time = min(wait_time * 2, max_wait_time)
-        print(f"Retrying in {wait_time} seconds...")
+        logger.info(f"Retrying in {wait_time} seconds...")
         time.sleep(wait_time)
 
         retry_count += 1
 
-    print("Max retries reached. API request failed.")
+    logger.warning("Max retries reached. API request failed.")
     return None

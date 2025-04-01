@@ -1,7 +1,11 @@
 import re
+import json
 import requests
 from researchgraph.utils.openai_client import openai_client
 from pydantic import BaseModel
+from logging import getLogger
+
+logger = getLogger(__name__)
 
 
 class LLMOutput(BaseModel):
@@ -25,7 +29,7 @@ class ExtractGithubUrlNode:
                     valid_urls.append(url)
             return valid_urls
         except Exception as e:
-            print(f"Error extracting GitHub URL: {e}")
+            logger.warning(f"Error extracting GitHub URL: {e}")
             return []
 
     def _is_valid_github_url(self, url: str) -> bool:
@@ -43,7 +47,7 @@ class ExtractGithubUrlNode:
         message = [
             {
                 "role": "system",
-                "content": """
+                "content": """\n
 # Task
 You carefully read the contents of the “Paper Outline” and select one GitHub link from the “GitHub URLs List” that you think is most relevant to the contents.
 
@@ -54,7 +58,7 @@ You carefully read the contents of the “Paper Outline” and select one GitHub
             },
             {
                 "role": "user",
-                "content": f"""
+                "content": f"""\n
 # Paper Outline
 {paper_summary}
       
@@ -64,7 +68,12 @@ You carefully read the contents of the “Paper Outline” and select one GitHub
         ]
 
         response = openai_client(self.llm_name, message=message, data_class=LLMOutput)
-        return response["index"]
+        if response is None:
+            logger.warning("Error: No response from LLM.")
+            return None
+        else:
+            response = json.loads(response)
+            return response["index"]
 
     def execute(self, paper_full_text: str, paper_summary: str) -> str:
         extract_github_url_list = self._extract_github_url_from_text(paper_full_text)
@@ -76,7 +85,9 @@ You carefully read the contents of the “Paper Outline” and select one GitHub
         elif 0 <= index <= len(extract_github_url_list) - 1:
             return extract_github_url_list[index]
         else:
-            print("extract_github_url_listの範囲外のindexが選択されました")
+            logger.warning(
+                "An index outside the range of extract_github_url_list was selected."
+            )
             return ""
 
 

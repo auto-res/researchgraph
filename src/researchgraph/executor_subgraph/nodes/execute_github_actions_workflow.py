@@ -1,6 +1,9 @@
 import os
 from datetime import datetime, timezone
 from researchgraph.utils.api_request_handler import fetch_api_data, retry_request
+from logging import getLogger
+
+logger = getLogger(__name__)
 
 GITHUB_PERSONAL_ACCESS_TOKEN = os.getenv("GITHUB_PERSONAL_ACCESS_TOKEN")
 
@@ -105,17 +108,17 @@ def execute_github_actions_workflow(
         branch_name=branch_name,
     )
     if response_before_execution:
-        print(
+        logger.info(
             "Successfully retrieved information on Github actions prior to execution of workflow."
         )
     else:
-        print(
+        logger.warning(
             "Failure to retrieve information on Github actions before executing workflow."
         )
     num_workflow_runs_before_execution = _count_github_actions_workflow_runs(
         response_before_execution
     )
-    print(
+    logger.info(
         f"Number of workflow runs before execution:{num_workflow_runs_before_execution}"
     )
 
@@ -136,11 +139,11 @@ def execute_github_actions_workflow(
         num_workflow_runs_before_execution,
     )
     if response_before_execution:
-        print(
+        logger.info(
             "Successfully retrieved information on Github actions after execution of workflow."
         )
     else:
-        print(
+        logger.warning(
             "Failure to retrieve information on Github actions after executing workflow."
         )
 

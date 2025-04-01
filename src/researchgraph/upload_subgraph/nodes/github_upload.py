@@ -3,6 +3,9 @@ import base64
 import json
 
 from researchgraph.utils.api_request_handler import fetch_api_data, retry_request
+from logging import getLogger
+
+logger = getLogger(__name__)
 
 GITHUB_PERSONAL_ACCESS_TOKEN = os.getenv("GITHUB_PERSONAL_ACCESS_TOKEN")
 
@@ -119,7 +122,7 @@ def github_upload(
     )
     encoded_research_graph_log = _encoding_all_data(all_logs)
 
-    print("Paper Upload")
+    logger.info("Paper Upload")
     paper_path = "paper/paper.pdf"
     response_paper = _request_get_github_content(
         headers=headers,
@@ -138,7 +141,7 @@ def github_upload(
         sha=response_paper["sha"] if response_paper is not None else None,
     )
 
-    print("Experiment log upload")
+    logger.info("Experiment log upload")
     experiment_log_path = "logs/experiment_log.txt"
     response_experiment_log = _request_get_github_content(
         headers=headers,
@@ -159,7 +162,7 @@ def github_upload(
         else None,
     )
 
-    print("README upload")
+    logger.info("README upload")
     readme_path = "README.md"
     response_readme = _request_get_github_content(
         headers=headers,
@@ -179,7 +182,7 @@ def github_upload(
         sha=response_readme["sha"] if response_readme is not None else None,
     )
 
-    print("Research Graph log upload")
+    logger.info("Research Graph log upload")
     research_graph_log_path = "logs/research_graph_log.json"
     response_research_graph_log = _request_get_github_content(
         headers=headers,
