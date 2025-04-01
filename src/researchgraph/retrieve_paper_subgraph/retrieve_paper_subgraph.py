@@ -180,7 +180,7 @@ class RetrievePaperSubgraph:
     @time_node("retrieve_paper_subgraph", "_retrieve_arxiv_full_text_node")
     def _retrieve_arxiv_full_text_node(self, state: RetrievePaperState) -> dict:
         process_index = state["process_index"]
-        logger.info("process_index: ", process_index)
+        logger.info(f"process_index: {process_index}")
         paper_info = state["search_paper_list"][process_index]
         paper_full_text = RetrievearXivTextNode(papers_dir=self.papers_dir).execute(
             arxiv_url=paper_info["arxiv_url"]
