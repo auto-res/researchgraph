@@ -48,7 +48,7 @@ def extract_paper_title_node(
         else:
             print("Exceeded maximum retries for one of the scraped results.")
             return None
-    return aggregated_titles
+    return list(dict.fromkeys(aggregated_titles))
 
 extract_title_prompt ="""
 You are an expert at extracting research paper titles from web content. 

@@ -68,7 +68,7 @@ You carefully read the contents of the “Paper Outline” and select one GitHub
         ]
 
         
-        response = openai_client(self.llm_name, messate, schema=schema)
+        # response = openai_client(self.llm_name, messate, schema=schema)
         response = completion(
             model=self.llm_name,
             messages=messate,
@@ -96,7 +96,9 @@ You carefully read the contents of the “Paper Outline” and select one GitHub
 
 
 if __name__ == "__main__":
-    extract_github_url_node = ExtractGithubUrlNode()
+    llm_name = "gpt-4o-mini-2024-07-18"
+    extract_github_url_node = ExtractGithubUrlNode(llm_name=llm_name)
     paper_text = ""
-    github_urls = extract_github_url_node.execute(paper_text)
+    paper_summary = ""
+    github_urls = extract_github_url_node.execute(paper_text, paper_summary)
     print(github_urls)
