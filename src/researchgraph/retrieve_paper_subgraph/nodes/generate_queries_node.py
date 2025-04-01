@@ -1,7 +1,7 @@
 from pydantic import BaseModel
-from litellm import completion
 from jinja2 import Environment
-import ast
+import json
+from researchgraph.utils.openai_client import openai_client
 
 
 class LLMOutput(BaseModel):
@@ -16,32 +16,24 @@ def generate_queries_node(
     llm_name: str,
     prompt_template: str,
     selected_base_paper_info: str,
-    queries: list, 
+    queries: list,
 ) -> list[str]:
-    data = {
-        "selected_base_paper_info": selected_base_paper_info,
-        "queries": queries
-    }
+    data = {"selected_base_paper_info": selected_base_paper_info, "queries": queries}
 
     env = Environment()
     template = env.from_string(prompt_template)
     prompt = template.render(data)
+    messages = [
+        {"role": "user", "content": prompt},
+    ]
 
-    response = completion(
-        model=llm_name,
-        messages=[
-            {"role": "user", "content": f"{prompt}"},
-        ],
-        temperature=0.2, 
-        response_format=LLMOutput,
-    )
-    output = response.choices[0].message.content
-    output_dict = ast.literal_eval(output)
-    generated_query_1 = output_dict["generated_query_1"]
-    generated_query_2 = output_dict["generated_query_2"]
-    generated_query_3 = output_dict["generated_query_3"]
-    generated_query_4 = output_dict["generated_query_4"]
-    generated_query_5 = output_dict["generated_query_5"]
+    response = openai_client(llm_name, message=messages, data_class=LLMOutput)
+    response = json.loads(response)
+    generated_query_1 = response["generated_query_1"]
+    generated_query_2 = response["generated_query_2"]
+    generated_query_3 = response["generated_query_3"]
+    generated_query_4 = response["generated_query_4"]
+    generated_query_5 = response["generated_query_5"]
     return [
         generated_query_1,
         generated_query_2,

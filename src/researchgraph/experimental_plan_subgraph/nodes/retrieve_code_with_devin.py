@@ -1,4 +1,7 @@
 from researchgraph.utils.api_request_handler import fetch_api_data, retry_request
+from logging import getLogger
+
+logger = getLogger(__name__)
 
 
 def _request_create_session(headers, github_url, base_method_text):
@@ -25,15 +28,18 @@ The GitHub repository provided in the "GitHub Repository URL" corresponds to the
 
 
 def retrieve_code_with_devin(
-    headers: dict, github_url: str, base_method_text: str
+    headers: dict, github_url: str | None, base_method_text: str
 ) -> tuple[str | None, str | None]:
-    response = _request_create_session(headers, github_url, base_method_text)
-    if response:
-        print("Successfully created Devin session.")
-        retrieve_session_id = response["session_id"]
-        retrieve_devin_url = response["url"]
-        print("Devin URL: ", retrieve_devin_url)
-        return retrieve_session_id, retrieve_devin_url
+    if github_url is not None:
+        response = _request_create_session(headers, github_url, base_method_text)
+        if response:
+            logger.info("Successfully created Devin session.")
+            retrieve_session_id = response["session_id"]
+            retrieve_devin_url = response["url"]
+            logger.info("Devin URL: ", retrieve_devin_url)
+            return retrieve_session_id, retrieve_devin_url
+        else:
+            logger.info("Failed to create Devin session.")
+            return None, None
     else:
-        print("Failed to create Devin session.")
         return None, None

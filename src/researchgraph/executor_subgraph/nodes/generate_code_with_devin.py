@@ -1,5 +1,8 @@
 import os
 from researchgraph.utils.api_request_handler import fetch_api_data, retry_request
+from logging import getLogger
+
+logger = getLogger(__name__)
 
 DEVIN_API_KEY = os.getenv("DEVIN_API_KEY")
 
@@ -68,16 +71,16 @@ def generate_code_with_devin(
         experiment_code=experiment_code,
     )
     if response:
-        print("Successfully created Devin session.")
+        logger.info("Successfully created Devin session.")
         experiment_session_id = response["session_id"]
         experiment_devin_url = response["url"]
-        print("Devin URL: ", experiment_devin_url)
+        logger.info("Devin URL: ", experiment_devin_url)
         return (
             experiment_session_id,
             experiment_devin_url,
         )
     else:
-        print("Failed to create Devin session.")
+        logger.error("Failed to create Devin session.")
         return (
             None,
             None,

@@ -1,13 +1,19 @@
 import os
+import logging
 from typing import TypedDict
 from langgraph.graph import START, END, StateGraph
 from langgraph.graph.graph import CompiledGraph
+
+from researchgraph.utils.logging_utils import setup_logging
 
 from researchgraph.writer_subgraph.nodes.generate_note import generate_note
 from researchgraph.writer_subgraph.nodes.paper_writing import WritingNode
 from researchgraph.writer_subgraph.nodes.convert_to_latex import LatexNode
 from researchgraph.writer_subgraph.input_data import writer_subgraph_input_data
 from researchgraph.utils.execution_timers import time_node, ExecutionTimeState
+
+setup_logging()
+logger = logging.getLogger(__name__)
 
 
 class WriterSubgraphInputState(TypedDict):
@@ -29,10 +35,10 @@ class WriterSubgraphOutputState(TypedDict):
 
 
 class WriterSubgraphState(
-    WriterSubgraphInputState, 
-    WriterSubgraphHiddenState, 
-    WriterSubgraphOutputState, 
-    ExecutionTimeState
+    WriterSubgraphInputState,
+    WriterSubgraphHiddenState,
+    WriterSubgraphOutputState,
+    ExecutionTimeState,
 ):
     pass
 
@@ -53,7 +59,7 @@ class WriterSubgraph:
 
     @time_node("writer_subgraph", "_generate_note_node")
     def _generate_note_node(self, state: WriterSubgraphState) -> dict:
-        print("---WriterSubgraph---")
+        logger.info("---WriterSubgraph---")
         note = generate_note(state=dict(state), figures_dir=self.figures_dir)
         return {"note": note}
 
@@ -96,13 +102,13 @@ class WriterSubgraph:
 
 
 if __name__ == "__main__":
-    #llm_name = "gpt-4o-2024-11-20"
+    # llm_name = "gpt-4o-2024-11-20"
     llm_name = "gpt-4o-mini-2024-07-18"
     save_dir = "/workspaces/researchgraph/data"
 
     subgraph = WriterSubgraph(
         save_dir=save_dir,
         llm_name=llm_name,
-        refine_round=1, 
+        refine_round=1,
     ).build_graph()
     result = subgraph.invoke(writer_subgraph_input_data)

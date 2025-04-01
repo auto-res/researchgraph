@@ -2,28 +2,31 @@ import os
 import time
 import httpx
 import urllib.parse
+from logging import getLogger
+
+logger = getLogger(__name__)
 
 FIRE_CRAWL_API_KEY = os.getenv("FIRE_CRAWL_API_KEY")
 
 
 def web_scrape_node(queries: list, scrape_urls: list) -> list[dict]:
     if not FIRE_CRAWL_API_KEY:
-        print("WARNING: FIRE_CRAWL_API_KEY environment variable is not set")
+        logger.warning("FIRE_CRAWL_API_KEY environment variable is not set")
         return []
 
-    print("Executing FireCrawl API scraping...")
+    logger.info("Executing FireCrawl API scraping...")
     scrape_params = {
-        "formats": ["markdown"], 
-        "onlyMainContent": True, 
-        "waitFor": 5000, 
-        "timeout": 15000, 
+        "formats": ["markdown"],
+        "onlyMainContent": True,
+        "waitFor": 5000,
+        "timeout": 15000,
     }
 
     scraped_results = []
     for query in queries:
         for url in scrape_urls:
             full_url = f"{url}&search={urllib.parse.quote_plus(query)}"
-            print(f"Scraping URL: {full_url}")
+            logger.info(f"Scraping URL: {full_url}")
             try:
                 response = firecrawl_scrape(url=full_url, params=scrape_params)
                 data = response.get("data")
@@ -32,21 +35,22 @@ def web_scrape_node(queries: list, scrape_urls: list) -> list[dict]:
                     if scraped_result:
                         scraped_results.append(scraped_result)
                     else:
-                        print("Warning: 'markdown' not found in response data")
+                        logger.warning("'markdown' not found in response data")
                 else:
-                    print("Warning: Unexpected response format or no data")
+                    logger.warning("Unexpected response format or no data")
             except Exception as e:
-                print(f"Error with FireCrawl API: {e}")
-                print("FireCrawl API failed - returning empty results")
+                logger.error(f"Error with FireCrawl API: {e}")
+                logger.error("FireCrawl API failed - returning empty results")
     return scraped_results
 
+
 def firecrawl_scrape(
-    url: str, 
-    params: dict, 
+    url: str,
+    params: dict,
     api_url: str = "https://api.firecrawl.dev/v1",
-    initial_wait_time: int = 1, 
-    max_wait_time: int = 10, 
-    max_retries: int = 3
+    initial_wait_time: int = 1,
+    max_wait_time: int = 10,
+    max_retries: int = 3,
 ) -> dict:
     endpoint = f"{api_url}/scrape"
     headers = {
@@ -64,11 +68,11 @@ def firecrawl_scrape(
             response.raise_for_status()
             return response.json()
         except httpx.HTTPError as e:
-            print(f"Attempt {retry_count+1} failed with HTTP error: {e}")
+            logger.error(f"Attempt {retry_count+1} failed with HTTP error: {e}")
         except Exception as e:
-            print(f"Unexpected error on attempt {retry_count+1}: {e}")
+            logger.error(f"Unexpected error on attempt {retry_count+1}: {e}")
 
-        print(f"Retrying in {wait_time} seconds...")
+        logger.info(f"Retrying in {wait_time} seconds...")
         time.sleep(wait_time)
         wait_time = min(wait_time * 2, max_wait_time)
         retry_count += 1

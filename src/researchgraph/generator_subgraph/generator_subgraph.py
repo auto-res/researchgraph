@@ -1,13 +1,19 @@
+import logging
+
 from langgraph.graph import START, END, StateGraph
 from langgraph.graph.graph import CompiledGraph
 from typing import TypedDict
 
+from researchgraph.utils.logging_utils import setup_logging
 from researchgraph.generator_subgraph.nodes.generator_node import generator_node
 
 from researchgraph.generator_subgraph.input_data import (
     generator_subgraph_input_data,
 )
 from researchgraph.utils.execution_timers import time_node, ExecutionTimeState
+
+setup_logging()
+logger = logging.getLogger(__name__)
 
 
 class GeneratorSubgraphInputState(TypedDict):
@@ -27,7 +33,7 @@ class GeneratorSubgraphState(
     GeneratorSubgraphInputState,
     GeneratorSubgraphHiddenState,
     GeneratorSubgraphOutputState,
-    ExecutionTimeState, 
+    ExecutionTimeState,
 ):
     pass
 
@@ -35,13 +41,15 @@ class GeneratorSubgraphState(
 class GeneratorSubgraph:
     def __init__(
         self,
+        llm_name: str,
     ):
-        pass
+        self.llm_name = llm_name
 
     @time_node("generator_subgraph", "_generator_node")
     def _generator_node(self, state: GeneratorSubgraphState) -> dict:
-        print("---GeneratorSubgraph---")
+        logger.info("---GeneratorSubgraph---")
         new_method = generator_node(
+            llm_name=self.llm_name,
             base_method_text=state["base_method_text"],
             add_method_text_list=state["add_method_texts"],
         )
@@ -59,8 +67,10 @@ class GeneratorSubgraph:
 
 
 if __name__ == "__main__":
-    llm_name = "gpt-4o-2024-11-20"
-    subgraph = GeneratorSubgraph().build_graph()
+    llm_name = "o1-2024-12-17"
+    subgraph = GeneratorSubgraph(
+        llm_name=llm_name,
+    ).build_graph()
 
     result = subgraph.invoke(generator_subgraph_input_data)
     print(result)
