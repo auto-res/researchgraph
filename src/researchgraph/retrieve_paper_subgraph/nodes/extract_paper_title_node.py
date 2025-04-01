@@ -40,7 +40,6 @@ def extract_paper_title_node(
             response = json.loads(response)
             if "paper_titles" in response:
                 titles_list = response["paper_titles"]
-                # titles_list = [title.strip() for title in titles_str.split('\n') if title.strip()]
                 aggregated_titles.extend(titles_list)
     return aggregated_titles
 

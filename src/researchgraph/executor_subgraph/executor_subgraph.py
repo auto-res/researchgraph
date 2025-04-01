@@ -102,13 +102,13 @@ class ExecutorSubgraph:
     @time_node("executor_subgraph", "_check_devin_completion_node")
     def _check_devin_completion_node(self, state: ExecutorSubgraphState) -> dict:
         time.sleep(120)
-        check_devin_completion(
+        result = check_devin_completion(
             headers=self.headers,
             session_id=state["experiment_session_id"],
         )
-        return {
-            "devin_completion": True,
-        }
+        if result is None:
+            return {"devin_completion": False}
+        return {"devin_completion": True}
 
     @time_node("executor_subgraph", "_execute_github_actions_workflow_node")
     def _execute_github_actions_workflow_node(
@@ -199,9 +199,13 @@ class ExecutorSubgraph:
         graph_builder.add_edge(
             "generate_code_with_devin_node", "check_devin_completion_node"
         )
-        graph_builder.add_edge(
+        graph_builder.add_conditional_edges(
             "check_devin_completion_node",
-            "execute_github_actions_workflow_node",
+            path=lambda state: state["devin_completion"],
+            path_map={
+                True: "execute_github_actions_workflow_node",
+                False: END,
+            },
         )
         graph_builder.add_edge(
             "execute_github_actions_workflow_node",
