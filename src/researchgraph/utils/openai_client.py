@@ -1,11 +1,13 @@
 import tiktoken
 from openai import OpenAI
-from typing import Optional, Dict, List
+from typing import Dict, List, Type
 import json
+from pydantic import BaseModel
+
 
 # モデルごとの最大トークン数定義
 MODEL_MAX_TOKENS = {
-    "gpt-4.5-preview-2025-02-27": 16384 ,
+    "gpt-4.5-preview-2025-02-27": 16384,
     "gpt-4o-mini-2024-07-18": 16384,
     "gpt-4o-2024-11-20": 16384,
     "gpt-4-0613": 8192,
@@ -19,52 +21,46 @@ MODEL_MAX_TOKENS = {
     "gpt-3.5-turbo-0301": 4096,
 }
 
+
 def count_tokens(model_name: str, text: str) -> int:
     """モデルに応じたトークン数を計算"""
     enc = tiktoken.encoding_for_model(model_name)
     return len(enc.encode(text))
 
-def truncate_prompt(model_name: str, prompt: List[Dict[str, str]]) -> List[Dict[str, str]]:
+
+def truncate_prompt(
+    model_name: str, message: List[Dict[str, str]]
+) -> List[Dict[str, str]]:
     """最大トークン数を超えないようにプロンプトを短縮"""
     max_tokens = MODEL_MAX_TOKENS.get(model_name, 4096)  # デフォルト4096
     enc = tiktoken.encoding_for_model(model_name)
-    total_tokens = sum(len(enc.encode(msg["content"])) for msg in prompt)
-    
+    total_tokens = sum(len(enc.encode(msg["content"])) for msg in message)
+
     if total_tokens > max_tokens:
         print("警告: プロンプトが最大トークン数を超えています。短縮します。")
-        
+
         # content のトークン数が多いものから順に削る
-        for msg in prompt[::-1]:
+        for msg in message[::-1]:
             if total_tokens <= max_tokens:
                 break
             tokens = enc.encode(msg["content"])
-            if len(tokens) > max_tokens // len(prompt):
-                msg["content"] = enc.decode(tokens[:max_tokens // len(prompt)])
-            total_tokens = sum(len(enc.encode(m["content"])) for m in prompt)
-    
-    return prompt
+            if len(tokens) > max_tokens // len(message):
+                msg["content"] = enc.decode(tokens[: max_tokens // len(message)])
+            total_tokens = sum(len(enc.encode(m["content"])) for m in message)
 
-def openai_client(model_name: str, prompt: List[Dict[str, str]], schema: Optional[Dict] = None) -> str:
+    return message
+
+
+def openai_client(
+    model_name: str, message: List[Dict[str, str]], data_class: Type[BaseModel]
+) -> dict:
     client = OpenAI()
-    prompt = truncate_prompt(model_name, prompt)
+    message = truncate_prompt(model_name, message)
 
-    text_format = (
-        {
-            "format": {
-                "type": "json_schema",
-                "name": "structured_response",
-                "schema": schema,
-                "strict": True,
-            }
-        }
-        if schema else None
-    )
-    
     response = client.responses.create(
         model=model_name,
-        input=prompt,
-        text=text_format
+        input=message,
+        response_format=data_class,
     )
-    
-    output = json.loads(response.output_text) if schema else response.output_text
+    output = json.loads(response.choices[0].message.content)
     return output

@@ -1,14 +1,11 @@
 import re
-import json
 import requests
-from litellm import completion
 from researchgraph.utils.openai_client import openai_client
-
 from pydantic import BaseModel
 
 
 class LLMOutput(BaseModel):
-    index: str
+    index: int | None
 
 
 class ExtractGithubUrlNode:
@@ -42,8 +39,8 @@ class ExtractGithubUrlNode:
 
     def _extract_related_github_url(
         self, paper_summary: str, extract_github_url_list: list[str]
-    ) -> str:
-        messate = [
+    ) -> int | None:
+        message = [
             {
                 "role": "system",
                 "content": """
@@ -53,7 +50,7 @@ You carefully read the contents of the “Paper Outline” and select one GitHub
 # Constraints
 - Output the index number corresponding to the selected GitHub URL.
 - Be sure to select only one GiHub URL.
-- If there is no related GitHub link, output an empty string.""",
+- If there is no related GitHub link, output None.""",
             },
             {
                 "role": "user",
@@ -63,40 +60,34 @@ You carefully read the contents of the “Paper Outline” and select one GitHub
       
 # GitHub URLs List
 {extract_github_url_list}""",
-            }
-        
+            },
         ]
 
-        
-        response = openai_client(self.llm_name, messate, schema=schema)
-        response = completion(
-            model=self.llm_name,
-            messages=messate,
-            response_format=LLMOutput,
-        )
-        list_index_str = json.loads(response.choices[0].message.content)["index"]
-        return list_index_str
+        response = openai_client(self.llm_name, message=message, data_class=LLMOutput)
+        return response["index"]
 
     def execute(self, paper_full_text: str, paper_summary: str) -> str:
         extract_github_url_list = self._extract_github_url_from_text(paper_full_text)
         if not extract_github_url_list:
             return ""
-        list_index_str = self._extract_related_github_url(
-            paper_summary, extract_github_url_list
-        )
-        if not list_index_str:
+        index = self._extract_related_github_url(paper_summary, extract_github_url_list)
+        if index is None:
             return ""
-
-        list_index = int(list_index_str)
-        if list_index >= len(extract_github_url_list):
+        elif 0 <= index <= len(extract_github_url_list) - 1:
+            return extract_github_url_list[index]
+        else:
             print("extract_github_url_listの範囲外のindexが選択されました")
             return ""
 
-        return extract_github_url_list[list_index]
-
 
 if __name__ == "__main__":
-    extract_github_url_node = ExtractGithubUrlNode()
-    paper_text = ""
-    github_urls = extract_github_url_node.execute(paper_text)
+    extract_github_url_node = ExtractGithubUrlNode(
+        llm_name="gpt-4o-mini-2024-07-18",
+    )
+    paper_text = "aaa"
+    paper_summary = "bbb"
+    github_urls = extract_github_url_node.execute(
+        paper_full_text=paper_text,
+        paper_summary=paper_summary,
+    )
     print(github_urls)
