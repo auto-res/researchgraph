@@ -5,6 +5,9 @@ import time
 from datetime import datetime, timedelta
 from typing import Optional
 from pydantic import BaseModel, ValidationError, Field
+from logging import getLogger
+
+logger = getLogger(__name__)
 
 
 class ArxivResponse(BaseModel):
@@ -18,12 +21,12 @@ class ArxivResponse(BaseModel):
 
 class ArxivNode:
     def __init__(
-        self, 
-        num_retrieve_paper: int = 5, 
-        period_days: Optional[int] = None, 
-        max_retries: int = 20, 
-        initial_wait_time = 1, 
-        max_wait_time = 180, 
+        self,
+        num_retrieve_paper: int = 5,
+        period_days: Optional[int] = None,
+        max_retries: int = 20,
+        initial_wait_time=1,
+        max_wait_time=180,
     ):
         self.num_retrieve_paper = num_retrieve_paper
         self.period_days = period_days
@@ -31,7 +34,6 @@ class ArxivNode:
         self.max_retries = max_retries
         self.initial_wait_time = initial_wait_time
         self.max_wait_time = max_wait_time
-        
 
     def _build_arxiv_query(self, query: str) -> str:
         sanitized_query = query.replace(":", "")
@@ -60,7 +62,7 @@ class ArxivNode:
             )
             return paper
         except ValidationError as e:
-            print(f"Validation error: {e}")
+            logger.error(f"Validation error: {e}")
             return None
 
     def search_paper(self, query: str) -> list[ArxivResponse]:
@@ -84,12 +86,14 @@ class ArxivNode:
                 response.raise_for_status()
                 break
             except requests.exceptions.RequestException as exc:
-                print(f"Error fetching from arXiv API: {exc}. Retrying in {wait_time} seconds...")
+                logger.error(
+                    f"Error fetching from arXiv API: {exc}. Retrying in {wait_time} seconds..."
+                )
                 time.sleep(wait_time)
                 retry_count += 1
                 wait_time = min(wait_time * 2, self.max_wait_time)
         else:
-            print("Maximum retries reached. Failed to fetch data.")
+            logger.warning("Maximum retries reached. Failed to fetch data.")
 
         feed = feedparser.parse(response.text)
 
@@ -107,11 +111,8 @@ class ArxivNode:
         return validated_list
 
     def execute(self, queries) -> list[dict]:
-        # queries = getattr(state, self.input_key[0], [])
         if not queries or not isinstance(queries, list):
-            print(
-                f"No valid queries found in state[{self.input_key[0]}]. Return empty."
-            )
+            logger.warning("No valid queries. Return empty.")
             return []
 
         all_papers = []

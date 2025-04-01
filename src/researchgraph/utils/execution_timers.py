@@ -1,6 +1,10 @@
 import time
 from functools import wraps
 from typing import TypedDict
+from logging import getLogger
+
+logger = getLogger(__name__)
+
 
 class ExecutionTimeState(TypedDict, total=False):
     execution_time: dict[str, dict[str, list[float]]]
@@ -11,7 +15,7 @@ def time_node(subgraph_name: str, node_name: str):
         @wraps(func)
         def wrapper(self, state, *args, **kwargs):
             header = f"[{subgraph_name}.{node_name}]".ljust(40)
-            print(f"{header} 開始")
+            logger.info(f"{header} Start")
             start = time.time()
             result = func(self, state, *args, **kwargs)
             end = time.time()
@@ -25,9 +29,11 @@ def time_node(subgraph_name: str, node_name: str):
             timings[subgraph_name] = subgraph_log
             state["execution_time"] = timings
 
-            print(f"{header} 実行時間: {duration:7.4f} 秒")
+            logger.info(f"{header} End    Execution Time: {duration:7.4f} seconds")
             return result
+
         return wrapper
+
     return decorator
 
 
@@ -36,7 +42,7 @@ def time_subgraph(subgraph_name: str):
         @wraps(func)
         def wrapper(state, *args, **kwargs):
             header = f"[{subgraph_name}]".ljust(40)
-            print(f"{header} 開始")
+            logger.info(f"{header} Start")
             start = time.time()
             result = func(state, *args, **kwargs)
             end = time.time()
@@ -50,7 +56,9 @@ def time_subgraph(subgraph_name: str):
             timings[subgraph_name] = subgraph_log
             state["execution_time"] = timings
 
-            print(f"{header} 実行時間: {duration:7.4f} 秒")
+            logger.info(f"{header} End    Execution Time: {duration:7.4f} seconds")
             return result
+
         return wrapper
+
     return decorator

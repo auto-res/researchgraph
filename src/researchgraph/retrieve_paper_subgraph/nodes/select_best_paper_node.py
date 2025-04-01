@@ -1,7 +1,10 @@
-import json
 from pydantic import BaseModel
-from litellm import completion
 from jinja2 import Environment
+import json
+from researchgraph.utils.openai_client import openai_client
+from logging import getLogger
+
+logger = getLogger(__name__)
 
 
 class LLMOutput(BaseModel):
@@ -13,36 +16,39 @@ def select_best_paper_node(
     prompt_template: str,
     candidate_papers,
     selected_base_paper_info=None,
-    add_paper_num: int = 3, 
+    add_paper_num: int = 3,
 ) -> list[str]:
     if selected_base_paper_info is None:
         data = {
             "candidate_papers": candidate_papers,
-            "add_paper_num": add_paper_num, 
+            "add_paper_num": add_paper_num,
         }
     else:
         data = {
             "candidate_papers": candidate_papers,
             "selected_base_paper": selected_base_paper_info,
-            "add_paper_num": add_paper_num, 
+            "add_paper_num": add_paper_num,
         }
 
     env = Environment()
     template = env.from_string(prompt_template)
     prompt = template.render(data)
-
-    response = completion(
-        model=llm_name,
-        messages=[
-            {"role": "user", "content": f"{prompt}"},
-        ],
-        response_format=LLMOutput,
-    )
-    structured_output = json.loads(response.choices[0].message.content)
-    arxiv_id_str = structured_output["selected_arxiv_id"]
-    arxiv_id_list = [arxiv_id.strip() for arxiv_id in arxiv_id_str.split('\n') if arxiv_id.strip()]
-    print(f"Selected arxiv ids: {arxiv_id_list}")
-    return arxiv_id_list
+    messages = [
+        {"role": "user", "content": f"{prompt}"},
+    ]
+    response = openai_client(llm_name, message=messages, data_class=LLMOutput)
+    response = json.loads(response)
+    if "selected_arxiv_id" in response:
+        arxiv_id_str = response["selected_arxiv_id"]
+        arxiv_id_list = [
+            arxiv_id.strip()
+            for arxiv_id in arxiv_id_str.split("\n")
+            if arxiv_id.strip()
+        ]
+        return arxiv_id_list
+    else:
+        logger.warning("No 'selected_arxiv_id' found in the response.")
+        return []
 
 
 select_base_paper_prompt = """

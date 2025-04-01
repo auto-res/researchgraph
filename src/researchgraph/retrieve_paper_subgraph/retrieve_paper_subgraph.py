@@ -1,11 +1,14 @@
 import os
 import shutil
 import operator
+import logging
 from typing import Annotated, TypedDict, Optional
 from pydantic import BaseModel
 
 from langgraph.graph import START, END, StateGraph
 from langgraph.graph.graph import CompiledGraph
+
+from researchgraph.utils.logging_utils import setup_logging
 
 from researchgraph.retrieve_paper_subgraph.nodes.web_scrape_node import web_scrape_node
 from researchgraph.retrieve_paper_subgraph.nodes.extract_paper_title_node import (
@@ -35,6 +38,9 @@ from researchgraph.retrieve_paper_subgraph.input_data import (
     retrieve_paper_subgraph_input_data,
 )
 from researchgraph.utils.execution_timers import time_node, ExecutionTimeState
+
+setup_logging()
+logger = logging.getLogger(__name__)
 
 
 class CandidatePaperInfo(BaseModel):
@@ -117,7 +123,7 @@ class RetrievePaperSubgraph:
         os.makedirs(self.selected_papers_dir, exist_ok=True)
 
     def _initialize_state(self, state: RetrievePaperState) -> dict:
-        print("---RetrievePaperSubgraph---")
+        logger.info("---RetrievePaperSubgraph---")
         return {
             "queries": state["queries"],
             "process_index": 0,
@@ -143,7 +149,7 @@ class RetrievePaperSubgraph:
         return {"extracted_paper_titles": extracted_paper_titles}
 
     def _check_extracted_titles(self, state: RetrievePaperState) -> str:
-        print("check_extracted_titles")
+        logger.info("check_extracted_titles")
         if not state.get("extracted_paper_titles"):
             if "generated_queries" in state:
                 return "Regenerate queries"
@@ -174,11 +180,10 @@ class RetrievePaperSubgraph:
     @time_node("retrieve_paper_subgraph", "_retrieve_arxiv_full_text_node")
     def _retrieve_arxiv_full_text_node(self, state: RetrievePaperState) -> dict:
         process_index = state["process_index"]
-        print("process_index: ", process_index)
+        logger.info("process_index: ", process_index)
         paper_info = state["search_paper_list"][process_index]
-        arxiv_url = paper_info["arxiv_url"]
-        paper_full_text = RetrievearXivTextNode(save_dir=self.papers_dir).execute(
-            arxiv_url=arxiv_url
+        paper_full_text = RetrievearXivTextNode(papers_dir=self.papers_dir).execute(
+            arxiv_url=paper_info["arxiv_url"]
         )
         return {"paper_full_text": paper_full_text}
 
@@ -200,7 +205,6 @@ class RetrievePaperSubgraph:
         return {"github_url": github_url, "process_index": process_index}
 
     def _check_github_urls(self, state: RetrievePaperState) -> str:
-        print("check_github_urls")
         if state["github_url"] == "":
             if state["process_index"] < state["search_paper_count"]:
                 return "Next paper"
@@ -250,7 +254,6 @@ class RetrievePaperSubgraph:
         }
 
     def _check_paper_count(self, state: RetrievePaperState) -> str:
-        print("check_paper_count")
         if state["process_index"] < state["search_paper_count"]:
             return "Next paper"
         else:
@@ -405,7 +408,6 @@ class RetrievePaperSubgraph:
         }
 
     def _check_add_paper_count(self, state: RetrievePaperState) -> str:
-        print("check_add_paper_count")
         if len(state["selected_add_paper_arxiv_ids"]) < self.add_paper_num:
             return "Regenerate queries"
         else:
@@ -568,8 +570,7 @@ if __name__ == "__main__":
     save_dir = "/workspaces/researchgraph/data"
     os.makedirs(save_dir, exist_ok=True)
 
-    # llm_name = "gpt-4o-2024-11-20"
-    llm_name = "gpt-4o-mini-2024-07-18"
+    llm_name = "o3-mini-2025-01-31"
     scrape_urls = [
         "https://icml.cc/virtual/2024/papers.html?filter=title",
         "https://iclr.cc/virtual/2024/papers.html?filter=title",
@@ -588,23 +589,5 @@ if __name__ == "__main__":
     config = {"recursion_limit": 300}
     result = subgraph.invoke(retrieve_paper_subgraph_input_data, config=config)
 
-    print(result.keys())
-
-    # 複数になるようにしないといけない
-    candidate_base_papers_info = result["candidate_base_papers_info_list"]
-    candidate_add_papers_info = result["candidate_add_papers_info_list"]
-    print("-" * 50)
-    print(f"Candidate base Paper Results: {len(candidate_base_papers_info)}")
-    print(f"Candidate add Paper Results: {len(candidate_add_papers_info)}")
-
-    base_github_url = result["base_github_url"]
-    base_method_text = result["base_method_text"]
-    print(f"base_github_url: {base_github_url}")
-    print(f"base_method_text: {base_method_text}")
-
-    add_github_urls = result["add_github_urls"]
-    add_method_texts = result["add_method_texts"]
-    print("-" * 50)
-    print(f"add_paper: {len(add_method_texts)}")
-    print(f"add_github_urls: {add_github_urls}")
-    print(f"add_method_texts: {add_method_texts}")
+    # print(result.keys())
+    print(result)

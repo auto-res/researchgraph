@@ -1,7 +1,8 @@
-from litellm import completion
+from researchgraph.utils.openai_client import openai_client
 
 
 def generator_node(
+    llm_name: str,
     base_method_text: str,
     add_method_text_list: list[str],
 ) -> str:
@@ -18,13 +19,8 @@ Your task is to propose a genuinely novel method that mitigates one or more chal
 # Add Method
 {add_method_text}
 """
-
-    response = completion(
-        model="o3-mini-2025-01-31",
-        messages=[
-            {"role": "user", "content": f"{prompt}"},
-        ],
-    )
-    new_method = response.choices[0].message.content
-
-    return new_method
+    messages = [
+        {"role": "user", "content": f"{prompt}"},
+    ]
+    response = openai_client(model_name=llm_name, message=messages)
+    return response

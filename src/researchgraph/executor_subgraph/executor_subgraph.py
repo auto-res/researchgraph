@@ -1,8 +1,11 @@
 import os
 import time
+import logging
 from typing import TypedDict
 from langgraph.graph import START, END, StateGraph
 from langgraph.graph.graph import CompiledGraph
+
+from researchgraph.utils.logging_utils import setup_logging
 
 from researchgraph.executor_subgraph.nodes.generate_code_with_devin import (
     generate_code_with_devin,
@@ -25,6 +28,9 @@ from researchgraph.executor_subgraph.input_data import (
     executor_subgraph_input_data,
 )
 from researchgraph.utils.execution_timers import time_node, ExecutionTimeState
+
+setup_logging()
+logger = logging.getLogger(__name__)
 
 DEVIN_API_KEY = os.getenv("DEVIN_API_KEY")
 
@@ -50,10 +56,10 @@ class ExecutorSubgraphOutputState(TypedDict):
 
 
 class ExecutorSubgraphState(
-    ExecutorSubgraphInputState, 
-    ExecutorSubgraphHiddenState, 
-    ExecutorSubgraphOutputState, 
-    ExecutionTimeState, 
+    ExecutorSubgraphInputState,
+    ExecutorSubgraphHiddenState,
+    ExecutorSubgraphOutputState,
+    ExecutionTimeState,
 ):
     pass
 
@@ -77,7 +83,7 @@ class ExecutorSubgraph:
 
     @time_node("executor_subgraph", "_generate_code_with_devin_node")
     def _generate_code_with_devin_node(self, state: ExecutorSubgraphState) -> dict:
-        print("---ExecutorSubgraph---")
+        logger.info("---ExecutorSubgraph---")
         experiment_session_id, experiment_devin_url = generate_code_with_devin(
             headers=self.headers,
             github_owner=self.github_owner,
@@ -96,13 +102,13 @@ class ExecutorSubgraph:
     @time_node("executor_subgraph", "_check_devin_completion_node")
     def _check_devin_completion_node(self, state: ExecutorSubgraphState) -> dict:
         time.sleep(120)
-        check_devin_completion(
+        result = check_devin_completion(
             headers=self.headers,
             session_id=state["experiment_session_id"],
         )
-        return {
-            "devin_completion": True,
-        }
+        if result is None:
+            return {"devin_completion": False}
+        return {"devin_completion": True}
 
     @time_node("executor_subgraph", "_execute_github_actions_workflow_node")
     def _execute_github_actions_workflow_node(
@@ -136,7 +142,7 @@ class ExecutorSubgraph:
     @time_node("executor_subgraph", "_llm_decide_node")
     def _llm_decide_node(self, state: ExecutorSubgraphState) -> dict:
         judgment_result = llm_decide(
-            llm_name="gpt-4o-mini-2024-07-18",
+            llm_name="o3-mini-2025-01-31",
             output_text_data=state["output_text_data"],
             error_text_data=state["error_text_data"],
         )
@@ -193,9 +199,13 @@ class ExecutorSubgraph:
         graph_builder.add_edge(
             "generate_code_with_devin_node", "check_devin_completion_node"
         )
-        graph_builder.add_edge(
+        graph_builder.add_conditional_edges(
             "check_devin_completion_node",
-            "execute_github_actions_workflow_node",
+            path=lambda state: state["devin_completion"],
+            path_map={
+                True: "execute_github_actions_workflow_node",
+                False: END,
+            },
         )
         graph_builder.add_edge(
             "execute_github_actions_workflow_node",

@@ -4,6 +4,9 @@ import shutil
 import zipfile
 
 from researchgraph.utils.api_request_handler import fetch_api_data, retry_request
+from logging import getLogger
+
+logger = getLogger(__name__)
 
 GITHUB_PERSONAL_ACCESS_TOKEN = os.getenv("GITHUB_PERSONAL_ACCESS_TOKEN")
 
@@ -39,25 +42,27 @@ def _zip_to_txt(response, iteration_save_dir, key):
     zip_file_path = os.path.join(iteration_save_dir, f"{key}.zip")
     with open(zip_file_path, "wb") as f:
         f.write(response)
-    print(f"Downloaded artifact saved to: {zip_file_path}")
+    logger.info(f"Downloaded artifact saved to: {zip_file_path}")
     with zipfile.ZipFile(zip_file_path, "r") as zip_ref:
         zip_ref.extractall(iteration_save_dir)
-    print(f"Extracted artifact to: {iteration_save_dir}")
+    logger.info(f"Extracted artifact to: {iteration_save_dir}")
     if os.path.exists(zip_file_path):
         os.remove(zip_file_path)
-        print(f"ZIP file deleted: {zip_file_path}")
+        logger.info(f"ZIP file deleted: {zip_file_path}")
+
 
 def _copy_images_to_latest_dir(source_dir: str, dest_dir: str):
     if os.path.exists(dest_dir):
         shutil.rmtree(dest_dir)
-        print(f"Removed exisiting images/ directory: {dest_dir}")
+        logger.info(f"Removed exisiting images/ directory: {dest_dir}")
     os.makedirs(dest_dir, exist_ok=True)
-    
+
     for file_path in glob.glob(os.path.join(source_dir, "*.pdf")):
         filename = os.path.basename(file_path)
         dest_path = os.path.join(dest_dir, filename)
         shutil.copyfile(file_path, dest_path)
-        print(f"Copied image to: {dest_path}")
+        logger.info(f"Copied image to: {dest_path}")
+
 
 def retrieve_github_actions_artifacts(
     github_owner,
@@ -77,9 +82,9 @@ def retrieve_github_actions_artifacts(
         headers, github_owner, repository_name
     )
     if response_artifacts_infos:
-        print("Successfully retrieved artifacts information.")
+        logger.info("Successfully retrieved artifacts information.")
     else:
-        print("Failure to retrieve artifacts information.")
+        logger.error("Failure to retrieve artifacts information.")
     get_artifacts_redirect_url_dict = _parse_artifacts_info(
         response_artifacts_infos, workflow_run_id
     )
