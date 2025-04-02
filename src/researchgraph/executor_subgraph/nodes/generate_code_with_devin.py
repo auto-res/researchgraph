@@ -74,7 +74,7 @@ def generate_code_with_devin(
         logger.info("Successfully created Devin session.")
         experiment_session_id = response["session_id"]
         experiment_devin_url = response["url"]
-        logger.info("Devin URL: ", experiment_devin_url)
+        logger.info(f"Devin URL: {experiment_devin_url}")
         return (
             experiment_session_id,
             experiment_devin_url,

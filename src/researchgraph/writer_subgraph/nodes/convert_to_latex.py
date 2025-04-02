@@ -81,12 +81,6 @@ The value of "latex_full_text" must contain the complete LaTeX text."""
 
         with open(self.template_copy_file, "w") as f:
             f.write(tex_text)
-
-        with open(self.template_copy_file, "r") as f:
-            updated_tex_text = f.read()
-
-        logger.info("更新後の `template_copy.tex` 内容:\n", updated_tex_text)
-
         return tex_text
 
     def _check_references(self, tex_text: str) -> str:
