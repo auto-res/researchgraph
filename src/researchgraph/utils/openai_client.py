@@ -1,6 +1,6 @@
 import tiktoken
 from openai import OpenAI
-from typing import Dict, List, Type
+from typing import Type
 from pydantic import BaseModel
 import time
 from logging import getLogger
@@ -34,8 +34,8 @@ def count_tokens(model_name: str, text: str) -> int:
 
 
 def truncate_prompt(
-    model_name: str, message: List[Dict[str, str]]
-) -> List[Dict[str, str]]:
+    model_name: str, message: list[dict[str, str]]
+) -> list[dict[str, str]]:
     """最大トークン数を超えないようにプロンプトを短縮"""
     max_tokens = MODEL_MAX_TOKENS.get(model_name, 4096)  # デフォルト4096
     enc = tiktoken.encoding_for_model(model_name)
@@ -58,11 +58,11 @@ def truncate_prompt(
 
 def openai_client(
     model_name: str,
-    message: List[Dict[str, str]],
+    message: list[dict[str, str]],
     data_class: Type[BaseModel] | None = None,
     max_retries: int = 3,
     delay: int = 1,
-) -> str:
+) -> str | None:
     client = OpenAI()
     message = truncate_prompt(model_name, message)
 
@@ -99,4 +99,4 @@ def openai_client(
         return output
     else:
         logger.error("Empty response from OpenAI API.")
-        return ""
+        return None
