@@ -96,9 +96,17 @@ class ExperimentalPlanSubgraph:
         if devin_output_response is None:
             experiment_info_of_source_research = ""
         else:
-            experiment_info_of_source_research = devin_output_response[
-                "structured_output"
-            ].get("extracted_info", "")
+            structured_output = devin_output_response.get("structured_output")
+            if structured_output is None:
+                logger.warning(
+                    "Devin output response does not contain `structured_output`. "
+                    f"Full response: {devin_output_response}"
+                )
+                experiment_info_of_source_research = ""
+            else:
+                experiment_info_of_source_research = structured_output.get(
+                    "extracted_info", ""
+                )
         return {
             "experiment_info_of_source_research": experiment_info_of_source_research,
         }

@@ -204,11 +204,11 @@ class ResearchGraph:
 if __name__ == "__main__":
     save_dir = "/workspaces/researchgraph/data"
     scrape_urls = [
-        "https://icml.cc/virtual/2024/papers.html?filter=titles",
-        "https://iclr.cc/virtual/2024/papers.html?filter=titles",
-        # "https://nips.cc/virtual/2024/papers.html?filter=titles",
-        # "https://cvpr.thecvf.com/virtual/2024/papers.html?filter=titles",
-        # "https://eccv.ecva.net/virtual/2024/papers.html?filter=titles",
+        "https://icml.cc/virtual/2024/papers.html?filter=title",
+        "https://iclr.cc/virtual/2024/papers.html?filter=title",
+        # "https://nips.cc/virtual/2024/papers.html?filter=title",
+        # "https://cvpr.thecvf.com/virtual/2024/papers.html?filter=title",
+        # "https://eccv.ecva.net/virtual/2024/papers.html?filter=title",
     ]
     add_paper_num = 3
     repository = "auto-res2/experiment_script_matsuzawa"

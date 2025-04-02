@@ -86,16 +86,14 @@ The value of "latex_full_text" must contain the complete LaTeX text."""
     def _check_references(self, tex_text: str) -> str:
         # Check for missing references in the LaTeX content against the references.bib section
         cites = re.findall(r"\\cite[a-z]*{([^}]*)}", tex_text)
-        references_bib = re.search(
-            r"\\begin{filecontents}{references.bib}(.*?)\\end{filecontents}",
-            tex_text,
-            re.DOTALL,
-        )
-        if references_bib is None:
-            raise FileNotFoundError("references.bib not found in template_copy.tex")
-
-        bib_text = references_bib.group(1)
+        bib_path = os.path.join(self.latex_save_dir, "references.bib")
+        if not os.path.exists(bib_path):
+            raise FileNotFoundError(f"references.bib file is missing at: {bib_path}")
+        
+        with open(bib_path, "r") as f:
+            bib_text = f.read()
         missing_cites = [cite for cite in cites if cite.strip() not in bib_text]
+
         if not missing_cites:
             logger.info("No missing references found.")
             return tex_text
@@ -111,7 +109,10 @@ The value of "latex_full_text" must contain the complete LaTeX text."""
 {bib_text}
 --------
 The following reference is missing from references.bib: {missing_cites}.
-Please provide the complete corrected LaTeX text, ensuring the reference issue is fixed.
+Only modify the BibTeX content or add missing \\cite{{...}} commands if needed.
+
+Do not remove, replace, or summarize any section of the LaTeX text such as Introduction, Method, or Results.
+Do not comment out or rewrite any parts. Just fix the missing references.
 Return the complete LaTeX document, including any bibtex changes."""
         llm_response = self._call_llm(prompt)
         if llm_response is None:
@@ -241,8 +242,8 @@ Return the complete corrected LaTeX text."""
                     timeout=self.timeout,
                     check=True,
                 )
-                logger.info("Standard Output:\n", result.stdout)
-                logger.info("Standard Error:\n", result.stderr)
+                logger.info(f"Standard Output:\n{result.stdout}")
+                logger.info(f"Standard Error:\n{result.stderr}")
             except subprocess.TimeoutExpired as e:
                 logger.error(f"Latex command timed out: {e}")
             except subprocess.CalledProcessError as e:
@@ -280,12 +281,12 @@ Return the complete corrected LaTeX text."""
         while iteration_count < max_iterations:
             logger.info(f"Start iteration: {iteration_count}")
 
-            logger.info("Check references...")
-            original_tex_text = tex_text
-            tex_text = self._check_references(tex_text)
-            if tex_text != original_tex_text:
-                iteration_count += 1
-                continue
+            # logger.info("Check references...")
+            # original_tex_text = tex_text
+            # tex_text = self._check_references(tex_text)
+            # if tex_text != original_tex_text:
+            #     iteration_count += 1
+            #     continue
 
             logger.info("Check figures...")
             original_tex_text = tex_text
@@ -343,10 +344,7 @@ if __name__ == "__main__":
     }
     paper_content = state["paper_content"]
     tex_text = state["tex_text"]
-    llm_name = "gpt-4o-mini-2024-07-18"
-    latex_template_file_path = (
-        "/workspaces/researchgraph/src/researchgraph/writer_subgraph/latex/template.tex"
-    )
+    llm_name = "o3-mini-2025-01-31"
     save_dir = "/workspaces/researchgraph/data"
     figures_dir = "/workspaces/researchgraph/data/images"
     os.makedirs(figures_dir, exist_ok=True)
@@ -354,7 +352,6 @@ if __name__ == "__main__":
     pdf_file_path = "/workspaces/researchgraph/data/test_output.pdf"
     tex_text = LatexNode(
         llm_name=llm_name,
-        latex_template_file_path=latex_template_file_path,
         save_dir=save_dir,
         figures_dir=figures_dir,
         pdf_file_path=pdf_file_path,
