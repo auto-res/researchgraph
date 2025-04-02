@@ -36,7 +36,7 @@ def retrieve_code_with_devin(
             logger.info("Successfully created Devin session.")
             retrieve_session_id = response["session_id"]
             retrieve_devin_url = response["url"]
-            logger.info("Devin URL: ", retrieve_devin_url)
+            logger.info(f"Devin URL: {retrieve_devin_url}")
             return retrieve_session_id, retrieve_devin_url
         else:
             logger.info("Failed to create Devin session.")
