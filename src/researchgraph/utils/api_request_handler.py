@@ -76,8 +76,8 @@ def retry_request(
     fetch_function,
     *args,
     max_retries=50,
-    initial_wait_time=1,
-    max_wait_time=180,
+    initial_wait_time=10,
+    max_wait_time=60,
     check_condition=None,
     **kwargs,
 ) -> dict | None:
