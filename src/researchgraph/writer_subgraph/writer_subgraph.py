@@ -102,8 +102,9 @@ class WriterSubgraph:
 
 
 if __name__ == "__main__":
+    llm_name = "o3-mini-2025-01-31"
     # llm_name = "gpt-4o-2024-11-20"
-    llm_name = "gpt-4o-mini-2024-07-18"
+    # llm_name = "gpt-4o-mini-2024-07-18"
     save_dir = "/workspaces/researchgraph/data"
 
     subgraph = WriterSubgraph(

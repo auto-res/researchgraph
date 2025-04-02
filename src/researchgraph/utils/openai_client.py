@@ -66,6 +66,10 @@ def openai_client(
     client = OpenAI()
     message = truncate_prompt(model_name, message)
 
+    for msg in message:
+        if "content" in msg:
+            msg["content"] = msg["content"].encode("utf-8", "ignore").decode("utf-8")
+
     while True:
         try:
             if data_class is None:

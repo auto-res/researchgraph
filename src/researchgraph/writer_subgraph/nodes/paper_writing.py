@@ -89,7 +89,7 @@ class WritingNode:
 - Make sure to include all the results from the experiments, and include all relevant figures.""",
             "Conclusions": """\n
 - Expected length: about 2000 words (~0.5 pages)
-- Do not include \section{...} or \subsection{...}.
+- Do not include \\section{...} or \\subsection{...}.
 - Brief recap of the entire paper.
 - To keep going with the analogy, you can think of future work as (potential) academic offspring.""",
         }
@@ -114,13 +114,19 @@ Here is the context of the entire paper:
     - **Ensure all mathematical equations, pseudocode, experimental setups, configurations, numerical results, and figures/tables are fully incorporated.**
     - When beneficial for clarity, utilize tables or pseudocode to describe mathematical equations, parameter settings, and procedural steps.
     - Avoid overly explanatory or repetitive descriptions that would be self-evident to readers familiar with standard machine learning notation.
+- List contributions using \\begin{itemize}...\\end{itemize} in LaTeX. Each item should start with a short title in \\textbf{...} format. Avoid using -, *, or other Markdown bullet styles.
+- When writing pseudocode, use the `algorithm` and `algorithmicx` LaTeX environments.
+    - Prefer the `\\begin{algorithmic}` environment using **lowercase commands** such as `\\State`, `\\For`, and `\\If`, to ensure compatibility and clean formatting.
 - Figures and images are ONLY allowed in the "Results" section. 
     - Use LaTeX float option `[H]` to force placement.  
-    - All images must be inserted using the following format:
-        ```
-        \\includegraphics[width=\\linewidth]{images/filename.pdf}
-        ```
-    - This ensures that all figures are properly scaled and aligned. Do NOT use other sizing options.
+- All figures must be inserted using the following LaTeX format, using a `width` that reflects the filename:
+    ```
+    \\includegraphics[width=<appropriate-width>]{images/filename.pdf}
+    ```
+    The `<appropriate-width>` must be selected based on the filename suffix:
+    - If the filename ends with `_full.pdf`, use `\\linewidth`
+    - If the filename ends with `_small.pdf`, use `0.7\\linewidth`
+    - For paired figures (e.g., `_pair1.pdf`, `_pair2.pdf`), use `0.48\\linewidth` and place them side by side using subfigure blocks
 - Avoid editor instructions, placeholders, speculative text, or comments like "details are missing."
     - Example: Remove phrases like "Here’s a refined version of the '{{ section }}'," as they are not part of the final document.
     - These phrases are found at the beginning of sections, introducing edits or refinements. Carefully review the start of each section for such instructions and ensure they are eliminated while preserving the actual content.
@@ -130,7 +136,7 @@ Here is the context of the entire paper:
     - Avoid creating too many subsections. If the content of a subsection is brief or overlaps significantly with other subsections, merge them to streamline the document. Focus on clarity and brevity over excessive structural division.
 - Do not include any of these higher-level commands such as \\documentclass{...}, \\begin{document}, and \\end{document}.
     - Additionally, avoid including section-specific commands such as \\begin{abstract}, \\section{ {{ section }} }, or any other similar environment definitions.
-- Be sure to use \cite or \citet where relevant, referring to the works provided in the file.
+- Be sure to use \\cite or \\citet where relevant, referring to the works provided in the file.
     - **Do not cite anything that is not already in `references.bib`. Do not add any new entries to this.
 - Keep the experimental results (figures and tables) only in the Results section, and make sure that any captions are filled in.
 - The full paper should be **about 8 pages long**, meaning **each section should contain substantial content**."""

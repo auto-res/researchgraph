@@ -17,6 +17,13 @@ Please follow the instructions below to tell us the detailed code for conducting
 - Please use matplotlib or seaborn to plot the results (e.g., accuracy, loss curves, confusion matrix), 
 and **explicitly save all plots as `.pdf` files using `plt.savefig("filename.pdf")` or equivalent.
     - Do not use `.png` or other formats—output must be `.pdf` only. These plots should be suitable for inclusion in academic papers.
+- Use the following filename format:
+    <figure_topic>[_<condition>][_small|_full|_pairN].pdf
+    - `<figure_topic>`: the main subject of the figure (e.g., `training_loss`, `accuracy`, `inference_latency`)
+    - `_<condition>` (optional): a specific model, setting, or comparison (e.g., `amict`, `baseline`, `tokens`, `multimodal_vs_text`)
+    - `_small` or `_full`: indicates the desired display size in LaTeX (`_small` → narrow width such as 0.7\\linewidth, `_full` → full width)
+    - `_pairN`: indicates that the figure is part of a pair (e.g., `_pair1`, `_pair2`) to be shown side by side using subfigures
+    
 
 # Experiment Details
 {experiment_details}
