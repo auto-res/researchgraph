@@ -1,5 +1,4 @@
 import os
-import time
 import logging
 from typing import TypedDict
 from langgraph.graph import START, END, StateGraph
@@ -101,7 +100,6 @@ class ExecutorSubgraph:
 
     @time_node("executor_subgraph", "_check_devin_completion_node")
     def _check_devin_completion_node(self, state: ExecutorSubgraphState) -> dict:
-        time.sleep(120)
         result = check_devin_completion(
             headers=self.headers,
             session_id=state["experiment_session_id"],
