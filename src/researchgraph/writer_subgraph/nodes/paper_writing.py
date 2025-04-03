@@ -162,7 +162,8 @@ Here is the context of the entire paper:
     - If the filename ends with _pair1.pdf or _pair2.pdf, use 0.48\\linewidth and place the figures side by side using subfigure blocks
     - Otherwise (default), use 0.7\\linewidth
 
-- When referring to file names, commands, or code snippets, do not use the \\texttt{} command or any monospaced font environments.  
+- When referring to file names, commands, or code snippets, do not use the \\texttt{} command or any monospaced font environments. 
+    - Instead, use plain text with single quotes (e.g., 'main.py', '--config'), and escape special characters such as underscores using `\\_` (e.g., 'config\\_file.yaml'). 
 
 - Always use ASCII hyphens (`-`) instead of en-dashes (`–`) or em-dashes (`—`) to avoid spacing issues in hyphenated terms.
 
