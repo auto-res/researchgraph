@@ -19,13 +19,13 @@ VERTEXAI_MODEL = Literal[
 VERTEXAI_MODEL_INFO = {
     "gemini-2.0-flash-001": {
         "max_input_tokens": 1048576,
-        "input_token_cost": 1 / 10000000,
-        "output_token_cost": 4 / 10000000,
+        "input_token_cost": 0.0000001,
+        "output_token_cost": 0.0000004,
     },
     "gemini-2.0-flash-lite-001": {
         "max_input_tokens": 1048576,
-        "input_token_cost": 0.075 / 1000000,
-        "output_token_cost": 0.3 / 1000000,
+        "input_token_cost": 0.000000075,
+        "output_token_cost": 0.0000003,
     },
 }
 
