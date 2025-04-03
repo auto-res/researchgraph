@@ -1,4 +1,7 @@
 from researchgraph.utils.openai_client import openai_client
+from logging import getLogger
+
+logger = getLogger(__name__)
 
 
 def generator_node(

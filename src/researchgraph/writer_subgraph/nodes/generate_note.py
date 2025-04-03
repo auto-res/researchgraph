@@ -14,7 +14,7 @@ corresponding_section: dict[str, list[str]] = {
     ],
     "Codes": ["experiment_code"],
     "Results": ["output_text_data"],
-    "Analysis": [],
+    "Analysis": ["analysis_report"],
     # "Related Work":[]
 }
 
