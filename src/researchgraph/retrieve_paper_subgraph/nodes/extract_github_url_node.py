@@ -1,7 +1,8 @@
 import re
-import json
 import requests
-from researchgraph.utils.openai_client import openai_client
+
+# from researchgraph.utils.openai_client import openai_client
+from researchgraph.utils.vertexai_client import vertexai_client
 from pydantic import BaseModel
 from logging import getLogger
 
@@ -44,35 +45,51 @@ class ExtractGithubUrlNode:
     def _extract_related_github_url(
         self, paper_summary: str, extract_github_url_list: list[str]
     ) -> int | None:
-        message = [
-            {
-                "role": "system",
-                "content": """\n
+        # TODO：OpenAI clientと統合した際に修正
+        #         message = [
+        #             {
+        #                 "role": "system",
+        #                 "content": """\
+        # # Task
+        # You carefully read the contents of the “Paper Outline” and select one GitHub link from the “GitHub URLs List” that you think is most relevant to the contents.
+
+        # # Constraints
+        # - Output the index number corresponding to the selected GitHub URL.
+        # - Be sure to select only one GiHub URL.
+        # - If there is no related GitHub link, output None.""",
+        #             },
+        #             {
+        #                 "role": "user",
+        #                 "content": f"""\
+        # # Paper Outline
+        # {paper_summary}
+
+        # # GitHub URLs List
+        # {extract_github_url_list}""",
+        #             },
+        #         ]
+        messages = f"""\
 # Task
 You carefully read the contents of the “Paper Outline” and select one GitHub link from the “GitHub URLs List” that you think is most relevant to the contents.
-
 # Constraints
 - Output the index number corresponding to the selected GitHub URL.
 - Be sure to select only one GiHub URL.
-- If there is no related GitHub link, output None.""",
-            },
-            {
-                "role": "user",
-                "content": f"""\n
+- If there is no related GitHub link, output None.
 # Paper Outline
 {paper_summary}
       
 # GitHub URLs List
-{extract_github_url_list}""",
-            },
-        ]
+{extract_github_url_list}"""
 
-        response = openai_client(self.llm_name, message=message, data_class=LLMOutput)
+        response = vertexai_client(
+            model_name=self.llm_name, message=messages, data_model=LLMOutput
+        )
+        # response = openai_client(self.llm_name, message=message, data_class=LLMOutput)
         if response is None:
             logger.warning("Error: No response from LLM.")
             return None
         else:
-            response = json.loads(response)
+            # response = json.loads(response)
             return response["index"]
 
     def execute(self, paper_full_text: str, paper_summary: str) -> str:
@@ -93,7 +110,7 @@ You carefully read the contents of the “Paper Outline” and select one GitHub
 
 if __name__ == "__main__":
     extract_github_url_node = ExtractGithubUrlNode(
-        llm_name="gpt-4o-mini-2024-07-18",
+        llm_name="gemini-2.0-flash-001",
     )
     paper_text = "aaa"
     paper_summary = "bbb"

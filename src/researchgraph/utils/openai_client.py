@@ -1,11 +1,22 @@
 import tiktoken
 from openai import OpenAI
-from typing import Type
 from pydantic import BaseModel
 import time
+from typing import Literal
 from logging import getLogger
 
 logger = getLogger(__name__)
+
+
+OPENAI_MODEL = Literal[
+    "o3-mini-2025-01-31",
+    "o1-2024-12-17",
+    "o1-mini-2024-09-12",
+    "gpt-4.5-preview-2025-02-27",
+    "gpt-4o-mini-2024-07-18",
+    "gpt-4o-2024-11-20",
+]
+
 
 # Maximum number of tokens per model definition
 MODEL_MAX_TOKENS = {
@@ -34,7 +45,7 @@ def count_tokens(model_name: str, text: str) -> int:
 
 
 def truncate_prompt(
-    model_name: str, message: list[dict[str, str]]
+    model_name: OPENAI_MODEL, message: list[dict[str, str]]
 ) -> list[dict[str, str]]:
     """最大トークン数を超えないようにプロンプトを短縮"""
     max_tokens = MODEL_MAX_TOKENS.get(model_name, 4096)  # デフォルト4096
@@ -59,16 +70,18 @@ def truncate_prompt(
 def openai_client(
     model_name: str,
     message: list[dict[str, str]],
-    data_class: Type[BaseModel] | None = None,
-    max_retries: int = 3,
+    data_class: type[BaseModel] | None = None,
+    max_retries: int = 30,
     delay: int = 1,
 ) -> str | None:
     client = OpenAI()
-    message = truncate_prompt(model_name, message)
 
+    # NOTE：エンコーディング，デコーディングの処理とtiktokenの処理が冗長なので，後で修正する
     for msg in message:
         if "content" in msg:
             msg["content"] = msg["content"].encode("utf-8", "ignore").decode("utf-8")
+
+    message = truncate_prompt(model_name, message)
 
     while True:
         try:
