@@ -44,7 +44,7 @@ class WritingNode:
 - The title must be concise and descriptive of the paper's concept, but try by creative with it.
 - Do not include any explanations, subsections, LaTeX commands (\\title{...}, etc.)""",
             "Abstract": """\n
-- Expected length: about 1000 words
+- Expected length: about 1000 characters
 - TL;DR of the paper
 - What are we trying to do and why is it relevant?
 - Why is this hard? 
@@ -53,7 +53,7 @@ class WritingNode:
 - Avoid using itemize, subheadings, or displayed equations in the abstract; keep math in plain text and list contributions inline.
 - Please make sure the abstract reads smoothly and is well-motivated. This should be one continuous paragraph with no breaks between the lines.""",
             "Introduction": """\n
-- Expected length: about 4000 words (~1–1.5 pages)
+- Expected length: about 4000 characters (~1–1.5 pages)
 - Longer version of the Abstract, i.e. of the entire paper
 - What are we trying to do and why is it relevant?
 - Why is this hard? 
@@ -62,25 +62,25 @@ class WritingNode:
 - New trend: specifically list your contributions as bullet points
 - Extra space? Future work!""",
             "Related Work": """\n
-- Expected length: about 3000 words (~1 pages)
+- Expected length: about 3000 characters (~1 pages)
 - Academic siblings of our work, i.e. alternative attempts in literature at trying to solve the same problem. 
 - Goal is to “Compare and contrast” - how does their approach differ in either assumptions or method? If their method is applicable to our Problem Setting I expect a comparison in the experimental section. If not, there needs to be a clear statement why a given method is not applicable. 
 - Note: Just describing what another paper is doing is not enough. We need to compare and contrast.""",
             "Background": """\n
-- Expected length: about 3000 words (~1 pages)
+- Expected length: about 3000 characters (~1 pages)
 - Academic Ancestors of our work, i.e. all concepts and prior work that are required for understanding our method. 
 - Usually includes a subsection, Problem Setting, which formally introduces the problem setting and notation (Formalism) for our method. Highlights any specific assumptions that are made that are unusual. 
 - Note: If our paper introduces a novel problem setting as part of its contributions, it's best to have a separate Section.""",
             "Method": """\n
-- Expected length: about 4000 words (~1–1.5 pages)
+- Expected length: about 4000 characters (~1–1.5 pages)
 - What we do. Why we do it. All described using the general Formalism introduced in the Problem Setting and building on top of the concepts / foundations introduced in Background.""",
             "Experimental Setup": """
-- Expected length: about 4000 words (~1–1.5 pages)
+- Expected length: about 4000 characters (~1–1.5 pages)
 - How do we test that our stuff works? Introduces a specific instantiation of the Problem Setting and specific implementation details of our Method for this Problem Setting.
 - Do not imagine unknown hardware details.
 - Includes a description of the dataset, evaluation metrics, important hyperparameters, and implementation details.""",
             "Results": """\n
-- Expected length: about 4000 words (~1–1.5 pages)
+- Expected length: about 4000 characters (~1–1.5 pages)
 - Shows the results of running Method on our problem described in Experimental Setup.
 - Includes statements on hyperparameters and other potential issues of fairness.
 - Only includes results that have actually been run and saved in the logs. Do not hallucinate results that don't exist.
@@ -89,7 +89,7 @@ class WritingNode:
 - Discusses limitations of the method.
 - Make sure to include all the results from the experiments, and include all relevant figures.""",
             "Conclusions": """\n
-- Expected length: about 2000 words (~0.5 pages)
+- Expected length: about 2000 characters (~0.5 pages)
 - Do not include \\section{...} or \\subsection{...}.
 - Brief recap of the entire paper.
 - To keep going with the analogy, you can think of future work as (potential) academic offspring.""",
@@ -108,38 +108,69 @@ Here is the context of the entire paper:
 {{ note }}
 
 **Instructions**:
+## Writing Guidelines (What to write)
 - Use ONLY the provided information in the context. 
-    - **DO NOT add any assumptions, invented data, or details that are not explicitly mentioned in the context.
-- **Use ALL information from '{{ note }}'.** However, you are free to organize and structure the content in a natural and logical way, rather than directly following the order or format of `{{ note }}`
-    - **It is mandatory to include all details related to methods, experiments, and results.**
-    - **Ensure all mathematical equations, pseudocode, experimental setups, configurations, numerical results, and figures/tables are fully incorporated.**
+    - DO NOT add any assumptions, invented data, or details that are not explicitly mentioned in the context.
+
+- Use ALL information from '{{ note }}'.
+    - You are free to organize and structure the content in a natural and logical way, rather than directly following the order or format of `{{ note }}`
+    - You must include all relevant details of methods, experiments, and results—including mathematical equations, pseudocode (if applicable), experimental setups, configurations, numerical results, and figures/tables.
     - When beneficial for clarity, utilize tables or pseudocode to describe mathematical equations, parameter settings, and procedural steps.
     - Avoid overly explanatory or repetitive descriptions that would be self-evident to readers familiar with standard machine learning notation.
-- List contributions using \\begin{itemize}...\\end{itemize} in LaTeX. Each item should start with a short title in \\textbf{...} format. Avoid using -, *, or other Markdown bullet styles.
+    - Keep the experimental results (figures and tables) only in the `Results section`, and make sure that any captions are filled in. 
+
+- Avoid editor instructions, placeholders, speculative text, or comments like "details are missing."
+    - Example: Remove phrases like "Here’s a refined version of the '{{ section }}'," as they are not part of the final document.
+    - These phrases are found at the beginning of sections, introducing edits or refinements. Carefully review the start of each section for such instructions and ensure they are eliminated while preserving the actual content.
+
+- The full paper should be **about 8 pages long**, meaning **each section should contain substantial content**.
+
+---
+
+## LaTeX Formatting Rules (How to write it)
+- Use \\subsection{...} for any subsections within this section.
+    - Subsection titles should be distinct from the '{{ section }}' title; 
+    - Do not use '\\subsection{ {{ section }} }', or other slight variations. Use more descriptive and unique titles.
+    - Avoid excessive subdivision. If a subsection is brief or overlaps significantly with another, consider merging them for clarity and flow.
+
+- For listing contributions, use the LaTeX \\begin{itemize}...\\end{itemize} format.
+    - Each item should start with a short title in \\textbf{...} format. 
+    - Avoid using -, *, or other Markdown bullet styles.
+
+- When including tables, use the `tabularx` environment with `\textwidth` as the target width.
+    - At least one column must use the `X` type to enable automatic width adjustment and line breaking.
+    - To left-align content in `X` columns, define `\newcolumntype{Y}{>{\raggedright\arraybackslash}X}` using the `array` package.
+
 - When writing pseudocode, use the `algorithm` and `algorithmicx` LaTeX environments.
+    - Only include pseudocode in the `Method` section. Pseudocode is not allowed in any other sections.
     - Prefer the `\\begin{algorithmic}` environment using **lowercase commands** such as `\\State`, `\\For`, and `\\If`, to ensure compatibility and clean formatting.
+    - Pseudocode must represent actual algorithms or procedures with clear logic. Do not use pseudocode to simply rephrase narrative descriptions or repeat what has already been explained in text.
+        - Good Example:
+        ```latex
+        \\State Compute transformed tokens: \\(\tilde{T} \\leftarrow W\\,T\\)
+        \\State Update: \\(T_{new} \\leftarrow \tilde{T} + \\mu\\,T_{prev}\\)
+        ```
 - Figures and images are ONLY allowed in the "Results" section. 
     - Use LaTeX float option `[H]` to force placement.  
+
 - All figures must be inserted using the following LaTeX format, using a `width` that reflects the filename:
-    ```
+    ```latex
     \\includegraphics[width=<appropriate-width>]{images/filename.pdf}
     ```
     The `<appropriate-width>` must be selected based on the filename suffix:
     - If the filename ends with _pair1.pdf or _pair2.pdf, use 0.48\\linewidth and place the figures side by side using subfigure blocks
     - Otherwise (default), use 0.7\\linewidth
-- Avoid editor instructions, placeholders, speculative text, or comments like "details are missing."
-    - Example: Remove phrases like "Here’s a refined version of the '{{ section }}'," as they are not part of the final document.
-    - These phrases are found at the beginning of sections, introducing edits or refinements. Carefully review the start of each section for such instructions and ensure they are eliminated while preserving the actual content.
-- **Use \\subsection{...} for any subsections within this section.**
-    - Subsection titles should be distinct from the '{{ section }}' title. 
-    - **Do not use '\\subsection{ {{ section }} }', or other slight variations. Use more descriptive and unique titles.
-    - Avoid creating too many subsections. If the content of a subsection is brief or overlaps significantly with other subsections, merge them to streamline the document. Focus on clarity and brevity over excessive structural division.
+
+- Do not use the \texttt{} command.
+
+- Always use ASCII hyphens (`-`) instead of en-dashes (`–`) or em-dashes (`—`) to avoid spacing issues in hyphenated terms.
+
 - Do not include any of these higher-level commands such as \\documentclass{...}, \\begin{document}, and \\end{document}.
     - Additionally, avoid including section-specific commands such as \\begin{abstract}, \\section{ {{ section }} }, or any other similar environment definitions.
+
 - Be sure to use \\cite or \\citet where relevant, referring to the works provided in the file.
-    - **Do not cite anything that is not already in `references.bib`. Do not add any new entries to this.
-- Keep the experimental results (figures and tables) only in the Results section, and make sure that any captions are filled in.
-- The full paper should be **about 8 pages long**, meaning **each section should contain substantial content**."""
+    - **Do not cite anything that is not already in `references.bib`. Do not add any new entries to this."""
+
 
         self.write_prompt_template = """\n
 You are tasked with filling in the '{{ section }}' section of a research paper."""
