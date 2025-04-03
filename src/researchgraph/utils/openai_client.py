@@ -71,7 +71,7 @@ def openai_client(
     model_name: str,
     message: list[dict[str, str]],
     data_class: type[BaseModel] | None = None,
-    max_retries: int = 3,
+    max_retries: int = 30,
     delay: int = 1,
 ) -> str | None:
     client = OpenAI()

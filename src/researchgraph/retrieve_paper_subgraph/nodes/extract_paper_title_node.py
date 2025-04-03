@@ -1,7 +1,9 @@
 from jinja2 import Environment
 from pydantic import BaseModel
-import json
-from researchgraph.utils.openai_client import openai_client
+
+# import json
+# from researchgraph.utils.openai_client import openai_client
+from researchgraph.utils.vertexai_client import vertexai_client
 from logging import getLogger
 
 logger = getLogger(__name__)
@@ -23,21 +25,29 @@ def extract_paper_title_node(
     for result in scraped_results:
         data = {"queries": queries, "result": result}
         prompt = template.render(data)
-        messages = [
-            {
-                "role": "system",
-                "content": "You are an expert at extracting research paper titles from web content. ",
-            },
-            {"role": "user", "content": prompt},
-        ]
-        response = openai_client(
-            model_name=llm_name, message=messages, data_class=LLMOutput
+        # TODO：OpenAI clientと統合した際に修正
+        # messages = [
+        #     {
+        #         "role": "system",
+        #         "content": "You are an expert at extracting research paper titles from web content. ",
+        #     },
+        #     {"role": "user", "content": prompt},
+        # ]
+        messages = f"""\
+You are an expert at extracting research paper titles from web content. 
+{prompt}
+"""
+        response = vertexai_client(
+            model_name=llm_name, message=messages, data_model=LLMOutput
         )
+        # response = openai_client(
+        #     model_name=llm_name, message=messages, data_class=LLMOutput
+        # )
         if response is None:
             logger.warning("Error: No response from the model.")
             break
         else:
-            response = json.loads(response)
+            # response = json.loads(response)
             if "paper_titles" in response:
                 titles_list = response["paper_titles"]
                 aggregated_titles.extend(titles_list)
@@ -62,7 +72,7 @@ extract_title_prompt = """\n
 --------"""
 
 if __name__ == "__main__":
-    llm_name = "gpt-4o-mini-2024-07-18"
+    llm_name = "gemini-2.0-flash-001"
     queries = ["deep leanning"]
     scraped_results = [
         "# ICLR 2024 - Deep Learning Advances\n\nThis paper discusses recent advances in deep learning architectures and training techniques...",

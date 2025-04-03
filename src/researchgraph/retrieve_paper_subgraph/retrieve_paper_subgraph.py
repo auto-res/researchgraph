@@ -142,7 +142,7 @@ class RetrievePaperSubgraph:
     @time_node("retrieve_paper_subgraph", "_extract_paper_title_node")
     def _extract_paper_title_node(self, state: RetrievePaperState) -> dict:
         extracted_paper_titles = extract_paper_title_node(
-            llm_name=self.llm_name,
+            llm_name="gemini-2.0-flash-001",
             queries=state["queries"],
             scraped_results=state["scraped_results"],
         )
@@ -193,7 +193,7 @@ class RetrievePaperSubgraph:
         process_index = state["process_index"]
         paper_summary = state["search_paper_list"][process_index]["summary"]
         github_url = ExtractGithubUrlNode(
-            llm_name=self.llm_name,
+            llm_name="gemini-2.0-flash-001",
         ).execute(
             paper_full_text=paper_full_text,
             paper_summary=paper_summary,
@@ -223,7 +223,7 @@ class RetrievePaperSubgraph:
             limitations,
             future_research_directions,
         ) = summarize_paper_node(
-            llm_name=self.llm_name,
+            llm_name="gemini-2.0-flash-001",
             prompt_template=summarize_paper_prompt_base,
             paper_text=paper_full_text,
         )
@@ -264,7 +264,7 @@ class RetrievePaperSubgraph:
         candidate_papers_info_list = state["candidate_base_papers_info_list"]
         # TODO:論文の検索数の制御がうまくいっていない気がする
         selected_arxiv_ids = select_best_paper_node(
-            llm_name=self.llm_name,
+            llm_name="gemini-2.0-flash-001",
             prompt_template=select_base_paper_prompt,
             candidate_papers=candidate_papers_info_list,
         )
@@ -334,7 +334,7 @@ class RetrievePaperSubgraph:
             limitations,
             future_research_directions,
         ) = summarize_paper_node(
-            llm_name=self.llm_name,
+            llm_name="gemini-2.0-flash-001",
             prompt_template=summarize_paper_prompt_base,
             paper_text=paper_full_text,
         )
@@ -375,7 +375,7 @@ class RetrievePaperSubgraph:
         ]
 
         selected_arxiv_ids = select_best_paper_node(
-            llm_name=self.llm_name,
+            llm_name="gemini-2.0-flash-001",
             prompt_template=select_add_paper_prompt,
             candidate_papers=filtered_candidates,
             selected_base_paper_info=state["selected_base_paper_info"],
