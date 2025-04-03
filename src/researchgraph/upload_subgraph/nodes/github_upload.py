@@ -107,6 +107,9 @@ def github_upload(
         "X-GitHub-Api-Version": "2022-11-28",
     }
     encoded_pdf_data = _encoded_pdf_file(pdf_file_path)
+    repository_url = (
+        f"https://github.com/{github_owner}/{repository_name}/tree/{branch_name}"
+    )
     paper_url = f"https://github.com/{github_owner}/{repository_name}/blob/{branch_name}/paper/paper.pdf"
     research_graph_execution_log = f"https://github.com/{github_owner}/{repository_name}/blob/{branch_name}/logs/research_graph_log.json"
     encoded_markdown_data = _encoded_markdown_data(
@@ -202,6 +205,8 @@ def github_upload(
         if response_research_graph_log is not None
         else None,
     )
+    logger.info("Successful execution. The results are as follows.")
+    logger.info(f"URL: {repository_url}")
     return True
 
 
