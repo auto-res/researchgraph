@@ -24,6 +24,7 @@ Please provide the extracted information in the following structured format:
 ```json
 "structured_output": {{
   "extracted_info": "<Extracted information>"
+```
 }}
 
 # Description of Methodology
