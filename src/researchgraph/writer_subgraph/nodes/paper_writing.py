@@ -50,6 +50,7 @@ class WritingNode:
 - Why is this hard? 
 - How do we solve it (i.e. our contribution!)
 - How do we verify that we solved it (e.g. Experiments and results)
+- Avoid using itemize, subheadings, or displayed equations in the abstract; keep math in plain text and list contributions inline.
 - Please make sure the abstract reads smoothly and is well-motivated. This should be one continuous paragraph with no breaks between the lines.""",
             "Introduction": """\n
 - Expected length: about 4000 words (~1–1.5 pages)
@@ -124,9 +125,8 @@ Here is the context of the entire paper:
     \\includegraphics[width=<appropriate-width>]{images/filename.pdf}
     ```
     The `<appropriate-width>` must be selected based on the filename suffix:
-    - If the filename ends with `_full.pdf`, use `\\linewidth`
-    - If the filename ends with `_small.pdf`, use `0.7\\linewidth`
-    - For paired figures (e.g., `_pair1.pdf`, `_pair2.pdf`), use `0.48\\linewidth` and place them side by side using subfigure blocks
+    - If the filename ends with _pair1.pdf or _pair2.pdf, use 0.48\\linewidth and place the figures side by side using subfigure blocks
+    - Otherwise (default), use 0.7\\linewidth
 - Avoid editor instructions, placeholders, speculative text, or comments like "details are missing."
     - Example: Remove phrases like "Here’s a refined version of the '{{ section }}'," as they are not part of the final document.
     - These phrases are found at the beginning of sections, introducing edits or refinements. Carefully review the start of each section for such instructions and ensure they are eliminated while preserving the actual content.
