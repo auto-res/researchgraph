@@ -137,8 +137,9 @@ Here is the context of the entire paper:
     - Each item should start with a short title in \\textbf{...} format. 
     - Avoid using -, *, or other Markdown bullet styles.
 
-- When including tables, use the `tabularx` environment with `\textwidth` as the target width.
+- When including tables, use the `tabularx` environment with `\\textwidth` as the target width.
     - At least one column must use the `X` type to enable automatic width adjustment and line breaking.
+    - Include `\\hline` at the top, after the header, and at the bottom. Avoid vertical lines unless necessary.
     - To left-align content in `X` columns, define `\newcolumntype{Y}{>{\raggedright\arraybackslash}X}` using the `array` package.
 
 - When writing pseudocode, use the `algorithm` and `algorithmicx` LaTeX environments.
@@ -161,7 +162,7 @@ Here is the context of the entire paper:
     - If the filename ends with _pair1.pdf or _pair2.pdf, use 0.48\\linewidth and place the figures side by side using subfigure blocks
     - Otherwise (default), use 0.7\\linewidth
 
-- Do not use the \texttt{} command.
+- When referring to file names, commands, or code snippets, do not use the \\texttt{} command or any monospaced font environments.  
 
 - Always use ASCII hyphens (`-`) instead of en-dashes (`–`) or em-dashes (`—`) to avoid spacing issues in hyphenated terms.
 
