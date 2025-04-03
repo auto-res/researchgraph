@@ -26,6 +26,10 @@ from researchgraph.executor_subgraph.executor_subgraph import (
     ExecutorSubgraph,
     ExecutorSubgraphState,
 )
+from researchgraph.analytic_subgraph.analytic_subgraph import (
+    AnalyticSubgraph,
+    AnalyticSubgraphState,
+)
 from researchgraph.writer_subgraph.writer_subgraph import (
     WriterSubgraph,
     WriterSubgraphState,
@@ -49,6 +53,7 @@ class ResearchGraphState(
     GeneratorSubgraphState,
     ExperimentalPlanSubgraphState,
     ExecutorSubgraphState,
+    AnalyticSubgraphState,
     WriterSubgraphState,
     UploadSubgraphState,
     ExecutionTimeState,
@@ -105,6 +110,21 @@ class ResearchGraph:
             state["execution_time"] = timings
         return state
 
+    def _check_if_base_paper_found(self, state: ResearchGraphState) -> str:
+        if not state.get("selected_base_paper_arxiv_id"):
+            logger.warning("No base paper was found. The process will be terminated.")
+            return "Stop"
+        return "Continue"
+
+    def _check_analysis_results(self, state: ResearchGraphState) -> str:
+        if state["analysis_results"]:
+            return "Continue"
+        else:
+            logger.warning(
+                "The results of the experiment did not show any superiority."
+            )
+            return "Stop"
+
     def build_graph(self) -> CompiledGraph:
         # Search Subgraph
         @time_subgraph("retrieve_paper_subgraph")
@@ -142,6 +162,13 @@ class ResearchGraph:
             ).build_graph()
             return subgraph.invoke(state)
 
+        @time_subgraph("analytic_subgraph")
+        def analytic_subgraph(state: dict):
+            subgraph = AnalyticSubgraph(
+                llm_name="o3-mini-2025-01-31",
+            ).build_graph()
+            return subgraph.invoke(state)
+
         # Writer Subgraph
         @time_subgraph("writer_subgraph")
         def writer_subgraph(state: dict):
@@ -161,12 +188,6 @@ class ResearchGraph:
             ).build_graph()
             return subgraph.invoke(state)
 
-        def _check_if_base_paper_found(state: ResearchGraphState) -> str:
-            if not state.get("selected_base_paper_arxiv_id"):
-                logger.info("No base paper was found. The process will be terminated.")
-                return "Stop"
-            return "Continue"
-
         graph_builder = StateGraph(ResearchGraphState)
         # make nodes
         graph_builder.add_node("init_state", self._init_state)
@@ -174,6 +195,7 @@ class ResearchGraph:
         graph_builder.add_node("generator_subgraph", generator_subgraph)
         graph_builder.add_node("experimental_plan_subgraph", experimental_plan_subgraph)
         graph_builder.add_node("executor_subgraph", executor_subgraph)
+        graph_builder.add_node("analytic_subgraph", analytic_subgraph)
         graph_builder.add_node("writer_subgraph", writer_subgraph)
         graph_builder.add_node("upload_subgraph", upload_subgraph)
         graph_builder.add_node(
@@ -187,11 +209,17 @@ class ResearchGraph:
         graph_builder.add_edge("init_state", "retrieve_paper_subgraph")
         graph_builder.add_conditional_edges(
             "retrieve_paper_subgraph",
-            path=_check_if_base_paper_found,
+            path=self._check_if_base_paper_found,
             path_map={"Stop": END, "Continue": "generator_subgraph"},
+        )
+        graph_builder.add_conditional_edges(
+            "analytic_subgraph",
+            path=self._check_analysis_results,
+            path_map={"Stop": END, "Continue": "writer_subgraph"},
         )
         graph_builder.add_edge("generator_subgraph", "experimental_plan_subgraph")
         graph_builder.add_edge("experimental_plan_subgraph", "executor_subgraph")
+        graph_builder.add_edge("executor_subgraph", "analytic_subgraph")
         graph_builder.add_edge("executor_subgraph", "writer_subgraph")
         graph_builder.add_edge("writer_subgraph", "set_total_execution_time")
         graph_builder.add_edge("set_total_execution_time", "make_execution_logs_data")
