@@ -20,10 +20,11 @@ IMAGE_SAVE_DIR = "/workspaces/researchgraph/images"
 save_dir = "/workspaces/researchgraph/data"
 llm_name = "gpt-4o-mini-2024-07-18"
 scrape_urls = [
-    "https://icml.cc/virtual/2024/papers.html?filter=titles",
-    "https://iclr.cc/virtual/2024/papers.html?filter=titles",
-    # "https://nips.cc/virtual/2024/papers.html?filter=titles",
-    # "https://cvpr.thecvf.com/virtual/2024/papers.html?filter=titles",
+    "https://icml.cc/virtual/2024/papers.html?filter=title",
+    "https://iclr.cc/virtual/2024/papers.html?filter=title",
+    # "https://nips.cc/virtual/2024/papers.html?filter=title",
+    # "https://cvpr.thecvf.com/virtual/2024/papers.html?filter=title",
+    # "https://eccv.ecva.net/virtual/2024/papers.html?filter=title",
 ]
 
 
