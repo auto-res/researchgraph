@@ -1,7 +1,6 @@
 import json
 from pydantic import BaseModel
 from jinja2 import Environment
-from typing import Optional
 from researchgraph.utils.openai_client import openai_client
 from logging import getLogger
 
@@ -10,8 +9,17 @@ logger = getLogger(__name__)
 env = Environment()
 
 
-class LLMOutput(BaseModel):
-    generated_paper_text: str
+class PaperContent(BaseModel):
+    Title: str
+    Abstract: str
+    Introduction: str
+    Related_Work: str
+    Background: str
+    Method: str
+    Experimental_Setup: str
+    Results: str
+    Conclusions: str
+
 
 
 class WritingNode:
@@ -29,10 +37,10 @@ class WritingNode:
             "Title",
             "Abstract",
             "Introduction",
-            "Related work",
+            "Related Work",
             "Background",
             "Method",
-            "Experimental setup",
+            "Experimental Setup",
             "Results",
             "Conclusions",
         ]
@@ -42,7 +50,7 @@ class WritingNode:
     - Example of correct output: Efficient Adaptation of Large Language Models via Low-Rank Optimization
     - Incorrect output: "Efficient Adaptation of Large Language Models via Low-Rank Optimization"
 - The title must be concise and descriptive of the paper's concept, but try by creative with it.
-- Do not include any explanations, subsections, LaTeX commands (\\title{...}, etc.)""",
+- Do not include any explanations, subsections""",
             "Abstract": """\n
 - Expected length: about 1000 characters
 - TL;DR of the paper
@@ -90,95 +98,61 @@ class WritingNode:
 - Make sure to include all the results from the experiments, and include all relevant figures.""",
             "Conclusions": """\n
 - Expected length: about 2000 characters (~0.5 pages)
-- Do not include \\section{...} or \\subsection{...}.
 - Brief recap of the entire paper.
 - To keep going with the analogy, you can think of future work as (potential) academic offspring.""",
         }
 
         self.system_prompt = """\n
-A complete LaTeX template is already in place.
-Your role is to generate or refine the LaTeX content specifically for the '{{ section }}' section, such as text, equations, figures, tables, and citations—all within the existing document structure.
+Your goal is to write a clear, structured, and academically rigorous research paper in plain English.
+Avoid LaTeX commands or special formatting; focus solely on academic content quality.
 
-The final LaTeX content should be returned as the value of the key “generated_paper_text”.
-
-Some tips are provided below:
+The paper should contain the following sections and some tips are provided below:
+{% for section, tips in tips_dict.items() %}
+## {{ section }} Tips
 {{ tips }}
+{% endfor %}
 
 Here is the context of the entire paper:
 {{ note }}
 
 **Instructions**:
-## Writing Guidelines (What to write)
-- Use ONLY the provided information in the context. 
+- Use ONLY the information provided in the context above. 
     - DO NOT add any assumptions, invented data, or details that are not explicitly mentioned in the context.
 
-- Use ALL information from '{{ note }}'.
-    - You are free to organize and structure the content in a natural and logical way, rather than directly following the order or format of `{{ note }}`
+- Ensure that ALL relevant details from the context are included.
+    - You are free to organize and structure the content in a natural and logical way, rather than directly following the order or format of the context.
     - You must include all relevant details of methods, experiments, and results—including mathematical equations, pseudocode (if applicable), experimental setups, configurations, numerical results, and figures/tables.
-    - When beneficial for clarity, utilize tables or pseudocode to describe mathematical equations, parameter settings, and procedural steps.
+    - When beneficial for clarity, describe the mathematical equations, parameter settings, and procedures in a structured and easy-to-follow way, using natural language or numbered steps.
     - Avoid overly explanatory or repetitive descriptions that would be self-evident to readers familiar with standard machine learning notation.
     - Keep the experimental results (figures and tables) only in the `Results section`, and make sure that any captions are filled in. 
+    - If image filenames (e.g., `figure1.pdf`) are provided in the context, refer to them explicitly in the text.
 
 - Avoid editor instructions, placeholders, speculative text, or comments like "details are missing."
-    - Example: Remove phrases like "Here’s a refined version of the '{{ section }}'," as they are not part of the final document.
+    - Example: Remove phrases like "Here’s a refined version of this section," as they are not part of the final document.
     - These phrases are found at the beginning of sections, introducing edits or refinements. Carefully review the start of each section for such instructions and ensure they are eliminated while preserving the actual content.
 
 - The full paper should be **about 8 pages long**, meaning **each section should contain substantial content**.
 
----
-
-## LaTeX Formatting Rules (How to write it)
-- Use \\subsection{...} for any subsections within this section.
-    - Subsection titles should be distinct from the '{{ section }}' title; 
-    - Do not use '\\subsection{ {{ section }} }', or other slight variations. Use more descriptive and unique titles.
-    - Avoid excessive subdivision. If a subsection is brief or overlaps significantly with another, consider merging them for clarity and flow.
-
-- For listing contributions, use the LaTeX \\begin{itemize}...\\end{itemize} format.
-    - Each item should start with a short title in \\textbf{...} format. 
-    - Avoid using -, *, or other Markdown bullet styles.
-
-- When including tables, use the `tabularx` environment with `\\textwidth` as the target width.
-    - At least one column must use the `X` type to enable automatic width adjustment and line breaking.
-    - Include `\\hline` at the top, after the header, and at the bottom. Avoid vertical lines unless necessary.
-    - To left-align content in `X` columns, define `\newcolumntype{Y}{>{\raggedright\arraybackslash}X}` using the `array` package.
-
-- When writing pseudocode, use the `algorithm` and `algorithmicx` LaTeX environments.
-    - Only include pseudocode in the `Method` section. Pseudocode is not allowed in any other sections.
-    - Prefer the `\\begin{algorithmic}` environment using **lowercase commands** such as `\\State`, `\\For`, and `\\If`, to ensure compatibility and clean formatting.
-    - Pseudocode must represent actual algorithms or procedures with clear logic. Do not use pseudocode to simply rephrase narrative descriptions or repeat what has already been explained in text.
-        - Good Example:
-        ```latex
-        \\State Compute transformed tokens: \\(\tilde{T} \\leftarrow W\\,T\\)
-        \\State Update: \\(T_{new} \\leftarrow \tilde{T} + \\mu\\,T_{prev}\\)
-        ```
-- Figures and images are ONLY allowed in the "Results" section. 
-    - Use LaTeX float option `[H]` to force placement.  
-
-- All figures must be inserted using the following LaTeX format, using a `width` that reflects the filename:
-    ```latex
-    \\includegraphics[width=<appropriate-width>]{images/filename.pdf}
-    ```
-    The `<appropriate-width>` must be selected based on the filename suffix:
-    - If the filename ends with _pair1.pdf or _pair2.pdf, use 0.48\\linewidth and place the figures side by side using subfigure blocks
-    - Otherwise (default), use 0.7\\linewidth
-
-- When referring to file names, commands, or code snippets, do not use the \\texttt{} command or any monospaced font environments. 
-    - Instead, use plain text with single quotes (e.g., 'main.py', '--config'), and escape special characters such as underscores using `\\_` (e.g., 'config\\_file.yaml'). 
-
-- Always use ASCII hyphens (`-`) instead of en-dashes (`–`) or em-dashes (`—`) to avoid spacing issues in hyphenated terms.
-
-- Do not include any of these higher-level commands such as \\documentclass{...}, \\begin{document}, and \\end{document}.
-    - Additionally, avoid including section-specific commands such as \\begin{abstract}, \\section{ {{ section }} }, or any other similar environment definitions.
-
-- Be sure to use \\cite or \\citet where relevant, referring to the works provided in the file.
-    - **Do not cite anything that is not already in `references.bib`. Do not add any new entries to this."""
-
+**Output Format Example** (as JSON):
+```json
+{
+  "Title": "Efficient Adaptation of Large Language Models via Low-Rank Optimization",
+  "Abstract": "This paper proposes a novel method...",
+  "Introduction": "In recent years...",
+  "Related_Work": "...",
+  "Background": "...",
+  "Method": "...",
+  "Experimental_Setup": "...",
+  "Results": "...",
+  "Conclusions": "We conclude that..."
+}
+```"""
 
         self.write_prompt_template = """\n
-You are tasked with filling in the '{{ section }}' section of a research paper."""
+You are writing a research paper."""
 
         self.refinement_template = """\n
-You are tasked with refining the '{{ section }}' section of a research paper.
+You are refining a research paper.
 
 Here is the content that needs refinement:
 {{ content }}
@@ -188,107 +162,80 @@ Pay particular attention to fixing any errors such as:
 
         self.error_list_prompt = """\n
 - Unenclosed math symbols
-- Only reference figures that exist in our directory
-- LaTeX syntax errors
+- Grammatical or spelling errors
 - Numerical results that do not come from explicit experiments and logs
-- Repeatedly defined figure labels
-- References to papers that are not in the .bib file, DO NOT ADD ANY NEW CITATIONS!
 - Unnecessary verbosity or repetition, unclear text
 - Results or insights in the {{ note }} that have not yet need included
-- Any relevant figures that have not yet been included in the text
-- Closing any \\begin{{figure}} with a \\end{{figure}} and \\begin{{table}} with a \\end{{table}}, etc.
-- Duplicate headers, e.g. duplicated \\section{{Introduction}} or \\end{{document}}
-- Unescaped symbols, e.g. shakespeare_char should be shakespeare\\_char in text
-- Incorrect closing of environments, e.g. </end{{figure}}> instead of \\end{{figure}}"""
+- Any relevant figures that have not yet been included in the text"""
 
-    def _call_llm(self, prompt: str, system_prompt: str) -> Optional[str]:
+    def _replace_underscores_in_keys(self, paper_dict: dict[str, str]) -> dict[str, str]:
+        return {
+            key.replace("_", " "): value
+            for key, value in paper_dict.items()
+        }
+
+    def _call_llm(self, prompt: str, system_prompt: str) -> dict[str, str] | None:
         messages = [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": prompt},
         ]
-        response = openai_client(self.llm_name, message=messages, data_class=LLMOutput)
-        if response is not None:
-            response = json.loads(response)
-            return response["generated_paper_text"]
-        else:
+        response = openai_client(self.llm_name, message=messages, data_class=PaperContent)
+        if not response:
+            logger.warning("LLM response is None.")
             return None
+        return self._replace_underscores_in_keys(json.loads(response))
 
-    def _write(self, note: str, section_name: str) -> str:
-        prompt = self._generate_write_prompt(section_name, note)
-        system_prompt = self._render_system_prompt(section_name, note)
+    def _write(self, note: str) -> dict[str, str]:
+        prompt = self._generate_write_prompt()
+        system_prompt = self._render_system_prompt(note)
         content = self._call_llm(prompt=prompt, system_prompt=system_prompt)
-        if content is None:
-            raise RuntimeError(
-                f"Failed to generate content for section: {section_name}. The LLM returned None."
-            )
+        if not content:
+            raise RuntimeError("Failed to generate content. The LLM returned None.")
         return content
 
-    def _refine(self, note: str, section_name: str, content: str) -> str:
+    def _refine(self, note: str, content: dict[str, str]) -> dict[str, str]:
         for round_num in range(self.refine_round):
-            prompt = self._generate_refinement_prompt(section_name, note, content)
-            system_prompt = self._render_system_prompt(section_name, note)
+            prompt = self._generate_refinement_prompt(content)
+            system_prompt = self._render_system_prompt(note)
             refine_content = self._call_llm(prompt=prompt, system_prompt=system_prompt)
-            if refine_content is None:
-                logger.info(
-                    f"Refinement failed for {section_name} at round {round_num + 1}. Keeping previous content."
-                )
-                break
-            content = refine_content
-        return content
+            if not refine_content:
+                logger.warning(f"Refinement failed at round {round_num + 1}. Keeping previous content.")
+                return content
+        return refine_content
 
-    def _relate_work(
-        self, content: str
-    ) -> str:  # TODO: Implement functionality to manage retrieved papers in a centralized references file (e.g., references.bib).
-        return content  #       Generate descriptions based on information in RelatedWorkNode.
-
-    def _render_system_prompt(self, section: str, note: str) -> str:
+    def _render_system_prompt(self, note: str) -> str:
         template = env.from_string(self.system_prompt)
         return template.render(
-            section=section,
             note=note,
-            tips=self.per_section_tips_prompt_dict.get(section, ""),
+            tips_dict={s: self.per_section_tips_prompt_dict[s] for s in self.target_sections},
         )
 
-    def _generate_write_prompt(self, section: str, note: str) -> str:
+    def _generate_write_prompt(self) -> str:
         """
         Generate a write prompt for a specific section using Jinja2.
         """
         template = env.from_string(self.write_prompt_template)
-        return template.render(
-            section=section,
-            note=note,
-            tips=self.per_section_tips_prompt_dict.get(section, ""),
-        )
+        return template.render()
 
-    def _generate_refinement_prompt(self, section: str, note: str, content: str) -> str:
+    def _generate_refinement_prompt(self, content: dict[str, str]) -> str:
         """
         Generate a refinement prompt for a specific section using Jinja2.
         """
         template = env.from_string(self.refinement_template)
         return template.render(
-            section=section,
-            note=note,
             content=content,
-            tips=self.per_section_tips_prompt_dict.get(section, ""),
             error_list_prompt=self.error_list_prompt,
         )
 
-    def execute(self, note: str) -> dict:
-        paper_content = {}
-        for section in self.target_sections:
-            logger.info(f"Writing {section}")
-            if not self.refine_only:
-                # generate and refine
-                initial_content = self._write(note, section)
-                # initial_content = self._relate_work(initial_content)
-                refined_content = self._refine(note, section, initial_content)
-            else:
-                # refine only
-                initial_content = paper_content.get(section, "")
-                # initial_content = getattr(state, section)
-                refined_content = self._refine(note, section, initial_content)
-
-            paper_content[section] = refined_content
+    def execute(self, note: str, paper_content: dict[str, str] | None = None) -> dict[str, str]:
+        if not self.refine_only:
+            logger.info("Generating full paper in one LLM call...")
+            initial_content = self._write(note)
+            paper_content = self._refine(note,  initial_content)
+        else:
+            if paper_content is None:
+                raise ValueError("paper_content must be provided when refine_only is True.")
+            paper_content = self._refine(note,  paper_content)
         return paper_content
 
 

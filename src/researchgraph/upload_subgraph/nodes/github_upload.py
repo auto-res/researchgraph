@@ -45,17 +45,21 @@ def _request_github_file_upload(
         data["sha"] = sha
     return retry_request(fetch_api_data, url, headers=headers, data=data, method="PUT")
 
-
 def _encoded_pdf_file(pdf_file_path: str):
     with open(pdf_file_path, "rb") as pdf_file:
         encoded_pdf_data = base64.b64encode(pdf_file.read()).decode("utf-8")
     return encoded_pdf_data
 
+def _encoded_html_file(html_file_path: str):
+    with open(html_file_path, "rb") as html_file:
+        encoded_html_data = base64.b64encode(html_file.read()).decode("utf-8")
+    return encoded_html_data
 
 def _encoded_markdown_data(
     title: str,
     abstract: str,
     paper_url: str,
+    html_url: str,
     base_paper_url: str,
     research_graph_execution_log: str,
     devin_url: str,
@@ -67,6 +71,7 @@ def _encoded_markdown_data(
 {abstract}
 
 - [Full paper]({paper_url})
+- [HTML view]({html_url})
 - [Related work]({base_paper_url})
 - [Research Graph execution log]({research_graph_execution_log})
 - [Devin execution log]({devin_url})"""
@@ -91,6 +96,7 @@ def _encoding_experimental_results_data(experimental_results: str):
 
 def github_upload(
     pdf_file_path: str,
+    html_file_path: str,
     github_owner: str,
     repository_name: str,
     branch_name: str,
@@ -107,22 +113,23 @@ def github_upload(
         "X-GitHub-Api-Version": "2022-11-28",
     }
     encoded_pdf_data = _encoded_pdf_file(pdf_file_path)
-    repository_url = (
-        f"https://github.com/{github_owner}/{repository_name}/tree/{branch_name}"
-    )
+    encoded_html_data = _encoded_html_file(html_file_path)
+
+    repository_url = f"https://github.com/{github_owner}/{repository_name}/tree/{branch_name}"
     paper_url = f"https://github.com/{github_owner}/{repository_name}/blob/{branch_name}/paper/paper.pdf"
+    html_url = f"https://github.com/{github_owner}/{repository_name}/blob/{branch_name}/html/index.html"
     research_graph_execution_log = f"https://github.com/{github_owner}/{repository_name}/blob/{branch_name}/logs/research_graph_log.json"
+
     encoded_markdown_data = _encoded_markdown_data(
         title,
         abstract,
         paper_url,
+        html_url, 
         base_paper_url,
         research_graph_execution_log,
         devin_url,
     )
-    encoded_experimental_results = _encoding_experimental_results_data(
-        experimental_results
-    )
+    encoded_experimental_results = _encoding_experimental_results_data(experimental_results)
     encoded_research_graph_log = _encoding_all_data(all_logs)
 
     logger.info("Paper Upload")
@@ -142,6 +149,25 @@ def github_upload(
         encoded_data=encoded_pdf_data,
         repository_path=paper_path,
         sha=response_paper["sha"] if response_paper is not None else None,
+    )
+
+    logger.info("HTML Upload")
+    html_path = "html/index.html"
+    response_html = _request_get_github_content(
+        headers=headers, 
+        github_owner=github_owner, 
+        repository_name=repository_name, 
+        branch_name=branch_name,
+        repository_path=html_path,
+    )
+    _request_github_file_upload(
+        headers=headers, 
+        github_owner=github_owner, 
+        repository_name=repository_name, 
+        branch_name=branch_name, 
+        encoded_data=encoded_html_data,
+        repository_path=html_path,
+        sha=response_html["sha"] if response_html is not None else None,
     )
 
     logger.info("Experiment log upload")
@@ -214,6 +240,7 @@ if __name__ == "__main__":
     branch_name = "devin-b5ffa5ceb46e4562a62da3cef2715742"
     completion = github_upload(
         pdf_file_path="/workspaces/researchgraph/data/paper.pdf",
+        html_file_path="/workspaces/researchgraph/data/index.html",
         github_owner="auto-res2",
         repository_name="auto-research",
         branch_name=branch_name,
