@@ -9,9 +9,23 @@ from researchgraph.writer_subgraph.nodes.paper_writing import WritingNode
 logger = getLogger(__name__)
 
 
-class LLMOutput(BaseModel):
-    generated_latex_text: str
+class PaperContent(BaseModel):
+    Title: str
+    Abstract: str
+    Introduction: str
+    Related_Work: str
+    Background: str
+    Method: str
+    Experimental_Setup: str
+    Results: str
+    Conclusions: str
 
+
+def _replace_underscores_in_keys(paper_dict: dict[str, str]) -> dict[str, str]:
+    return {
+        key.replace("_", " "): value
+        for key, value in paper_dict.items()
+    }
 
 def convert_to_latex(
     llm_name: str,
@@ -32,17 +46,13 @@ def convert_to_latex(
     messages = [
         {"role": "user", "content": prompt},
     ]
-    response = openai_client(llm_name, message=messages, data_class=LLMOutput)
+    response = openai_client(llm_name, message=messages, data_class=PaperContent)
+    print(f"LLM response: {response}")
     if not response:
         logger.warning("LLM response is None.")
         return None
-    response = json.loads(response)
-    generated_latex_text = response["generated_latex_text"]
 
-    return WritingNode.parse_sectioned_output(
-        content_str=generated_latex_text, 
-        section_names=list(paper_content.keys()),
-    )
+    return _replace_underscores_in_keys(json.loads(response))
 
 convert_to_latex_prompt = """
 You are a LaTeX expert. 
@@ -104,18 +114,19 @@ Section: {{ section.name }}
 - Be sure to use \\cite or \\citet where relevant, referring to the works provided in the file.
     - **Do not cite anything that is not already in `references.bib`. Do not add any new entries to this.
     
-**Output Format**:
-```plaintext
-### Title
-...latex...
-
-### Abstract
-...latex...
-
-...
-
-### Conclusions
-...latex...
+**Output Format Example** (as JSON):
+```json
+{
+  "Title": "Efficient Adaptation of Large Language Models via Low-Rank Optimization",
+  "Abstract": "This paper proposes a novel method...",
+  "Introduction": "In recent years...",
+  "Related_Work": "...",
+  "Background": "...",
+  "Method": "...",
+  "Experimental_Setup": "...",
+  "Results": "...",
+  "Conclusions": "We conclude that..."
+}
 ```"""
 
 if __name__ == "__main__":

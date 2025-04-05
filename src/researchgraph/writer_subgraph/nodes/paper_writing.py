@@ -1,4 +1,3 @@
-import re
 import json
 from pydantic import BaseModel
 from jinja2 import Environment
@@ -10,8 +9,17 @@ logger = getLogger(__name__)
 env = Environment()
 
 
-class LLMOutput(BaseModel):
-    generated_paper_text: str
+class PaperContent(BaseModel):
+    Title: str
+    Abstract: str
+    Introduction: str
+    Related_Work: str
+    Background: str
+    Method: str
+    Experimental_Setup: str
+    Results: str
+    Conclusions: str
+
 
 
 class WritingNode:
@@ -98,8 +106,6 @@ class WritingNode:
 Your goal is to write a clear, structured, and academically rigorous research paper in plain English.
 Avoid LaTeX commands or special formatting; focus solely on academic content quality.
 
-The paper content should be returned as the value of the key “generated_paper_text”.
-
 The paper should contain the following sections and some tips are provided below:
 {% for section, tips in tips_dict.items() %}
 ## {{ section }} Tips
@@ -126,32 +132,20 @@ Here is the context of the entire paper:
 
 - The full paper should be **about 8 pages long**, meaning **each section should contain substantial content**.
 
-**Formatting Requirements**:
-- Each section must start with a line that begins with `###` followed by the exact section name.
-- You may include numbered subheadings like:
-  1. Submethod A
-  Content...
-
-- You may include bullet points like:
-  - Key point 1
-  - Key point 2
-
-- Output must be a single plain-text string. Do NOT use JSON or any markup.
-
-**Output Format**:
-```plaintext
-### Title
-The title text...
-
-### Abstract
-This paper proposes...
-
-...
-
-### Conclusions
-We conclude...
+**Output Format Example** (as JSON):
+```json
+{
+  "Title": "Efficient Adaptation of Large Language Models via Low-Rank Optimization",
+  "Abstract": "This paper proposes a novel method...",
+  "Introduction": "In recent years...",
+  "Related_Work": "...",
+  "Background": "...",
+  "Method": "...",
+  "Experimental_Setup": "...",
+  "Results": "...",
+  "Conclusions": "We conclude that..."
+}
 ```"""
-
 
         self.write_prompt_template = """\n
 You are writing a research paper."""
@@ -173,17 +167,24 @@ Pay particular attention to fixing any errors such as:
 - Results or insights in the {{ note }} that have not yet need included
 - Any relevant figures that have not yet been included in the text"""
 
-    def _call_llm(self, prompt: str, system_prompt: str) -> str | None:
+    def _replace_underscores_in_keys(self, paper_dict: dict[str, str]) -> dict[str, str]:
+        return {
+            key.replace("_", " "): value
+            for key, value in paper_dict.items()
+        }
+
+    def _call_llm(self, prompt: str, system_prompt: str) -> dict[str, str] | None:
         messages = [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": prompt},
         ]
-        response = openai_client(self.llm_name, message=messages, data_class=LLMOutput)
+        response = openai_client(self.llm_name, message=messages, data_class=PaperContent)
+        print(f"LLM response: {response}")
         if not response:
             logger.warning("LLM response is None.")
             return None
-        response = json.loads(response)
-        return response["generated_paper_text"]
+        print(f"json: {json.loads(response)}")
+        return self._replace_underscores_in_keys(json.loads(response))
 
     def _write(self, note: str) -> dict[str, str]:
         prompt = self._generate_write_prompt()
@@ -191,7 +192,7 @@ Pay particular attention to fixing any errors such as:
         content = self._call_llm(prompt=prompt, system_prompt=system_prompt)
         if not content:
             raise RuntimeError("Failed to generate content. The LLM returned None.")
-        return self.parse_sectioned_output(content, self.target_sections)
+        return content
 
     def _refine(self, note: str, content: dict[str, str]) -> dict[str, str]:
         for round_num in range(self.refine_round):
@@ -201,7 +202,7 @@ Pay particular attention to fixing any errors such as:
             if not refine_content:
                 logger.warning(f"Refinement failed at round {round_num + 1}. Keeping previous content.")
                 return content
-        return self.parse_sectioned_output(refine_content, self.target_sections)
+        return refine_content
 
     def _render_system_prompt(self, note: str) -> str:
         template = env.from_string(self.system_prompt)
@@ -226,26 +227,6 @@ Pay particular attention to fixing any errors such as:
             content=content,
             error_list_prompt=self.error_list_prompt,
         )
-    
-    @staticmethod
-    def parse_sectioned_output(content_str: str, section_names: list[str]) -> dict[str, str]:
-        pattern = r"^###\s*(" + "|".join(re.escape(name) for name in section_names) + r")\s*$"
-        matches = list(re.finditer(pattern, content_str, flags=re.MULTILINE))
-
-        if not matches:
-            raise ValueError("No section headers found. Check if output follows expected ### SectionName format.")
-
-        content_dict = {}
-        for i, match in enumerate(matches):
-            section_name = match.group(1)
-            start = match.end()
-            end = matches[i + 1].start() if i + 1 < len(matches) else len(content_str)
-            content_dict[section_name] = content_str[start:end].strip()
-
-        for name in section_names:
-            content_dict.setdefault(name, "")
-
-        return content_dict
 
     def execute(self, note: str, paper_content: dict[str, str] | None = None) -> dict[str, str]:
         if not self.refine_only:
