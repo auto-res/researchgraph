@@ -179,11 +179,9 @@ Pay particular attention to fixing any errors such as:
             {"role": "user", "content": prompt},
         ]
         response = openai_client(self.llm_name, message=messages, data_class=PaperContent)
-        print(f"LLM response: {response}")
         if not response:
             logger.warning("LLM response is None.")
             return None
-        print(f"json: {json.loads(response)}")
         return self._replace_underscores_in_keys(json.loads(response))
 
     def _write(self, note: str) -> dict[str, str]:

@@ -47,7 +47,6 @@ def convert_to_latex(
         {"role": "user", "content": prompt},
     ]
     response = openai_client(llm_name, message=messages, data_class=PaperContent)
-    print(f"LLM response: {response}")
     if not response:
         logger.warning("LLM response is None.")
         return None

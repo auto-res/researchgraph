@@ -25,7 +25,7 @@ class LatexNode:
         pdf_file_path: str,
         save_dir: str,
         timeout: int = 30,
-        latex_template_file_path: str = "writer_subgraph/latex/template.tex",
+        latex_template_file_path: str = "latex_subgraph/latex/template.tex",
     ):
         self.llm_name = llm_name
         self.latex_template_file_path = latex_template_file_path
@@ -275,7 +275,7 @@ Return the complete corrected LaTeX text."""
         """
         self._copy_template()
         tex_text = self._fill_template(paper_tex_content)
-        max_iterations = 5
+        max_iterations = 10
         iteration_count = 0
 
         while iteration_count < max_iterations:
