@@ -48,5 +48,7 @@ def generate_note(state: dict, figures_dir: Optional[str] = None) -> str:
 
     figures = []
     if figures_dir is not None:
-        figures.extend(glob.glob(os.path.join(figures_dir, "*.pdf")))
+        figures.extend(
+            [os.path.basename(f) for f in glob.glob(os.path.join(figures_dir, "*.pdf"))]
+        )
     return template.render(sections=sections, figures=figures)
