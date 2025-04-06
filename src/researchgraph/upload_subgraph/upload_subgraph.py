@@ -47,12 +47,14 @@ class UploadSubgraph:
         self.repository_name = repository_name
         self.save_dir = save_dir
         self.pdf_file_path = os.path.join(self.save_dir, "paper.pdf")
+        self.html_file_path = os.path.join(self.save_dir, "index.html")
 
     @time_node("upload_subgraph", "_github_upload_node")
     def _github_upload_node(self, state: UploadSubgraphState) -> dict:
         logger.info("---UploadeSubgraph---")
         completion = github_upload(
             pdf_file_path=self.pdf_file_path,
+            html_file_path=self.html_file_path, 
             github_owner=self.github_owner,
             repository_name=self.repository_name,
             branch_name=state["branch_name"],
