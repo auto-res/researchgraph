@@ -70,7 +70,7 @@ def truncate_prompt(
 def openai_client(
     model_name: str,
     message: list[dict[str, str]],
-    data_class: type[BaseModel] | None = None,
+    data_model: type[BaseModel] | None = None,
     max_retries: int = 30,
     delay: int = 1,
 ) -> str | None:
@@ -85,7 +85,7 @@ def openai_client(
 
     while True:
         try:
-            if data_class is None:
+            if data_model is None:
                 response = client.responses.create(
                     model=model_name,
                     input=message,
@@ -95,7 +95,7 @@ def openai_client(
                 response = client.beta.chat.completions.parse(
                     model=model_name,
                     messages=message,
-                    response_format=data_class,
+                    response_format=data_model,
                 )
                 output = response.choices[0].message.content
             break

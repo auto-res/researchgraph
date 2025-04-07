@@ -8,8 +8,8 @@ from researchgraph.analytic_subgraph.nodes.analytic_node import analytic_node
 
 from researchgraph.utils.logging_utils import setup_logging
 
-from researchgraph.generator_subgraph.input_data import (
-    generator_subgraph_input_data,
+from researchgraph.analytic_subgraph.input_data import (
+    analytic_subgraph_input_data,
 )
 from researchgraph.utils.execution_timers import time_node, ExecutionTimeState
 
@@ -29,7 +29,6 @@ class AnalyticSubgraphHiddenState(TypedDict):
 
 
 class AnalyticSubgraphOutputState(TypedDict):
-    analysis_results: str
     analysis_report: str
 
 
@@ -52,17 +51,14 @@ class AnalyticSubgraph:
     @time_node("analytic_subgraph", "_analytic_node")
     def _analytic_node(self, state: AnalyticSubgraphState) -> dict:
         logger.info("---AnalyticSubgraph---")
-        analysis_report, analysis_results = analytic_node(
+        analysis_report = analytic_node(
             llm_name=self.llm_name,
             new_method=state["new_method"],
             verification_policy=state["verification_policy"],
             experiment_code=state["experiment_code"],
             output_text_data=state["output_text_data"],
         )
-        return {
-            "analysis_report": analysis_report,
-            "analysis_results": analysis_results,
-        }
+        return {"analysis_report": analysis_report}
 
     def build_graph(self) -> CompiledGraph:
         graph_builder = StateGraph(AnalyticSubgraphState)
@@ -81,5 +77,5 @@ if __name__ == "__main__":
         llm_name=llm_name,
     ).build_graph()
 
-    result = subgraph.invoke(generator_subgraph_input_data)
-    print(result)
+    result = subgraph.invoke(analytic_subgraph_input_data)
+    print(result["analysis_report"])

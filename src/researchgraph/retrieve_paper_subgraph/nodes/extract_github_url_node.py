@@ -1,8 +1,12 @@
 import re
 import requests
+from jinja2 import Environment
 
 # from researchgraph.utils.openai_client import openai_client
 from researchgraph.utils.vertexai_client import vertexai_client
+from researchgraph.retrieve_paper_subgraph.prompt.extract_github_url_node_prompt import (
+    extract_github_url_node_prompt,
+)
 from pydantic import BaseModel
 from logging import getLogger
 
@@ -45,6 +49,13 @@ class ExtractGithubUrlNode:
     def _extract_related_github_url(
         self, paper_summary: str, extract_github_url_list: list[str]
     ) -> int | None:
+        env = Environment()
+        template = env.from_string(extract_github_url_node_prompt)
+        data = {
+            "paper_summary": paper_summary,
+            "extract_github_url_list": extract_github_url_list,
+        }
+        prompt = template.render(data)
         # TODO：OpenAI clientと統合した際に修正
         #         message = [
         #             {
@@ -68,23 +79,11 @@ class ExtractGithubUrlNode:
         # {extract_github_url_list}""",
         #             },
         #         ]
-        messages = f"""\
-# Task
-You carefully read the contents of the “Paper Outline” and select one GitHub link from the “GitHub URLs List” that you think is most relevant to the contents.
-# Constraints
-- Output the index number corresponding to the selected GitHub URL.
-- Be sure to select only one GiHub URL.
-- If there is no related GitHub link, output None.
-# Paper Outline
-{paper_summary}
-      
-# GitHub URLs List
-{extract_github_url_list}"""
 
         response = vertexai_client(
-            model_name=self.llm_name, message=messages, data_model=LLMOutput
+            model_name=self.llm_name, message=prompt, data_model=LLMOutput
         )
-        # response = openai_client(self.llm_name, message=message, data_class=LLMOutput)
+        # response = openai_client(self.llm_name, message=message, data_model=LLMOutput)
         if response is None:
             logger.warning("Error: No response from LLM.")
             return None

@@ -1,28 +1,26 @@
+from jinja2 import Environment
 from researchgraph.utils.openai_client import openai_client
+from researchgraph.experimental_plan_subgraph.prompt.generate_experiment_details_prompt import (
+    generate_experiment_details_prompt,
+)
 
 
 def generate_experiment_details(
     llm_name: str, verification_policy: str, experiment_info_of_source_research: str
 ) -> str:
-    prompt = f"""
-# Introduction
-Please follow the instructions below and tell us the details of the experiment for verification as described in the “Verification Policy”.
-- Please answer each of the verification policies given in the “Verification Policy”.
-- Please explain the details of the experiment as fully as possible. It is fine if the output is long in order to explain in detail.
-- If you have any examples of experimental codes, please include them.
-- Please use an experimental method that will increase the reliability of your research.
-- Please make sure that the content of each experiment does not overlap too much. If several verification items can be confirmed in one experiment, please combine them into one experiment.
-- Please consider the details of the experiment on the assumption that Pytorch will be used for implementation.
-- Please keep in mind that you should use existing python libraries as much as possible, and avoid implementing things from scratch.
-- The section 'Experimental information from the research on which it is based' includes details about the experiments conducted in the original research. Please use this information to make your experimental setup as close as possible to the original.
-# Verification Policy
-{verification_policy}
-# Experimental information from the research on which it is based
-{experiment_info_of_source_research}"""
+    env = Environment()
+    template = env.from_string(generate_experiment_details_prompt)
+    data = {
+        "verification_policy": verification_policy,
+        "experiment_info_of_source_research": experiment_info_of_source_research,
+    }
+    prompt = template.render(data)
     messages = [
         {"role": "user", "content": prompt},
     ]
     response = openai_client(model_name=llm_name, message=messages)
+    if response is None:
+        raise ValueError("No response from LLM in generate_experiment_details.")
     return response
 
 

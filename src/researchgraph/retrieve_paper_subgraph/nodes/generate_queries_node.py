@@ -27,7 +27,7 @@ def generate_queries_node(
         {"role": "user", "content": prompt},
     ]
 
-    response = openai_client(llm_name, message=messages, data_class=LLMOutput)
+    response = openai_client(llm_name, message=messages, data_model=LLMOutput)
     response = json.loads(response)
     generated_query_1 = response["generated_query_1"]
     generated_query_2 = response["generated_query_2"]
@@ -43,7 +43,7 @@ def generate_queries_node(
     ]
 
 
-generate_queries_prompt_add = """
+generate_queries_prompt_add = """\
 You are an expert research assistant tasked with generating search queries for finding relevant research papers.
 Your goal is to create a set of well-structured queries that can be used with a research paper search API 
 to retrieve papers that are conceptually or methodologically related to a given foundational paper (Research A).
@@ -87,5 +87,4 @@ User Query: {{ queries }}
 2. **No extra text, no triple backticks, no markdown.** Output ONLY the dictionary.
 3. If you are unsure, only output valid Python dictionary syntax with double quotes for strings.
 
-Now, output the dictionary literal in one single line (no additional commentary):
-"""
+Now, output the dictionary literal in one single line (no additional commentary):"""

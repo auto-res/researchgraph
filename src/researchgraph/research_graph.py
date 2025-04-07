@@ -128,15 +128,6 @@ class ResearchGraph:
             return "Stop"
         return "Continue"
 
-    def _check_analysis_results(self, state: ResearchGraphState) -> str:
-        if state["analysis_results"]:
-            return "Continue"
-        else:
-            logger.warning(
-                "The results of the experiment did not show any superiority."
-            )
-            return "Stop"
-
     def build_graph(self) -> CompiledGraph:
         # Search Subgraph
         @time_subgraph("retrieve_paper_subgraph")
@@ -241,11 +232,6 @@ class ResearchGraph:
             "retrieve_paper_subgraph",
             path=self._check_if_base_paper_found,
             path_map={"Stop": END, "Continue": "generator_subgraph"},
-        )
-        graph_builder.add_conditional_edges(
-            "analytic_subgraph",
-            path=self._check_analysis_results,
-            path_map={"Stop": END, "Continue": "writer_subgraph"},
         )
         graph_builder.add_edge("generator_subgraph", "experimental_plan_subgraph")
         graph_builder.add_edge("experimental_plan_subgraph", "executor_subgraph")

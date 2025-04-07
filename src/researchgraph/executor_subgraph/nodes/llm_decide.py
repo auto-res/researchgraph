@@ -35,7 +35,7 @@ def llm_decide(
     messages = [
         {"role": "user", "content": prompt},
     ]
-    response = openai_client(llm_name, message=messages, data_class=LLMOutput)
+    response = openai_client(llm_name, message=messages, data_model=LLMOutput)
     response = json.loads(response)
     if "judgment_result" in response:
         judgment_result = response["judgment_result"]

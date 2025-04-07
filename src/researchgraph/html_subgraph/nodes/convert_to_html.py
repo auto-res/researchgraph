@@ -4,7 +4,9 @@ from logging import getLogger
 from pydantic import BaseModel
 
 from researchgraph.utils.openai_client import openai_client
-from researchgraph.writer_subgraph.nodes.paper_writing import WritingNode
+from researchgraph.html_subgraph.prompt.convert_to_html_prompt import (
+    convert_to_html_prompt,
+)
 
 logger = getLogger(__name__)
 
@@ -17,7 +19,7 @@ def convert_to_html(
     llm_name: str,
     prompt_template: str,
     paper_content: dict[str, str],
-) -> str | None:
+) -> str:
     data = {
         "sections": [
             {"name": section, "content": paper_content[section]}
@@ -26,75 +28,18 @@ def convert_to_html(
     }
 
     env = Environment()
-    template = env.from_string(prompt_template)
+    template = env.from_string(convert_to_html_prompt)
     prompt = template.render(data)
 
     messages = [
         {"role": "user", "content": prompt},
     ]
-    response = openai_client(llm_name, message=messages, data_class=LLMOutput)
-    if not response:
-        logger.warning("LLM response is None.")
-        return None
+    response = openai_client(llm_name, message=messages, data_model=LLMOutput)
+    if response is None:
+        raise ValueError("Error: No response from the model in convert_to_html.")
     response = json.loads(response)
     return response["generated_html_text"]
 
-convert_to_html_prompt = """
-You are an HTML expert. 
-Your task is to convert each section of a research paper into **clean, semantic HTML**, suitable for publishing on a static site (such as GitHub Pages).
-
-Below are the paper sections. For each one, generate HTML content. Use semantic HTML tags (e.g., <section>, <article>, <h2>, <p>, <ul>, <li>, <figure>, etc.)
-{% for section in sections %}
----
-Section: {{ section.name }}
-
-{{ section.content }}
-
----
-{% endfor %}
-
-## HTML Formatting Rules:
-- Use <section> with <h2> for each top-level section (e.g., Introduction, Method, Results, etc.).
-    - The <h2> should match the section name.
-    - Do not use nested sections unless truly needed.
-
-- Use <p> tags for paragraphs.
-    - Split logically separate thoughts into their own <p> blocks.
-
-- For listing contributions or features, use <ul> and <li>.
-    - Start each list item with <strong>...</strong> for a short descriptor.
-
-- Use <figure> and <figcaption> with <img> for all figures (in the "Results" section only).
-    - Use appropriate relative paths for src (e.g., images/foo.png).
-    - Keep layout clear with centered or responsive figures.
-
-- Use <pre><code> for pseudocode or actual code (only in the "Method" section).
-    - Keep indentation clean and avoid syntax highlighting.
-
-- Do not include any of the following:
-    - <html>, <head>, <body>
-    - Metadata, document titles, or <article> tags unless semantically essential
-
-- All <a> tags must have target="_blank" and href attributes.
-- Escape reserved characters like &, <, >.
-- Avoid adding citations or references unless already included in the input.
-
-## Output Format:
-```html
-<!-- Title -->
-<section>
-  <h2>Title</h2>
-  <p>...</p>
-</section>
-
-<!-- Abstract -->
-<section>
-  <h2>Abstract</h2>
-  <p>...</p>
-</section>
-...
-```
-"""
 
 if __name__ == "__main__":
     paper_content = {
@@ -106,7 +51,7 @@ if __name__ == "__main__":
         "Method": "AMICT is constructed on the robust foundation of the BTLM-3B-8K backbone and extends it by integrating four interrelated modules:\n\n1. Dual-Stage Multimodal Pretraining\n   - The model is initially trained on a curated, deduplicated corpus that includes text, captioned images, and audio snippets. Dedicated yet lightweight encoders for image and audio data run parallel to the text encoder, merging outputs via cross-modal attention blocks. The underlying transformer architecture continues to utilize SwiGLU activations and ALiBi positional embeddings to ensure effective long-context processing.\n\n2. Enhanced Instruction-Tuning and Alignment\n   - In a further fine-tuning phase, the model is exposed to a variety of interactive tasks such as conversational chat, query-answering, and visual instruction following. A lightweight reinforcement learning loop, which employs web-based feedback and comparative ranking techniques, is integrated to reduce hallucinations and bias. This phase ensures that the model is better aligned with real-world application requirements.\n\n3. Dynamic Context Modulation\n   - Instead of relying on static context windows, AMICT introduces a dynamic modulation module that adjusts attention distributions based on the semantic density of inputs. This adaptive mechanism enables the model to maintain accuracy and coherence even when the input extends to 10K tokens or beyond.\n\n4. Hardware–Software Co-Design for On-Device Inference\n   - The final module focuses on maintaining efficiency. AMICT is optimized with quantization-friendly techniques, reducing memory usage to roughly 3GB at 4-bit precision, and achieving inference costs about 2.5× lower than typical 7B models. Modifications in resource scheduling between the multimodal submodules and the core transformer facilitate rapid and efficient on-device inference.\n\nThe careful integration of these components ensures that improvements in multimodal processing and long-context handling do not come at the expense of speed or efficiency.",
         "Experimental Setup": "The performance of AMICT is examined through three distinct experimental evaluations, each highlighting a specific advantage over the Base Method.\n\n1. Multimodal Instruction-Following Evaluation\n   - A benchmark dataset is constructed using paired text and image inputs, such as captioned images. In a PyTorch pipeline, both AMICT and the Base Method process the inputs. Images are preprocessed using standard transformations (resized to 224 × 224 pixels and normalized) and text is tokenized via the GPT-2 tokenizer from Hugging Face. Quantitative metrics (for example, BLEU scores) and qualitative assessments (such as visual inspection of output coherence) are recorded. A bar chart comparing response string lengths is produced as an initial dummy metric.\n\n2. Long-Context Handling and Dynamic Context Modulation Test\n   - This experiment involves processing long texts generated to have approximately 2K, 8K, and 10K tokens. Each input is fed to both models, and metrics such as generation latency, coherence, and response token counts are logged. Graphs plotting latency as a function of token length are generated to illustrate the effect of dynamic context modulation.\n\n3. On-Device Inference and Resource Efficiency Benchmark\n   - Dummy models simulating AMICT and the Base Method are deployed in a simulated on-device environment. Inference speed and memory footprint are measured using dynamic quantization and memory profiling tools. Using standard Python libraries (e.g., memory_profiler and torch’s benchmarking utilities), dual-axis bar charts are created to compare average inference latency and memory usage between the models.\n\nEach experiment is implemented via a complete Python script that covers all stages from data preprocessing to result visualization, ensuring reproducibility and clarity in the evaluation of the proposed improvements.",
         "Results": "The experimental evaluations yield several clear observations:\n\n- In the multimodal instruction-following experiment, AMICT effectively integrates image cues with text. Dummy outputs reflect that the model incorporates image statistics (for instance, mean values computed over input tensors) alongside textual metrics, resulting in richer and context-aware responses.\n\n- The long-context handling test shows that while both AMICT and the Base Method manage increased token counts, AMICT demonstrates a smoother performance degradation when processing inputs as long as 10K tokens. Latency measurements indicate minimal variation, with dynamic context modulation enabling sustained coherence and rapid response generation.\n\n- In the on-device inference benchmark, the hardware–software co-design presents near-zero differences in latency and memory usage compared to the baseline when measured on dummy models. Although both systems exhibit similar numerical outcomes in the simulated environment, these results highlight the potential for significant gains in real-world scenarios, where quantization and effective resource scheduling can lead to more notable improvements.\n\nFigures included in the results detail quantitative and qualitative comparisons. These comprise:\n- A bar chart comparing response string lengths from the multimodal evaluation.\n- Latency versus token length curves from the long-context experiment.\n- Dual-axis bar charts depicting inference latency and memory utilization in the simulated on-device setup.",
-        "Conclusions": "In summary, Adaptive Multimodal Instruction and Co-Training (AMICT) offers a novel, compact solution for enhancing multimodal processing, dynamic long-context understanding, and efficient on-device inference. By building upon the BTLM-3B-8K architecture and integrating multiple innovations—including dual-stage multimodal pretraining, an enhanced instruction-tuning phase with reinforcement learning feedback, dynamic attention modulation, and a hardware–software co-design—AMICT successfully addresses the limitations of its predecessor. Our experiments, implemented via realistic Python-based evaluations, confirm that AMICT can achieve performance levels comparable to large 7B-parameter models while operating at a fraction of the computational and memory cost. Future research may focus on further refining dynamic context modulation, extending multimodal capabilities to additional languages and data modalities, and introducing explicit measures for bias mitigation. Overall, AMICT represents a significant step toward the deployment of efficient and versatile on-device AI systems."
+        "Conclusions": "In summary, Adaptive Multimodal Instruction and Co-Training (AMICT) offers a novel, compact solution for enhancing multimodal processing, dynamic long-context understanding, and efficient on-device inference. By building upon the BTLM-3B-8K architecture and integrating multiple innovations—including dual-stage multimodal pretraining, an enhanced instruction-tuning phase with reinforcement learning feedback, dynamic attention modulation, and a hardware–software co-design—AMICT successfully addresses the limitations of its predecessor. Our experiments, implemented via realistic Python-based evaluations, confirm that AMICT can achieve performance levels comparable to large 7B-parameter models while operating at a fraction of the computational and memory cost. Future research may focus on further refining dynamic context modulation, extending multimodal capabilities to additional languages and data modalities, and introducing explicit measures for bias mitigation. Overall, AMICT represents a significant step toward the deployment of efficient and versatile on-device AI systems.",
     }
     llm_name = "o3-mini-2025-01-31"
 

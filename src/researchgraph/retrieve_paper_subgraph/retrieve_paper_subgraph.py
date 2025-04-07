@@ -142,7 +142,7 @@ class RetrievePaperSubgraph:
     @time_node("retrieve_paper_subgraph", "_extract_paper_title_node")
     def _extract_paper_title_node(self, state: RetrievePaperState) -> dict:
         extracted_paper_titles = extract_paper_title_node(
-            llm_name="gemini-2.0-flash-001",
+            llm_name="o3-mini-2025-01-31",
             queries=state["queries"],
             scraped_results=state["scraped_results"],
         )
