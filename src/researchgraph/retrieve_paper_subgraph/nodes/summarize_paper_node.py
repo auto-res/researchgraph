@@ -33,7 +33,7 @@ def summarize_paper_node(
     response = vertexai_client(
         model_name=llm_name, message=prompt, data_model=LLMOutput
     )
-    # response = openai_client(llm_name, message=messages, data_class=LLMOutput)
+    # response = openai_client(llm_name, message=messages, data_model=LLMOutput)
     # response = json.loads(response)
     main_contributions = response["main_contributions"]
     methodology = response["methodology"]

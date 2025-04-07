@@ -8,6 +8,7 @@ from researchgraph.utils.logging_utils import setup_logging
 
 from researchgraph.writer_subgraph.nodes.generate_note import generate_note
 from researchgraph.writer_subgraph.nodes.paper_writing import WritingNode
+
 # from researchgraph.writer_subgraph.input_data import writer_subgraph_input_data
 from researchgraph.utils.execution_timers import time_node, ExecutionTimeState
 
@@ -22,6 +23,7 @@ class WriterSubgraphInputState(TypedDict):
     experiment_details: str
     experiment_code: str
     output_text_data: str
+    analysis_report: str
 
 
 class WriterSubgraphHiddenState(TypedDict):
@@ -80,7 +82,6 @@ class WriterSubgraph:
         graph_builder.add_edge("generate_note_node", "writeup_node")
         graph_builder.add_edge("writeup_node", END)
 
-
         return graph_builder.compile()
 
 
@@ -111,7 +112,7 @@ if __name__ == "__main__":
             "experiment_code": "data/experiment_code.json",
             "output_text_data": "data/output_text_data.json",
         },
-        output_branch_name="test", 
+        output_branch_name="test",
         output_paths={
             "paper_content": "data/paper_content.json",
         },

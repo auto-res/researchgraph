@@ -21,7 +21,6 @@ class PaperContent(BaseModel):
     Conclusions: str
 
 
-
 class WritingNode:
     def __init__(
         self,
@@ -168,18 +167,19 @@ Pay particular attention to fixing any errors such as:
 - Results or insights in the context that have not yet need included
 - Any relevant figures that have not yet been included in the text"""
 
-    def _replace_underscores_in_keys(self, paper_dict: dict[str, str]) -> dict[str, str]:
-        return {
-            key.replace("_", " "): value
-            for key, value in paper_dict.items()
-        }
+    def _replace_underscores_in_keys(
+        self, paper_dict: dict[str, str]
+    ) -> dict[str, str]:
+        return {key.replace("_", " "): value for key, value in paper_dict.items()}
 
     def _call_llm(self, prompt: str, system_prompt: str) -> dict[str, str] | None:
         messages = [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": prompt},
         ]
-        response = openai_client(self.llm_name, message=messages, data_class=PaperContent)
+        response = openai_client(
+            self.llm_name, message=messages, data_model=PaperContent
+        )
         if not response:
             logger.warning("LLM response is None.")
             return None
@@ -199,7 +199,9 @@ Pay particular attention to fixing any errors such as:
             system_prompt = self._render_system_prompt(note)
             refine_content = self._call_llm(prompt=prompt, system_prompt=system_prompt)
             if not refine_content:
-                logger.warning(f"Refinement failed at round {round_num + 1}. Keeping previous content.")
+                logger.warning(
+                    f"Refinement failed at round {round_num + 1}. Keeping previous content."
+                )
                 return content
         return refine_content
 
@@ -207,7 +209,9 @@ Pay particular attention to fixing any errors such as:
         template = env.from_string(self.system_prompt)
         return template.render(
             note=note,
-            tips_dict={s: self.per_section_tips_prompt_dict[s] for s in self.target_sections},
+            tips_dict={
+                s: self.per_section_tips_prompt_dict[s] for s in self.target_sections
+            },
         )
 
     def _generate_write_prompt(self) -> str:
@@ -227,15 +231,19 @@ Pay particular attention to fixing any errors such as:
             error_list_prompt=self.error_list_prompt,
         )
 
-    def execute(self, note: str, paper_content: dict[str, str] | None = None) -> dict[str, str]:
+    def execute(
+        self, note: str, paper_content: dict[str, str] | None = None
+    ) -> dict[str, str]:
         if not self.refine_only:
             logger.info("Generating full paper in one LLM call...")
             initial_content = self._write(note)
-            paper_content = self._refine(note,  initial_content)
+            paper_content = self._refine(note, initial_content)
         else:
             if paper_content is None:
-                raise ValueError("paper_content must be provided when refine_only is True.")
-            paper_content = self._refine(note,  paper_content)
+                raise ValueError(
+                    "paper_content must be provided when refine_only is True."
+                )
+            paper_content = self._refine(note, paper_content)
         return paper_content
 
 
