@@ -295,7 +295,7 @@ if __name__ == "__main__":
     ]
     add_paper_num = 3
     repository = "auto-res2/auto-research"
-    max_code_fix_iteration = 1
+    max_code_fix_iteration = 5
 
     research_graph = ResearchGraph(
         save_dir=save_dir,

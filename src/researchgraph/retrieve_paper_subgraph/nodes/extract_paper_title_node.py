@@ -38,9 +38,11 @@ def extract_paper_title_node(
             model_name=llm_name, message=messages, data_model=LLMOutput
         )
         if response is None:
-            raise ValueError(
-                "Error: No response from the model in extract_paper_title_node."
-            )
+            logger.warning("Error: No response from LLM in extract_paper_title_node.")
+            continue
+            # raise ValueError(
+            #     "Error: No response from the model in extract_paper_title_node."
+            # )
         else:
             response = json.loads(response)
             if "paper_titles" in response:
