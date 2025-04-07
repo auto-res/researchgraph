@@ -13,9 +13,9 @@ The GitHub repository provided in the "GitHub Repository URL" corresponds to the
 # Output Format
 Please provide the extracted information in the following structured format:
 ```json
-"structured_output": {{
-  "extracted_info": "<Extracted information>"
-}}
+"structured_output": {
+    "extracted_info": "<Extracted information>"
+}
 ```
 
 # Description of Methodology

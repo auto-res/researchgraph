@@ -8,7 +8,8 @@ from researchgraph.utils.logging_utils import setup_logging
 
 from researchgraph.writer_subgraph.nodes.generate_note import generate_note
 from researchgraph.writer_subgraph.nodes.paper_writing import WritingNode
-from researchgraph.writer_subgraph.input_data import writer_subgraph_input_data
+
+# from researchgraph.writer_subgraph.input_data import writer_subgraph_input_data
 from researchgraph.utils.execution_timers import time_node, ExecutionTimeState
 
 setup_logging()
@@ -85,7 +86,7 @@ class WriterSubgraph:
 
 
 if __name__ == "__main__":
-    import json
+    from researchgraph.github_utils.graph_wrapper import GraphWrapper
 
     llm_name = "o3-mini-2025-01-31"
     # llm_name = "gpt-4o-2024-11-20"
@@ -97,10 +98,24 @@ if __name__ == "__main__":
         llm_name=llm_name,
         refine_round=1,
     ).build_graph()
-    result = subgraph.invoke(writer_subgraph_input_data)
 
-    output_path = os.path.join(save_dir, "test_writer_subgraph.json")
-    with open(output_path, "w", encoding="utf-8") as f:
-        json.dump(result["paper_content"], f, indent=2, ensure_ascii=False)
-
-    print(f"Saved result to {output_path}")
+    wrapped_subgraph = GraphWrapper(
+        subgraph=subgraph,
+        github_owner="auto-res2",
+        repository_name="experiment_script_matsuzawa",
+        input_branch_name="test",
+        input_paths={
+            "base_method_text": "data/base_method_text.json",
+            "new_method": "data/new_method.json",
+            "verification_policy": "data/verification_policy.json",
+            "experiment_details": "data/experiment_details.json",
+            "experiment_code": "data/experiment_code.json",
+            "output_text_data": "data/output_text_data.json",
+        },
+        output_branch_name="test",
+        output_paths={
+            "paper_content": "data/paper_content.json",
+        },
+    ).build_graph()
+    result = wrapped_subgraph.invoke({})
+    print(f"result: {result}")

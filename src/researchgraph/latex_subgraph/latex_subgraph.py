@@ -25,7 +25,7 @@ class LatexSubgraphHiddenState(TypedDict):
 
 class LatexSubgraphOutputState(TypedDict):
     tex_text: str
-
+    pdf_file_path: str
 
 
 class LatexSubgraphState(
@@ -69,7 +69,10 @@ class LatexSubgraph:
         ).execute(
             paper_tex_content=state["paper_tex_content"],
         )
-        return {"tex_text": tex_text}
+        return {
+            "tex_text": tex_text, 
+            "pdf_file_path": self.pdf_file_path
+        }
 
     def build_graph(self) -> CompiledGraph:
         graph_builder = StateGraph(LatexSubgraphState)
@@ -85,7 +88,7 @@ class LatexSubgraph:
 
 
 if __name__ == "__main__":
-    import json 
+    from researchgraph.github_utils.graph_wrapper import GraphWrapper
 
     llm_name = "o3-mini-2025-01-31"
     save_dir = "/workspaces/researchgraph/data"
@@ -94,10 +97,19 @@ if __name__ == "__main__":
         save_dir=save_dir,
         llm_name=llm_name,
     ).build_graph()
-    result = subgraph.invoke(latex_subgraph_input_data)
 
-    output_path = os.path.join(save_dir, "test_latex_subgraph.json")
-    with open(output_path, "w", encoding="utf-8") as f:
-        json.dump(result["tex_text"], f, indent=2, ensure_ascii=False)
-
-    print(f"Saved result to {output_path}")
+    wrapped_subgraph = GraphWrapper(
+        subgraph=subgraph, 
+        github_owner="auto-res2", 
+        repository_name="experiment_script_matsuzawa",
+        input_branch_name="test",  
+        input_paths={
+            "paper_content": "data/paper_content.json", 
+        }, 
+        output_branch_name="test", 
+        output_paths={
+            "pdf_file_path": "paper/paper.pdf"
+        }, 
+    ).build_graph()
+    result = wrapped_subgraph.invoke({})
+    print(f"result: {result}")
