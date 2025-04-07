@@ -34,6 +34,16 @@ from researchgraph.writer_subgraph.writer_subgraph import (
     WriterSubgraph,
     WriterSubgraphState,
 )
+
+# from researchgraph.latex_subgraph.latex_subgraph import (
+#     LatexSubgraph,
+#     LatexSubgraphState,
+# )
+
+from researchgraph.html_subgraph.html_subgraph import (
+    HtmlSubgraph,
+    HtmlSubgraphState,
+)
 from researchgraph.upload_subgraph.upload_subgraph import (
     UploadSubgraph,
     UploadSubgraphState,
@@ -55,6 +65,8 @@ class ResearchGraphState(
     ExecutorSubgraphState,
     AnalyticSubgraphState,
     WriterSubgraphState,
+    # LatexSubgraphState,
+    HtmlSubgraphState,
     UploadSubgraphState,
     ExecutionTimeState,
 ):
@@ -178,6 +190,22 @@ class ResearchGraph:
             ).build_graph()
             return subgraph.invoke(state)
 
+        # @time_subgraph("latex_subgraph")
+        # def latex_subgraph(state: dict):
+        #     subgraph = LatexSubgraph(
+        #         save_dir=self.save_dir,
+        #         llm_name="o3-mini-2025-01-31",
+        #     ).build_graph()
+        #     return subgraph.invoke(state)
+
+        @time_subgraph("html_subgraph")
+        def html_subgraph(state: dict):
+            subgraph = HtmlSubgraph(
+                save_dir=self.save_dir,
+                llm_name="o3-mini-2025-01-31",
+            ).build_graph()
+            return subgraph.invoke(state)
+
         # Upload Subgraph
         @time_subgraph("upload_subgraph")
         def upload_subgraph(state: dict):
@@ -197,6 +225,8 @@ class ResearchGraph:
         graph_builder.add_node("executor_subgraph", executor_subgraph)
         graph_builder.add_node("analytic_subgraph", analytic_subgraph)
         graph_builder.add_node("writer_subgraph", writer_subgraph)
+        graph_builder.add_node("html_subgraph", html_subgraph)
+        # graph_builder.add_node("latex_subgraph", latex_subgraph)
         graph_builder.add_node("upload_subgraph", upload_subgraph)
         graph_builder.add_node(
             "make_execution_logs_data", self._make_execution_logs_data
@@ -220,7 +250,10 @@ class ResearchGraph:
         graph_builder.add_edge("generator_subgraph", "experimental_plan_subgraph")
         graph_builder.add_edge("experimental_plan_subgraph", "executor_subgraph")
         graph_builder.add_edge("executor_subgraph", "analytic_subgraph")
-        graph_builder.add_edge("writer_subgraph", "set_total_execution_time")
+        graph_builder.add_edge("analytic_subgraph", "writer_subgraph")
+        graph_builder.add_edge("writer_subgraph", "html_subgraph")
+        # graph_builder.add_edge("html_subgraph", "latex_subgraph")
+        graph_builder.add_edge("html_subgraph", "set_total_execution_time")
         graph_builder.add_edge("set_total_execution_time", "make_execution_logs_data")
         graph_builder.add_edge("make_execution_logs_data", "upload_subgraph")
         graph_builder.add_edge("upload_subgraph", END)
