@@ -4,7 +4,6 @@ from logging import getLogger
 from pydantic import BaseModel
 
 from researchgraph.utils.openai_client import openai_client
-from researchgraph.writer_subgraph.nodes.paper_writing import WritingNode
 
 logger = getLogger(__name__)
 

@@ -79,6 +79,8 @@ Section: {{ section.name }}
 - Escape reserved characters like &, <, >.
 - Avoid adding citations or references unless already included in the input.
 
+- Do not invent or add any content (e.g., references, figures, lists) unless it exists in the input.
+
 ## Output Format:
 ```html
 <!-- Title -->

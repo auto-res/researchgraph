@@ -165,7 +165,7 @@ Pay particular attention to fixing any errors such as:
 - Grammatical or spelling errors
 - Numerical results that do not come from explicit experiments and logs
 - Unnecessary verbosity or repetition, unclear text
-- Results or insights in the {{ note }} that have not yet need included
+- Results or insights in the context that have not yet need included
 - Any relevant figures that have not yet been included in the text"""
 
     def _replace_underscores_in_keys(self, paper_dict: dict[str, str]) -> dict[str, str]:

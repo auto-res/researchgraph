@@ -49,6 +49,7 @@ from researchgraph.retrieve_paper_subgraph.input_data import (
     retrieve_paper_subgraph_input_data,
 )
 from researchgraph.utils.execution_timers import time_subgraph, ExecutionTimeState
+from researchgraph.github_utils.graph_wrapper import GraphWrapper
 
 setup_logging()
 logger = logging.getLogger(__name__)
@@ -161,7 +162,17 @@ class ResearchGraph:
                 save_dir=self.save_dir,
                 llm_name="o3-mini-2025-01-31",
             ).build_graph()
-            return subgraph.invoke(state)
+        
+            wrapped_subgraph = GraphWrapper(
+                subgraph=subgraph,
+                github_owner=self.github_owner,
+                repository_name=self.repository_name,
+                output_branch_name=state["branch_name"], 
+                output_paths={
+                    "paper_content": "data/paper_content.json",
+                },
+            ).build_graph()
+            return wrapped_subgraph.invoke(state)
 
         @time_subgraph("latex_subgraph")
         def latex_subgraph(state: dict):
@@ -169,15 +180,43 @@ class ResearchGraph:
                 save_dir=self.save_dir,
                 llm_name="o3-mini-2025-01-31",
             ).build_graph()
-            return subgraph.invoke(state)
+            
+            wrapped_subgraph = GraphWrapper(
+                subgraph=subgraph, 
+                github_owner=self.github_owner, 
+                repository_name=self.repository_name,
+                input_branch_name=state["branch_name"], 
+                input_paths={
+                    "paper_content": "data/paper_content.json", 
+                }, 
+                output_branch_name=state["branch_name"], 
+                output_paths={
+                    "pdf_file_path": "paper/paper.pdf"
+                }, 
+            ).build_graph()
+            return wrapped_subgraph.invoke(state)
 
         @time_subgraph("html_subgraph")
         def html_subgraph(state: dict):
             subgraph = HtmlSubgraph(
-                save_dir=self.save_dir,
                 llm_name="o3-mini-2025-01-31",
             ).build_graph()
-            return subgraph.invoke(state)
+        
+            input_branch_name = state["branch_name"]
+            wrapped_subgraph = GraphWrapper(
+                subgraph=subgraph, 
+                github_owner=self.github_owner, 
+                repository_name=self.repository_name,
+                input_branch_name=input_branch_name, 
+                input_paths={
+                    "paper_content": "data/paper_content.json", 
+                }, 
+                output_branch_name="gh-pages",
+                output_paths={
+                    "full_html": f"{input_branch_name}/index.html", 
+                }, 
+            ).build_graph()
+            return wrapped_subgraph.invoke(state)
 
         # Upload Subgraph
         @time_subgraph("upload_subgraph")

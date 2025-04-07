@@ -39,10 +39,8 @@ class HtmlSubgraphState(
 class HtmlSubgraph:
     def __init__(
         self,
-        save_dir: str,
         llm_name: str,
     ):
-        self.save_dir = save_dir
         self.llm_name = llm_name
     
     @time_node("html_subgraph", "_convert_to_html_node")
@@ -58,7 +56,6 @@ class HtmlSubgraph:
     def _render_html_node(self, state: HtmlSubgraphState) -> dict:
         full_html = render_html(
             paper_html_content=state["paper_html_content"],
-            save_dir=self.save_dir,
         )
         return {"full_html": full_html}
 
@@ -77,19 +74,27 @@ class HtmlSubgraph:
 
 
 if __name__ == "__main__":
-    import json 
+    from researchgraph.github_utils.graph_wrapper import GraphWrapper
 
     llm_name = "o3-mini-2025-01-31"
-    save_dir = "/workspaces/researchgraph/data"
+    input_branch_name = "test"
 
     subgraph = HtmlSubgraph(
-        save_dir=save_dir,
         llm_name=llm_name,
     ).build_graph()
-    result = subgraph.invoke(html_subgraph_input_data)
-
-    output_path = os.path.join(save_dir, "test_html_subgraph.json")
-    with open(output_path, "w", encoding="utf-8") as f:
-        json.dump(result["full_html"], f, indent=2, ensure_ascii=False)
-
-    print(f"Saved result to {output_path}")
+    
+    wrapped_subgraph = GraphWrapper(
+        subgraph=subgraph, 
+        github_owner="auto-res2", 
+        repository_name="experiment_script_matsuzawa",
+        input_branch_name=input_branch_name, 
+        input_paths={
+            "paper_content": "data/paper_content.json", 
+        }, 
+        output_branch_name="gh-pages", 
+        output_paths={
+            "full_html": f"{input_branch_name}/index.html", 
+        }, 
+    ).build_graph()
+    result = wrapped_subgraph.invoke({})
+    print(f"result: {result}")
