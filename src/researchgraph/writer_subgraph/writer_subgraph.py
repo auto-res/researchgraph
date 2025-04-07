@@ -23,6 +23,7 @@ class WriterSubgraphInputState(TypedDict):
     experiment_details: str
     experiment_code: str
     output_text_data: str
+    analysis_report: str
 
 
 class WriterSubgraphHiddenState(TypedDict):

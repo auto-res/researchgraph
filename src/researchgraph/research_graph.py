@@ -220,7 +220,6 @@ class ResearchGraph:
         graph_builder.add_edge("generator_subgraph", "experimental_plan_subgraph")
         graph_builder.add_edge("experimental_plan_subgraph", "executor_subgraph")
         graph_builder.add_edge("executor_subgraph", "analytic_subgraph")
-        graph_builder.add_edge("executor_subgraph", "writer_subgraph")
         graph_builder.add_edge("writer_subgraph", "set_total_execution_time")
         graph_builder.add_edge("set_total_execution_time", "make_execution_logs_data")
         graph_builder.add_edge("make_execution_logs_data", "upload_subgraph")
@@ -239,7 +238,7 @@ if __name__ == "__main__":
         # "https://eccv.ecva.net/virtual/2024/papers.html?filter=title",
     ]
     add_paper_num = 3
-    repository = "auto-res2/experiment_script_matsuzawa"
+    repository = "auto-res2/auto-research"
     max_code_fix_iteration = 1
 
     research_graph = ResearchGraph(
