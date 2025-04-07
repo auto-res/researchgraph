@@ -102,7 +102,7 @@ if __name__ == "__main__":
         subgraph=subgraph,
         github_owner="auto-res2",
         repository_name="experiment_script_matsuzawa",
-        branch_name="test",
+        input_branch_name="test",
         input_paths={
             "base_method_text": "data/base_method_text.json",
             "new_method": "data/new_method.json",
@@ -111,6 +111,7 @@ if __name__ == "__main__":
             "experiment_code": "data/experiment_code.json",
             "output_text_data": "data/output_text_data.json",
         },
+        output_branch_name="test", 
         output_paths={
             "paper_content": "data/paper_content.json",
         },

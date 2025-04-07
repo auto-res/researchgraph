@@ -66,7 +66,10 @@ def github_input_node(
     for state_key, github_path in input_paths.items():
         logger.info(f"[GitHub I/O] Downloading input from: {github_path}")
         file_bytes = _download_file_from_github(
-            github_owner, repository_name, branch_name, github_path
+            github_owner, 
+            repository_name, 
+            branch_name, 
+            github_path, 
         )
         if not file_bytes:
             logger.error(f"GitHub file not found: {github_path}")
@@ -94,11 +97,27 @@ def github_output_node(
     for state_key, github_path in output_paths.items():
         logger.info(f"[GitHub I/O] Uploading {state_key} to: {github_path}")
         try:
-            output_bytes = json.dumps(state[state_key], indent=2, ensure_ascii=False).encode("utf-8")
+            value = state[state_key]
+            file_bytes = _encode_content(value)
             _upload_file_to_github(
-                github_owner, repository_name, branch_name, github_path, output_bytes
+                github_owner, 
+                repository_name, 
+                branch_name, 
+                github_path, 
+                file_bytes
             )
         except Exception as e:
             logger.warning(f"Failed to upload {state_key} to {github_path}: {e}", exc_info=True)
             completion = False
     return completion
+
+def _encode_content(value: Any) -> bytes:
+    if isinstance(value, str) and os.path.isfile(value):
+        with open(value, "rb") as f:
+            return f.read()
+    elif isinstance(value, bytes):
+        return value
+    elif isinstance(value, str):
+        return value.encode("utf-8")
+    else:
+        return json.dumps(value, indent=2, ensure_ascii=False).encode("utf-8")
