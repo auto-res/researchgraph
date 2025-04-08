@@ -69,7 +69,6 @@ class ResearchGraphState(
     HtmlSubgraphState,
     UploadSubgraphState,
     ExecutionTimeState,
-    GraphWrapperState,
 ):
     start_timestamp: float
     execution_logs: dict
