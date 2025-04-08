@@ -53,7 +53,6 @@ from researchgraph.retrieve_paper_subgraph.input_data import (
     retrieve_paper_subgraph_input_data,
 )
 from researchgraph.utils.execution_timers import time_subgraph, ExecutionTimeState
-from researchgraph.github_utils.graph_wrapper import GraphWrapper, GraphWrapperState
 
 setup_logging()
 logger = logging.getLogger(__name__)
