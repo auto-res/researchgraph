@@ -13,7 +13,7 @@ GITHUB_PERSONAL_ACCESS_TOKEN = os.getenv("GITHUB_PERSONAL_ACCESS_TOKEN")
 
 
 def check_github_repository(
-    github_owner: str, repository_name: str, max_retries: int = 5
+    github_owner: str, repository_name: str, max_retries: int = 10
 ) -> bool | None:
     headers = {
         "Accept": "application/vnd.github+json",

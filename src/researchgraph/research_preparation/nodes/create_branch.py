@@ -20,7 +20,7 @@ def create_branch(
     repository_name: str,
     branch_name: str,
     main_sha: str,
-    max_retries: int = 5,
+    max_retries: int = 10,
 ) -> bool:
     headers = {
         "Accept": "application/vnd.github+json",
@@ -46,13 +46,13 @@ def create_branch(
             elif response.status_code == 409:
                 raise RuntimeError(f"Conflict: {url}")
             elif response.status_code == 422:
+                error_message = response.json()
                 raise RuntimeError(
-                    f"Validation failed, or the endpoint has been spammed: {url}"
+                    f"Validation failed, or the endpoint has been spammed.: {url}\n"
+                    f"Error message: {error_message}"
                 )
             else:
-                logger.error(
-                    f"Unhandled status code {response.status_code} for URL: {url}\n"
-                )
+                response.raise_for_status()
         except requests.exceptions.HTTPError as e:
             logger.error(f"Request failed: {e}")
 

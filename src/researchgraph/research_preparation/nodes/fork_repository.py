@@ -19,7 +19,7 @@ def fork_repository(
     repository_name: str,
     device_type: DEVICETYPE = "cpu",
     organization: str = "",
-    max_retries: int = 5,
+    max_retries: int = 10,
 ) -> bool:
     headers = {
         "Accept": "application/vnd.github+json",

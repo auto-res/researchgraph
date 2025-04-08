@@ -16,7 +16,7 @@ DEVICETYPE = Literal["cpu", "gpu"]
 
 
 def check_branch_existence(
-    github_owner: str, repository_name: str, branch_name: str, max_retries: int = 5
+    github_owner: str, repository_name: str, branch_name: str, max_retries: int = 10
 ) -> str:
     headers = {
         "Accept": "application/vnd.github+json",

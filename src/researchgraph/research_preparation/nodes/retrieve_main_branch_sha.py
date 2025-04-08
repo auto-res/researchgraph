@@ -16,8 +16,9 @@ DEVICETYPE = Literal["cpu", "gpu"]
 
 
 def retrieve_main_branch_sha(
-    github_owner: str, repository_name: str, max_retries: int = 5
+    github_owner: str, repository_name: str, max_retries: int = 10
 ) -> str:
+    # time.sleep(3)
     headers = {
         "Accept": "application/vnd.github+json",
         "Authorization": f"Bearer {GITHUB_PERSONAL_ACCESS_TOKEN}",
@@ -36,15 +37,14 @@ def retrieve_main_branch_sha(
                 response = response.json()
                 return response["commit"]["sha"]
             elif response.status_code == 404:
-                logger.info(f"Branch not found: {url}")
-                return ""
+                # NOTE：If the API request is made too early, it may result in a 404 error, so retry processing is used.
+                error_message = response.json()
+                logger.error(f"error_message: {error_message}")
             elif response.status_code == 301:
                 raise RuntimeError(f"Moved permanently: {url}")
             else:
-                logger.error(
-                    f"Unhandled status code {response.status_code} for URL: {url}\n"
-                )
-        except requests.RequestException as e:
+                response.raise_for_status()
+        except requests.exceptions.HTTPError as e:
             logger.error(f"Request failed: {e}")
 
         retries += 1
