@@ -1,8 +1,17 @@
 from typing import Any
+from typing import TypedDict
 from langgraph.graph import StateGraph, START, END
 from langgraph.graph.graph import CompiledGraph
-from researchgraph.github_utils.github_file_io import github_input_node, github_output_node
+from researchgraph.github_utils.github_file_io import (
+    github_input_node,
+    github_output_node,
+)
 from researchgraph.utils.execution_timers import time_node
+
+
+class GraphWrapperState(TypedDict):
+    github_upload_success: bool
+
 
 class GraphWrapper:
     def __init__(
@@ -10,7 +19,7 @@ class GraphWrapper:
         subgraph: CompiledGraph,
         github_owner: str,
         repository_name: str,
-        input_branch_name: str | None = None, 
+        input_branch_name: str | None = None,
         input_paths: dict[str, str] | None = None,
         output_branch_name: str | None = None,
         output_paths: dict[str, str] | None = None,
@@ -33,18 +42,18 @@ class GraphWrapper:
         )
 
     @time_node("wrapper", "github_output_node")
-    def _github_output_node(self, state: dict[str, Any]) -> dict[str, bool]:
+    def _github_output_node(self, state: GraphWrapperState) -> dict[str, bool]:
         result = github_output_node(
             github_owner=self.github_owner,
             repository_name=self.repository_name,
             branch_name=self.output_branch_name,
             output_paths=self.output_paths,
-            state=state,
+            state=dict(state),
         )
         return {"github_upload_success": result}
 
     def build_graph(self) -> CompiledGraph:
-        wrapper = StateGraph(dict[str, Any])
+        wrapper = StateGraph(GraphWrapperState)
         prev = START
 
         if self.input_paths and self.input_branch_name:
