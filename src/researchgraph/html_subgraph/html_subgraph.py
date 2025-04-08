@@ -74,27 +74,23 @@ class HtmlSubgraph:
 
 
 if __name__ == "__main__":
-    from researchgraph.github_utils.graph_wrapper import GraphWrapper
+    from researchgraph.github_utils.graph_wrapper import create_wrapped_subgraph
+    from researchgraph.html_subgraph.html_subgraph import HtmlSubgraph
 
     llm_name = "o3-mini-2025-01-31"
     input_branch_name = "test"
 
-    subgraph = HtmlSubgraph(
-        llm_name=llm_name,
-    ).build_graph()
-
-    wrapped_subgraph = GraphWrapper(
-        subgraph=subgraph,
+    wrapped_subgraph = create_wrapped_subgraph(
+        subgraph_cls=HtmlSubgraph,
         github_owner="auto-res2",
         repository_name="experiment_script_matsuzawa",
         input_branch_name=input_branch_name,
-        input_paths={
-            "paper_content": "data/paper_content.json",
-        },
+        input_path="research/research_record.json",
         output_branch_name="gh-pages",
-        output_paths={
-            "full_html": f"{input_branch_name}/index.html",
-        },
-    ).build_graph()
+        output_path=f"{input_branch_name}/index.html",
+        llm_name=llm_name,
+        upload_key="full_html", 
+    )
+
     result = wrapped_subgraph.invoke({})
     print(f"result: {result}")

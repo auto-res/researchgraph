@@ -86,36 +86,26 @@ class WriterSubgraph:
 
 
 if __name__ == "__main__":
-    from researchgraph.github_utils.graph_wrapper import GraphWrapper
+    from researchgraph.writer_subgraph.writer_subgraph import WriterSubgraph
+    from researchgraph.github_utils.graph_wrapper import create_wrapped_subgraph
 
     llm_name = "o3-mini-2025-01-31"
     # llm_name = "gpt-4o-2024-11-20"
     # llm_name = "gpt-4o-mini-2024-07-18"
     save_dir = "/workspaces/researchgraph/data"
 
-    subgraph = WriterSubgraph(
-        save_dir=save_dir,
-        llm_name=llm_name,
-        refine_round=1,
-    ).build_graph()
-
-    wrapped_subgraph = GraphWrapper(
-        subgraph=subgraph,
+    wrapped_subgraph = create_wrapped_subgraph(
+        subgraph_cls=WriterSubgraph,
         github_owner="auto-res2",
         repository_name="experiment_script_matsuzawa",
         input_branch_name="test",
-        input_paths={
-            "base_method_text": "data/base_method_text.json",
-            "new_method": "data/new_method.json",
-            "verification_policy": "data/verification_policy.json",
-            "experiment_details": "data/experiment_details.json",
-            "experiment_code": "data/experiment_code.json",
-            "output_text_data": "data/output_text_data.json",
-        },
+        input_path="research/research_record.json", 
         output_branch_name="test",
-        output_paths={
-            "paper_content": "data/paper_content.json",
-        },
-    ).build_graph()
+        output_path="research/research_record.json",
+        save_dir=save_dir,
+        llm_name=llm_name,
+        refine_round=1,
+    )
+
     result = wrapped_subgraph.invoke({})
     print(f"result: {result}")

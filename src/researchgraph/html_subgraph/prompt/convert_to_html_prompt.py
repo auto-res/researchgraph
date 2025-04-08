@@ -13,9 +13,14 @@ Section: {{ section.name }}
 {% endfor %}
 
 ## HTML Formatting Rules:
-- Use <section> with <h2> for each top-level section (e.g., Introduction, Method, Results, etc.).
-    - The <h2> should match the section name.
-    - Do not use nested sections unless truly needed.
+- For the "Title" section:
+    - Do **not** render the word "Title".
+    - Instead, output a top-level <h2 class="paper-title"> tag containing the title text directly (without a <section> wrapper).
+
+- For other sections:
+    - Use <section> with <h2> for each top-level section (e.g., Introduction, Method, Results, etc.).
+        - The <h2> should match the section name.
+        - Do not use nested sections unless truly needed.
 
 - Use <p> tags for paragraphs.
     - Split logically separate thoughts into their own <p> blocks.
@@ -43,14 +48,17 @@ Section: {{ section.name }}
 ## Output Format:
 ```html
 <!-- Title -->
-<section>
-  <h2>Title</h2>
-  <p>...</p>
-</section>
+<h2 class="paper-title">[Title text here]</h2>
 
 <!-- Abstract -->
 <section>
   <h2>Abstract</h2>
+  <p>...</p>
+</section>
+
+<!-- Introduction -->
+<section>
+  <h2>Introduction</h2>
   <p>...</p>
 </section>
 ...
