@@ -1,8 +1,13 @@
-from typing import Any, Protocol, TypeVar
+from typing import Any, Protocol, TypeVar, TypedDict
 from langgraph.graph import StateGraph, START, END
 from langgraph.graph.graph import CompiledGraph
 from researchgraph.github_utils.github_file_io import download_from_github, upload_to_github
 from researchgraph.utils.execution_timers import time_node
+
+
+# class GraphWrapperState(TypedDict):
+#     github_upload_success: bool
+
 
 class GraphWrapper:
     def __init__(
@@ -14,6 +19,7 @@ class GraphWrapper:
         input_path: str | None = None,
         output_branch_name: str | None = None,
         output_path: str | None = None,
+        upload_key: str | None = None, 
     ):
         self.subgraph = subgraph
         self.github_owner = github_owner
@@ -22,12 +28,12 @@ class GraphWrapper:
         self.input_path = input_path
         self.output_branch_name = output_branch_name
         self.output_path = output_path
+        self.upload_key = upload_key
 
 
     def _call_api(self) -> None:
         pass
-
-
+    
     @time_node("wrapper", "download_from_github")
     def _download_from_github(self, state: dict[str, Any]) -> dict[str, Any]:
         return download_from_github(
@@ -50,11 +56,12 @@ class GraphWrapper:
             branch_name=self.output_branch_name,
             output_path=self.output_path,
             state=state,
+            upload_key=self.upload_key, 
         )
         return {"github_upload_success": result}
 
     def build_graph(self) -> CompiledGraph:
-        wrapper = StateGraph(dict[str, Any])
+        wrapper = StateGraph(dict)
         prev = START
 
         if self.input_path and self.input_branch_name:
@@ -90,6 +97,7 @@ def create_wrapped_subgraph(
     input_path: str | None = None,
     output_branch_name: str | None = None,
     output_path: str | None = None,
+    upload_key: str | None = None, 
     *args: Any, 
     **kwargs: Any,
 ) -> CompiledGraph:
@@ -108,6 +116,7 @@ def create_wrapped_subgraph(
             input_path=input_path,
             output_branch_name=output_branch_name,
             output_path=output_path,
+            upload_key=upload_key, 
         ).build_graph()
 
     return subgraph

@@ -21,6 +21,13 @@ def _wrap_in_html_template(paper_html_content: str) -> str:
       color: #333;
       background-color: #fff;
     }
+    h2.paper-title {
+      font-size: 1.8em;
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 0.5em;
+      border-bottom: none;
+    }
     h2 {
       border-bottom: 2px solid #ddd;
       padding-bottom: 0.3em;

@@ -88,28 +88,23 @@ class LatexSubgraph:
 
 
 if __name__ == "__main__":
-    from researchgraph.github_utils.graph_wrapper import GraphWrapper
+    from researchgraph.github_utils.graph_wrapper import create_wrapped_subgraph
+    from researchgraph.latex_subgraph.latex_subgraph import LatexSubgraph
 
     llm_name = "o3-mini-2025-01-31"
     save_dir = "/workspaces/researchgraph/data"
 
-    subgraph = LatexSubgraph(
-        save_dir=save_dir,
-        llm_name=llm_name,
-    ).build_graph()
-
-    wrapped_subgraph = GraphWrapper(
-        subgraph=subgraph, 
-        github_owner="auto-res2", 
+    wrapped_subgraph = create_wrapped_subgraph(
+        subgraph_cls=LatexSubgraph,
+        github_owner="auto-res2",
         repository_name="experiment_script_matsuzawa",
-        input_branch_name="test",  
-        input_paths={
-            "paper_content": "data/paper_content.json", 
-        }, 
-        output_branch_name="test", 
-        output_paths={
-            "pdf_file_path": "paper/paper.pdf"
-        }, 
-    ).build_graph()
+        input_branch_name="test",
+        input_path="research/research_record.json",
+        output_branch_name="test",
+        output_path="research/research_record.json",
+        llm_name=llm_name,
+        save_dir=save_dir, 
+    )
+
     result = wrapped_subgraph.invoke({})
     print(f"result: {result}")

@@ -18,7 +18,7 @@ def _build_headers():
     }
 
 
-def _download_file_from_github(
+def _download_file_bytes_from_github(
     github_owner: str,
     repository_name: str,
     branch_name: str,
@@ -32,13 +32,13 @@ def _download_file_from_github(
     return None
 
 
-def _upload_file_to_github(
+def _upload_file_bytes_to_github(
     github_owner: str,
     repository_name: str,
     branch_name: str,
     repository_path: str,
     file_content: bytes,
-    commit_message: str = "Upload file via ResearchGraph",
+    commit_message: str,
 ) -> bool:
     url = f"https://api.github.com/repos/{github_owner}/{repository_name}/contents/{repository_path}"
     existing = retry_request(fetch_api_data, url, headers=_build_headers(), params={"ref": branch_name}, method="GET")
@@ -56,60 +56,59 @@ def _upload_file_to_github(
     return True
 
 
-def github_input_node(
+def download_from_github(
     github_owner: str,
     repository_name: str,
     branch_name: str,
-    input_paths: dict[str, str],
+    input_path: str,
 ) -> dict[str, Any]:
-    input_data = {}
-    for state_key, github_path in input_paths.items():
-        logger.info(f"[GitHub I/O] Downloading input from: {github_path}")
-        file_bytes = _download_file_from_github(
+    logger.info(f"[GitHub I/O] Downloading input from: {input_path}")
+    file_bytes = _download_file_bytes_from_github(
+        github_owner, 
+        repository_name, 
+        branch_name, 
+        input_path, 
+    )
+    if not file_bytes:
+        logger.error(f"GitHub file not found: {input_path}")
+        raise FileNotFoundError(f"Required GitHub input not found: {input_path}")
+    try:
+        decoded = json.loads(file_bytes.decode("utf-8"))
+        if not isinstance(decoded, dict):
+            logger.error(f"Decoded input is not a dictionary: {input_path}")
+            raise ValueError("Decoded input is not a dictionary.")
+        return decoded
+    except Exception as e:
+        error_message = f"Failed to parse full-state JSON from {input_path}: {e}"
+        logger.error(error_message)
+        raise ValueError(error_message) from e
+
+
+def upload_to_github(
+    github_owner: str,
+    repository_name: str,
+    branch_name: str,
+    output_path: str,
+    state: dict[str, Any],
+    upload_key: str | None = None, 
+    commit_message: str = "Upload file via ResearchGraph",
+) -> bool:
+    logger.info(f"[GitHub I/O] Uploading full state to: {output_path}")
+    try:
+        content = state[upload_key] if upload_key else state
+        file_bytes = _encode_content(content)
+        _upload_file_bytes_to_github(
             github_owner, 
             repository_name, 
             branch_name, 
-            github_path, 
+            output_path, 
+            file_bytes, 
+            commit_message=commit_message, 
         )
-        if not file_bytes:
-            logger.error(f"GitHub file not found: {github_path}")
-            raise FileNotFoundError(f"Required GitHub input not found: {github_path}")
-        try:
-            input_data[state_key] = json.loads(file_bytes.decode("utf-8"))
-        except Exception as e:
-            logger.warning(f"Could not parse {github_path} as JSON. Using raw string. Error: {e}")
-            try:
-                input_data[state_key] = file_bytes.decode("utf-8") 
-            except Exception as e2:
-                logger.error(f"Failed to decode {github_path} as UTF-8 string: {e2}")
-                raise ValueError(f"Failed to decode content of {github_path}")
-    return input_data
-
-
-def github_output_node(
-    github_owner: str,
-    repository_name: str,
-    branch_name: str,
-    output_paths: dict[str, str],
-    state: dict[str, Any],
-) -> bool:
-    completion = True
-    for state_key, github_path in output_paths.items():
-        logger.info(f"[GitHub I/O] Uploading {state_key} to: {github_path}")
-        try:
-            value = state[state_key]
-            file_bytes = _encode_content(value)
-            _upload_file_to_github(
-                github_owner, 
-                repository_name, 
-                branch_name, 
-                github_path, 
-                file_bytes
-            )
-        except Exception as e:
-            logger.warning(f"Failed to upload {state_key} to {github_path}: {e}", exc_info=True)
-            completion = False
-    return completion
+        return True
+    except Exception as e:
+        logger.warning(f"Failed to upload state to {output_path}: {e}", exc_info=True)
+        return False
 
 def _encode_content(value: Any) -> bytes:
     if isinstance(value, str) and os.path.isfile(value):
