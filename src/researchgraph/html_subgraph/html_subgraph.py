@@ -41,8 +41,10 @@ class HtmlSubgraph:
     def __init__(
         self,
         llm_name: str,
+        save_dir: str, 
     ):
         self.llm_name = llm_name
+        self.save_dir = save_dir
 
     @time_node("html_subgraph", "_convert_to_html_node")
     def _convert_to_html_node(self, state: HtmlSubgraphState) -> dict:
@@ -57,6 +59,7 @@ class HtmlSubgraph:
     def _render_html_node(self, state: HtmlSubgraphState) -> dict:
         full_html = render_html(
             paper_html_content=state["paper_html_content"],
+            save_dir=self.save_dir
         )
         return {"full_html": full_html}
 
@@ -74,22 +77,36 @@ class HtmlSubgraph:
 
 
 if __name__ == "__main__":
+    import os
+    import glob
     from researchgraph.github_utils.graph_wrapper import create_wrapped_subgraph
     from researchgraph.html_subgraph.html_subgraph import HtmlSubgraph
 
     llm_name = "o3-mini-2025-01-31"
-    input_branch_name = "test"
+    save_dir = "/workspaces/researchgraph/data"
+    figures_dir = "/workspaces/researchgraph/data/images"
+
+    branch_name = "branch-1"
+    path="research/research_history.json"
+
+    pdf_files = glob.glob(os.path.join(figures_dir, "*.pdf"))
+    extra_files = [
+        ("gh-pages", "branches/{{ branch_name }}/", [f"{save_dir}/index.html"]),
+        ("gh-pages", "branches/{{ branch_name }}/images/", pdf_files)
+    ]
 
     wrapped_subgraph = create_wrapped_subgraph(
-        subgraph_cls=HtmlSubgraph,
+        subgraph=HtmlSubgraph,
+        output_state=HtmlSubgraphOutputState, 
         github_owner="auto-res2",
         repository_name="experiment_script_matsuzawa",
-        input_branch_name=input_branch_name,
-        input_path="research/research_record.json",
-        output_branch_name="gh-pages",
-        output_path=f"{input_branch_name}/index.html",
+        input_branch_name=branch_name,
+        input_path=path,
+        output_branch_name=branch_name,
+        output_path=path,
+        extra_files=extra_files, 
         llm_name=llm_name,
-        upload_key="full_html", 
+        save_dir=save_dir, 
     )
 
     result = wrapped_subgraph.invoke({})

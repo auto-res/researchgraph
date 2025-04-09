@@ -256,7 +256,7 @@ if __name__ == "__main__":
         # "https://eccv.ecva.net/virtual/2024/papers.html?filter=title",
     ]
     add_paper_num = 3
-    repository = "auto-res2/auto-research"
+    repository = "auto-res2/experiment_script_matsuzawa"
     max_code_fix_iteration = 5
 
     research_graph = ResearchGraph(

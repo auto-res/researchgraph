@@ -25,7 +25,6 @@ class LatexSubgraphHiddenState(TypedDict):
 
 class LatexSubgraphOutputState(TypedDict):
     tex_text: str
-    pdf_file_path: str
 
 
 class LatexSubgraphState(
@@ -71,7 +70,6 @@ class LatexSubgraph:
         )
         return {
             "tex_text": tex_text, 
-            "pdf_file_path": self.pdf_file_path
         }
 
     def build_graph(self) -> CompiledGraph:
@@ -89,19 +87,27 @@ class LatexSubgraph:
 
 if __name__ == "__main__":
     from researchgraph.github_utils.graph_wrapper import create_wrapped_subgraph
-    from researchgraph.latex_subgraph.latex_subgraph import LatexSubgraph
+    from researchgraph.latex_subgraph.latex_subgraph import LatexSubgraph, LatexSubgraphOutputState
 
     llm_name = "o3-mini-2025-01-31"
     save_dir = "/workspaces/researchgraph/data"
 
+    branch_name = "branch-1"
+    path = "research/research_history.json"
+    extra_files = [
+        ("{{ branch_name }}", "research/", [f"{save_dir}/paper.pdf"]), 
+    ]
+
     wrapped_subgraph = create_wrapped_subgraph(
-        subgraph_cls=LatexSubgraph,
+        subgraph=LatexSubgraph,
+        output_state=LatexSubgraphOutputState, 
         github_owner="auto-res2",
         repository_name="experiment_script_matsuzawa",
-        input_branch_name="test",
-        input_path="research/research_record.json",
-        output_branch_name="test",
-        output_path="research/research_record.json",
+        input_branch_name=branch_name, 
+        input_path=path, 
+        output_branch_name=branch_name, 
+        output_path=path, 
+        extra_files=extra_files, 
         llm_name=llm_name,
         save_dir=save_dir, 
     )
