@@ -22,10 +22,10 @@ class GraphWrapper:
         output_state: type[TypedDict], 
         github_owner: str,
         repository_name: str,
-        input_branch_name: str, 
-        input_path: str,
-        output_branch_name: str,
-        output_path: str,
+        input_branch_name: str | None = None,  
+        input_path: str | None = None,
+        output_branch_name: str | None = None,
+        output_path: str | None = None,
         extra_files: list[tuple[str, str, list[str]]] | None = None, 
     ):
         self.subgraph = subgraph
@@ -38,6 +38,7 @@ class GraphWrapper:
         self.output_path = output_path
         self.extra_files = extra_files
 
+        self.subgraph_name = getattr(subgraph, "__source_subgraph_name__", "subgraph").lower()
         self.output_state_keys = (
             list(output_state.__annotations__.keys()) if output_state else []
         )
@@ -57,8 +58,7 @@ class GraphWrapper:
         
     def _create_branch_name(self) -> str:
         ts = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
-        subgraph_name = getattr(self.subgraph, "__source_subgraph_name__", "subgraph").lower()
-        new_branch = f"{self.output_branch_name}-{subgraph_name}-{ts}"
+        new_branch = f"{self.output_branch_name}-{self.subgraph_name}-{ts}"
     
         create_branch_on_github(
             github_owner=self.github_owner,
@@ -132,19 +132,29 @@ class GraphWrapper:
             output_path=self.output_path,
             state=merged_state,
             extra_files=formatted_extra_files, 
+            commit_message=f"Update by subgraph: {self.subgraph_name}"
         )
         return {"github_upload_success": result}
 
     def build_graph(self) -> CompiledGraph:
-        wrapper = StateGraph(dict)
-        wrapper.add_node("download_from_github", self._download_from_github)
-        wrapper.add_node("run_subgraph", self._run_subgraph)
-        wrapper.add_node("upload_to_github", self._upload_to_github)
+        wrapper = StateGraph(dict[str, Any])
+        prev = START
 
-        wrapper.add_edge(START, "download_from_github")
-        wrapper.add_edge("download_from_github", "run_subgraph")
-        wrapper.add_edge("run_subgraph", "upload_to_github")
-        wrapper.add_edge("upload_to_github", END)
+        if self.input_path and self.input_branch_name:
+            wrapper.add_node("download_from_github", self._download_from_github)
+            wrapper.add_edge(prev, "download_from_github")
+            prev = "download_from_github"
+
+        wrapper.add_node("run_subgraph", self._run_subgraph)
+        wrapper.add_edge(prev, "run_subgraph")
+        prev = "run_subgraph"
+
+        if self.output_path and self.output_branch_name:
+            wrapper.add_node("upload_to_github", self._upload_to_github)
+            wrapper.add_edge(prev, "upload_to_github")
+            prev = "upload_to_github"
+
+        wrapper.add_edge(prev, END)
         return wrapper.compile()
 
 
