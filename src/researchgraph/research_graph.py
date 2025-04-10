@@ -193,6 +193,7 @@ class ResearchGraph:
         def html_subgraph(state: dict):
             subgraph = HtmlSubgraph(
                 llm_name="o3-mini-2025-01-31",
+                save_dir=self.save_dir, 
             ).build_graph()
             return subgraph.invoke(state)
 
