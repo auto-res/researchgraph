@@ -10,6 +10,7 @@ from researchgraph.latex_subgraph.nodes.convert_to_latex import convert_to_latex
 from researchgraph.latex_subgraph.nodes.compile_to_pdf import LatexNode
 from researchgraph.latex_subgraph.input_data import latex_subgraph_input_data
 from researchgraph.utils.execution_timers import time_node, ExecutionTimeState
+from researchgraph.github_utils.graph_wrapper import create_wrapped_subgraph
 
 setup_logging()
 logger = logging.getLogger(__name__)
@@ -25,7 +26,6 @@ class LatexSubgraphHiddenState(TypedDict):
 
 class LatexSubgraphOutputState(TypedDict):
     tex_text: str
-    pdf_file_path: str
 
 
 class LatexSubgraphState(
@@ -71,7 +71,6 @@ class LatexSubgraph:
         )
         return {
             "tex_text": tex_text, 
-            "pdf_file_path": self.pdf_file_path
         }
 
     def build_graph(self) -> CompiledGraph:
@@ -85,26 +84,32 @@ class LatexSubgraph:
         graph_builder.add_edge("latex_node", END)
 
         return graph_builder.compile()
+    
+
+LatexConverter =  create_wrapped_subgraph(LatexSubgraph, LatexSubgraphOutputState)
 
 
 if __name__ == "__main__":
-    from researchgraph.github_utils.graph_wrapper import create_wrapped_subgraph
-    from researchgraph.latex_subgraph.latex_subgraph import LatexSubgraph
-
     llm_name = "o3-mini-2025-01-31"
     save_dir = "/workspaces/researchgraph/data"
 
-    wrapped_subgraph = create_wrapped_subgraph(
-        subgraph_cls=LatexSubgraph,
-        github_owner="auto-res2",
-        repository_name="experiment_script_matsuzawa",
-        input_branch_name="test",
-        input_path="research/research_record.json",
-        output_branch_name="test",
-        output_path="research/research_record.json",
+    github_repository="auto-res2/experiment_script_matsuzawa"
+    branch_name = "base-branch"
+    extra_files = [
+        {
+            "upload_branch": "{{ branch_name }}", 
+            "upload_dir": ".research/", 
+            "local_file_paths": [f"{save_dir}/paper.pdf"], 
+        }
+    ]
+
+    latex_converter = LatexConverter(
+        github_repository=github_repository,
+        branch_name=branch_name,
+        extra_files=extra_files, 
         llm_name=llm_name,
         save_dir=save_dir, 
     )
 
-    result = wrapped_subgraph.invoke({})
+    result = latex_converter.run({})
     print(f"result: {result}")

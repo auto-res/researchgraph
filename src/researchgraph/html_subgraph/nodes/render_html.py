@@ -1,3 +1,4 @@
+import os
 import logging
 from jinja2 import Environment
 
@@ -63,5 +64,13 @@ def _wrap_in_html_template(paper_html_content: str) -> str:
     template = env.from_string(base_template)
     return template.render(content=paper_html_content)
 
-def render_html(paper_html_content: str) -> str:
-    return _wrap_in_html_template(paper_html_content)
+def _save_index_html(content: str, save_dir: str) -> None:
+    html_path = os.path.join(save_dir, "index.html")
+    with open(html_path, "w", encoding="utf-8") as f:
+        f.write(content)
+    logger.info(f"Saved HTML to: {html_path}")
+
+def render_html(paper_html_content: str, save_dir: str) -> str:
+    full_html = _wrap_in_html_template(paper_html_content)
+    _save_index_html(full_html, save_dir)
+    return full_html
