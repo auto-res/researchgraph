@@ -11,6 +11,7 @@ from researchgraph.html_subgraph.nodes.convert_to_html import (
 )
 from researchgraph.html_subgraph.nodes.render_html import render_html
 from researchgraph.utils.execution_timers import time_node, ExecutionTimeState
+from researchgraph.github_utils.graph_wrapper import create_wrapped_subgraph
 
 setup_logging()
 logger = logging.getLogger(__name__)
@@ -74,40 +75,44 @@ class HtmlSubgraph:
         graph_builder.add_edge("render_html_node", END)
 
         return graph_builder.compile()
+    
+
+HtmlConverter = create_wrapped_subgraph(HtmlSubgraph, HtmlSubgraphOutputState)
 
 
 if __name__ == "__main__":
     import os
     import glob
-    from researchgraph.github_utils.graph_wrapper import create_wrapped_subgraph
-    from researchgraph.html_subgraph.html_subgraph import HtmlSubgraph
 
     llm_name = "o3-mini-2025-01-31"
     save_dir = "/workspaces/researchgraph/data"
     figures_dir = "/workspaces/researchgraph/data/images"
-
-    branch_name = "branch-1"
-    path="research/research_history.json"
-
     pdf_files = glob.glob(os.path.join(figures_dir, "*.pdf"))
+
+    github_repository="auto-res2/experiment_script_matsuzawa"
+    branch_name = "base-branch"
+    # research_file_path = ".research/research_history.json"
+
     extra_files = [
-        ("gh-pages", "branches/{{ branch_name }}/", [f"{save_dir}/index.html"]),
-        ("gh-pages", "branches/{{ branch_name }}/images/", pdf_files)
+        {
+            "upload_branch": "gh-pages", 
+            "upload_dir": "branches/{{ branch_name }}/", 
+            "local_file_paths": [f"{save_dir}/index.html"], 
+        }, 
+        {
+            "upload_branch": "gh-pages", 
+            "upload_dir": "branches/{{ branch_name }}/images/", 
+            "local_file_paths": pdf_files, 
+        }
     ]
 
-    wrapped_subgraph = create_wrapped_subgraph(
-        subgraph=HtmlSubgraph,
-        output_state=HtmlSubgraphOutputState, 
-        github_owner="auto-res2",
-        repository_name="experiment_script_matsuzawa",
-        input_branch_name=branch_name,
-        input_path=path,
-        output_branch_name=branch_name,
-        output_path=path,
-        extra_files=extra_files, 
+    html_converter = HtmlConverter(
+        github_repository=github_repository,
+        branch_name=branch_name,
+        extra_files=extra_files,
         llm_name=llm_name,
-        save_dir=save_dir, 
+        save_dir=save_dir,
     )
 
-    result = wrapped_subgraph.invoke({})
+    result = html_converter.run({})
     print(f"result: {result}")

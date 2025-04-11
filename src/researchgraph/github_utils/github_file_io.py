@@ -2,12 +2,18 @@ import os
 import base64
 import json
 import logging
-from typing import Any
+from typing import Any, TypedDict
 from researchgraph.utils.api_request_handler import fetch_api_data, retry_request
 
 logger = logging.getLogger(__name__)
 
 GITHUB_TOKEN = os.getenv("GITHUB_PERSONAL_ACCESS_TOKEN")
+
+class ExtraFileConfig(TypedDict):
+    upload_branch: str
+    upload_dir: str
+    local_file_paths: list[str]
+
 
 
 def _build_headers():
@@ -90,7 +96,7 @@ def upload_to_github(
     branch_name: str,
     output_path: str,
     state: dict[str, Any],
-    extra_files: list[tuple[str, str, list[str]]] | None = None,  # [branch_name, repo_path, local_paths]
+    extra_files: list[ExtraFileConfig] | None = None,
     commit_message: str = "Upload file via ResearchGraph",
 ) -> bool:
     logger.info(f"[GitHub I/O] Uploading state to: {output_path}")
@@ -111,25 +117,28 @@ def upload_to_github(
         success = False
 
     if extra_files:
-        for extra_branch, repo_base_path, local_paths in extra_files:
-            for local_path in local_paths:
+        for file_config in extra_files:
+            upload_branch = file_config["upload_branch"]
+            upload_dir = file_config["upload_dir"]
+            local_file_paths = file_config["local_file_paths"]
+            for file_path in local_file_paths:
                 try:
-                    filename = os.path.basename(local_path)
-                    repo_path = os.path.join(repo_base_path, filename).replace("\\", "/")
-                    with open(local_path, "rb") as f:
+                    filename = os.path.basename(file_path)
+                    repo_path = os.path.join(upload_dir, filename).replace("\\", "/")
+                    with open(file_path, "rb") as f:
                         file_bytes = f.read()
 
                     _upload_file_bytes_to_github(
                         github_owner,
                         repository_name,
-                        extra_branch,
+                        upload_branch,
                         repo_path,
                         file_bytes,
                         commit_message=commit_message,
                     )
-                    logger.info(f"[GitHub I/O] Uploaded extra file: {local_path} to {repo_path}")
+                    logger.info(f"[GitHub I/O] Uploaded extra file: {file_path} to {repo_path}")
                 except Exception as e:
-                    logger.warning(f"Failed to upload extra file {local_path} to {repo_path}: {e}", exc_info=True)
+                    logger.warning(f"Failed to upload extra file {file_path} to {repo_path}: {e}", exc_info=True)
                     success = False
     return success
 

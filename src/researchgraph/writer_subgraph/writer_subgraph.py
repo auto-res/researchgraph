@@ -11,6 +11,7 @@ from researchgraph.writer_subgraph.nodes.paper_writing import WritingNode
 
 # from researchgraph.writer_subgraph.input_data import writer_subgraph_input_data
 from researchgraph.utils.execution_timers import time_node, ExecutionTimeState
+from researchgraph.github_utils.graph_wrapper import create_wrapped_subgraph
 
 setup_logging()
 logger = logging.getLogger(__name__)
@@ -83,32 +84,26 @@ class WriterSubgraph:
         graph_builder.add_edge("writeup_node", END)
 
         return graph_builder.compile()
+    
+
+PaperWriter = create_wrapped_subgraph(WriterSubgraph, WriterSubgraphOutputState)
 
 
 if __name__ == "__main__":
-    from researchgraph.writer_subgraph.writer_subgraph import WriterSubgraph, WriterSubgraphOutputState
-    from researchgraph.github_utils.graph_wrapper import create_wrapped_subgraph
-
     llm_name = "o3-mini-2025-01-31"
-    # llm_name = "gpt-4o-2024-11-20"
-    # llm_name = "gpt-4o-mini-2024-07-18"
     save_dir = "/workspaces/researchgraph/data"
+    refine_round = 1
 
-    branch_name = "branch-1" 
+    github_repository="auto-res2/experiment_script_matsuzawa"
+    branch_name = "base-branch" 
 
-    wrapped_subgraph = create_wrapped_subgraph(
-        subgraph=WriterSubgraph,
-        output_state=WriterSubgraphOutputState, 
-        github_owner="auto-res2",
-        repository_name="experiment_script_matsuzawa",
-        input_branch_name=branch_name,
-        input_path="research/input_data_writer_subgraph.json", 
-        output_branch_name=branch_name,
-        output_path="research/research_history.json",
-        save_dir=save_dir,
+    paper_writer = PaperWriter(
+        github_repository=github_repository, 
+        branch_name=branch_name,
         llm_name=llm_name,
-        refine_round=1,
+        save_dir=save_dir,
+        refine_round=refine_round,
     )
 
-    result = wrapped_subgraph.invoke({})
+    result = paper_writer.run({})
     print(f"result: {result}")
