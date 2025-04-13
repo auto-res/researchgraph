@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkdocs=self.webpackChunkdocs||[]).push([[472],{5513:e=>{e.exports=JSON.parse('{"title":"Recent posts","items":[{"title":"sample","permalink":"/researchgraph/blog/sample","unlisted":false,"date":"2025-04-13T08:14:45.797Z"}]}')}}]);
