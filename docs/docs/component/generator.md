@@ -1,0 +1,4 @@
+---
+id: generator
+title: Generator
+---
