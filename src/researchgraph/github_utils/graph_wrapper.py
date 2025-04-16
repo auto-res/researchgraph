@@ -5,12 +5,11 @@ from typing import Any, Protocol, TypeVar, TypedDict
 from langgraph.graph import StateGraph, START, END
 from langgraph.graph.graph import CompiledGraph
 from researchgraph.utils.logging_utils import setup_logging
-from researchgraph.utils.execution_timers import time_node
 from researchgraph.github_utils.github_file_io import (
-    download_from_github, 
-    upload_to_github, 
-    create_branch_on_github, 
-    ExtraFileConfig, 
+    download_from_github,
+    upload_to_github,
+    create_branch_on_github,
+    ExtraFileConfig,
 )
 
 setup_logging()
@@ -19,18 +18,19 @@ logger = logging.getLogger(__name__)
 # class GraphWrapperState(TypedDict):
 #     github_upload_success: bool
 
+
 class GithubGraphWrapper:
     def __init__(
         self,
         subgraph: CompiledGraph,
-        output_state: type[TypedDict], 
-        github_repository: str, 
-        branch_name: str,  
-        research_file_path: str = ".research/research_history.json", 
-        extra_files: list[ExtraFileConfig] | None = None, 
-        perform_download: bool = True, 
-        perform_upload: bool = True, 
-        public_branch: str = "gh-pages", 
+        output_state: type[TypedDict],
+        github_repository: str,
+        branch_name: str,
+        research_file_path: str = ".research/research_history.json",
+        extra_files: list[ExtraFileConfig] | None = None,
+        perform_download: bool = True,
+        perform_upload: bool = True,
+        public_branch: str = "gh-pages",
     ):
         self.subgraph = subgraph
         self.output_state = output_state
@@ -42,7 +42,9 @@ class GithubGraphWrapper:
         self.perform_upload = perform_upload
         self.public_branch = public_branch
 
-        self.subgraph_name = getattr(subgraph, "__source_subgraph_name__", "subgraph").lower()
+        self.subgraph_name = getattr(
+            subgraph, "__source_subgraph_name__", "subgraph"
+        ).lower()
         self.output_state_keys = (
             list(output_state.__annotations__.keys()) if output_state else []
         )
@@ -56,51 +58,52 @@ class GithubGraphWrapper:
     def _deep_merge(self, old: dict[str, Any], new: dict[str, Any]) -> dict[str, Any]:
         result = deepcopy(old)
         for k, v in new.items():
-            if (
-                k in result
-                and isinstance(result[k], dict)
-                and isinstance(v, dict)
-            ):
+            if k in result and isinstance(result[k], dict) and isinstance(v, dict):
                 result[k] = self._deep_merge(result[k], v)
             else:
                 result[k] = deepcopy(v)
         return result
-        
+
     def _create_branch_name(self) -> str:
         ts = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
         new_branch = f"{self.branch_name}-{self.subgraph_name}-{ts}"
-    
+
         create_branch_on_github(
             github_owner=self.github_owner,
             repository_name=self.repository_name,
             new_branch_name=new_branch,
-            base_branch_name=self.branch_name
+            base_branch_name=self.branch_name,
         )
 
         logger.info(f"Created new GitHub branch: {new_branch}")
         return new_branch
-    
+
     def _format_extra_files(self, branch_name: str) -> list[ExtraFileConfig] | None:
         if self.extra_files is None:
             return None
-        
+
         formatted_files = []
         for file_config in self.extra_files:
             tb = file_config["upload_branch"].replace("{{ branch_name }}", branch_name)
             tp = file_config["upload_dir"].replace("{{ branch_name }}", branch_name)
-            fps = [fp.replace("{{ branch_name }}", branch_name) for fp in file_config["local_file_paths"]]
-            formatted_files.append({
-                "upload_branch": tb, 
-                "upload_dir": tp, 
-                "local_file_paths": fps, 
-            })
+            fps = [
+                fp.replace("{{ branch_name }}", branch_name)
+                for fp in file_config["local_file_paths"]
+            ]
+            formatted_files.append(
+                {
+                    "upload_branch": tb,
+                    "upload_dir": tp,
+                    "local_file_paths": fps,
+                }
+            )
 
         return formatted_files
 
     def _call_api(self) -> None:
         pass
-    
-    @time_node("wrapper", "download_from_github")
+
+    # @time_node("wrapper", "download_from_github")
     def _download_from_github(self, state: dict[str, Any]) -> dict[str, Any]:
         original_state = download_from_github(
             github_owner=self.github_owner,
@@ -108,25 +111,26 @@ class GithubGraphWrapper:
             branch_name=self.branch_name,
             input_path=self.research_file_path,
         )
-        return {
-            "original_state": deepcopy(original_state)  
-        }
-    
-    @time_node("wrapper", "run_subgraph")
+        return {"original_state": deepcopy(original_state)}
+
+    # @time_node("wrapper", "run_subgraph")
     def _run_subgraph(self, state: dict[str, Any]) -> dict[str, Any]:
         original_state = state.get("original_state") or {}
         output_state = self.subgraph.invoke(original_state)
         return {
-            "original_state": original_state, 
-            "output_state": output_state, 
+            "original_state": original_state,
+            "output_state": output_state,
         }
 
-    @time_node("wrapper", "upload_to_github")
+    # @time_node("wrapper", "upload_to_github")
     def _upload_to_github(self, state: dict[str, Any]) -> dict[str, bool]:
-
         original_state = state.get("original_state", {})
         raw_output_state = state.get("output_state", {})
-        output_state = {k: raw_output_state[k] for k in self.output_state_keys if k in raw_output_state}
+        output_state = {
+            k: raw_output_state[k]
+            for k in self.output_state_keys
+            if k in raw_output_state
+        }
         merged_state = self._deep_merge(original_state, output_state)
 
         key_conflict = bool(set(original_state) & set(output_state))
@@ -145,8 +149,8 @@ class GithubGraphWrapper:
             branch_name=final_branch,
             output_path=self.research_file_path,
             state=merged_state,
-            extra_files=formatted_extra_files, 
-            commit_message=f"Update by subgraph: {self.subgraph_name}"
+            extra_files=formatted_extra_files,
+            commit_message=f"Update by subgraph: {self.subgraph_name}",
         )
         if formatted_extra_files is not None:
             for file_config in formatted_extra_files:
@@ -185,46 +189,50 @@ class GithubGraphWrapper:
 class BuildableSubgraph(Protocol):
     def build_graph(self) -> CompiledGraph: ...
 
+
 T = TypeVar("T", bound=BuildableSubgraph)
 
 
 # TODO: Add support for subgraph API invocation
 def create_wrapped_subgraph(
     subgraph: type[T],
-    output_state: type[TypedDict], 
+    output_state: type[Any],
 ) -> type:
-    
     class GithubGraphRunner(GithubGraphWrapper):
         def __init__(
-            self, 
+            self,
             github_repository: str,
             branch_name: str,
             research_file_path: str = ".research/research_history.json",
             extra_files: list[ExtraFileConfig] | None = None,
-            perform_download: bool = True, 
-            perform_upload: bool = True, 
-            public_branch: str = "gh-pages", 
+            perform_download: bool = True,
+            perform_upload: bool = True,
+            public_branch: str = "gh-pages",
             *args: Any,
             **kwargs: Any,
         ):
-            
             subgraph_instance = subgraph(*args, **kwargs)
             compiled_subgraph = subgraph_instance.build_graph()
-            setattr(compiled_subgraph, "__source_subgraph_name__", subgraph_instance.__class__.__name__)
+            setattr(
+                compiled_subgraph,
+                "__source_subgraph_name__",
+                subgraph_instance.__class__.__name__,
+            )
             super().__init__(
                 subgraph=compiled_subgraph,
                 output_state=output_state,
-                github_repository=github_repository, 
+                github_repository=github_repository,
                 branch_name=branch_name,
                 research_file_path=research_file_path,
                 extra_files=extra_files,
-                perform_download=perform_download, 
-                perform_upload=perform_upload, 
-                public_branch=public_branch, 
+                perform_download=perform_download,
+                perform_upload=perform_upload,
+                public_branch=public_branch,
             )
 
-        def run(self, inputs: dict[str, Any]) -> dict[str, Any]:
+        def run(self, inputs: dict[str, Any] = {}) -> dict[str, Any]:
             graph = self.build_graph()
-            return graph.invoke(inputs)
-        
+            config = {"recursion_limit": 300}  # NOTE:
+            return graph.invoke(inputs, config=config)
+
     return GithubGraphRunner
