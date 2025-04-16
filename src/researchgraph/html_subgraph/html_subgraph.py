@@ -42,7 +42,7 @@ class HtmlSubgraph:
     def __init__(
         self,
         llm_name: str,
-        save_dir: str, 
+        save_dir: str,
     ):
         self.llm_name = llm_name
         self.save_dir = save_dir
@@ -59,8 +59,7 @@ class HtmlSubgraph:
     @time_node("html_subgraph", "_render_html_node")
     def _render_html_node(self, state: HtmlSubgraphState) -> dict:
         full_html = render_html(
-            paper_html_content=state["paper_html_content"],
-            save_dir=self.save_dir
+            paper_html_content=state["paper_html_content"], save_dir=self.save_dir
         )
         return {"full_html": full_html}
 
@@ -75,7 +74,7 @@ class HtmlSubgraph:
         graph_builder.add_edge("render_html_node", END)
 
         return graph_builder.compile()
-    
+
 
 HtmlConverter = create_wrapped_subgraph(HtmlSubgraph, HtmlSubgraphOutputState)
 
@@ -89,21 +88,21 @@ if __name__ == "__main__":
     figures_dir = "/workspaces/researchgraph/data/images"
     pdf_files = glob.glob(os.path.join(figures_dir, "*.pdf"))
 
-    github_repository="auto-res2/experiment_script_matsuzawa"
-    branch_name = "base-branch"
+    github_repository = "auto-res2/auto-research"
+    branch_name = "devin-87bbb10091ff4885b001b5f49bd7aa11"
     # research_file_path = ".research/research_history.json"
 
     extra_files = [
         {
-            "upload_branch": "gh-pages", 
-            "upload_dir": "branches/{{ branch_name }}/", 
-            "local_file_paths": [f"{save_dir}/index.html"], 
-        }, 
+            "upload_branch": "gh-pages",
+            "upload_dir": "branches/{{ branch_name }}/",
+            "local_file_paths": [f"{save_dir}/index.html"],
+        },
         {
-            "upload_branch": "gh-pages", 
-            "upload_dir": "branches/{{ branch_name }}/images/", 
-            "local_file_paths": pdf_files, 
-        }
+            "upload_branch": "gh-pages",
+            "upload_dir": "branches/{{ branch_name }}/images/",
+            "local_file_paths": pdf_files,
+        },
     ]
 
     html_converter = HtmlConverter(

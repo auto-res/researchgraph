@@ -34,10 +34,8 @@ from researchgraph.retrieve_paper_subgraph.nodes.summarize_paper_node import (
 from researchgraph.retrieve_paper_subgraph.nodes.retrieve_arxiv_text_node import (
     RetrievearXivTextNode,
 )
-from researchgraph.retrieve_paper_subgraph.input_data import (
-    retrieve_paper_subgraph_input_data,
-)
 from researchgraph.utils.execution_timers import time_node, ExecutionTimeState
+from researchgraph.github_utils.graph_wrapper import create_wrapped_subgraph
 
 setup_logging()
 logger = logging.getLogger(__name__)
@@ -566,11 +564,12 @@ class RetrievePaperSubgraph:
         return graph_builder.compile()
 
 
-if __name__ == "__main__":
-    save_dir = "/workspaces/researchgraph/data"
-    os.makedirs(save_dir, exist_ok=True)
+Retriever = create_wrapped_subgraph(
+    RetrievePaperSubgraph,
+    RetrievePaperOutputState,
+)
 
-    llm_name = "o3-mini-2025-01-31"
+if __name__ == "__main__":
     scrape_urls = [
         "https://icml.cc/virtual/2024/papers.html?filter=title",
         "https://iclr.cc/virtual/2024/papers.html?filter=title",
@@ -579,15 +578,24 @@ if __name__ == "__main__":
     ]
     add_paper_num = 1
 
-    subgraph = RetrievePaperSubgraph(
+    llm_name = "o3-mini-2025-01-31"
+    save_dir = "/workspaces/researchgraph/data"
+
+    github_repository = "auto-res2/test20"
+    branch_name = "test"
+    input = {
+        "queries": ["diffusion model"],
+    }
+
+    retriever = Retriever(
+        github_repository=github_repository,
+        branch_name=branch_name,
+        perform_download=False,
         llm_name=llm_name,
         save_dir=save_dir,
         scrape_urls=scrape_urls,
         add_paper_num=add_paper_num,
-    ).build_graph()
+    )
 
-    config = {"recursion_limit": 300}
-    result = subgraph.invoke(retrieve_paper_subgraph_input_data, config=config)
-
-    # print(result.keys())
-    print(result)
+    result = retriever.run(input)
+    print(f"result: {result}")

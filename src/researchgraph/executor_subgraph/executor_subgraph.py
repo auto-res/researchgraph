@@ -23,10 +23,8 @@ from researchgraph.executor_subgraph.nodes.check_devin_completion import (
 )
 from researchgraph.executor_subgraph.nodes.llm_decide import llm_decide
 
-from researchgraph.executor_subgraph.input_data import (
-    executor_subgraph_input_data,
-)
 from researchgraph.utils.execution_timers import time_node, ExecutionTimeState
+from researchgraph.github_utils.graph_wrapper import create_wrapped_subgraph
 
 setup_logging()
 logger = logging.getLogger(__name__)
@@ -50,7 +48,6 @@ class ExecutorSubgraphHiddenState(TypedDict):
 
 class ExecutorSubgraphOutputState(TypedDict):
     experiment_devin_url: str
-    branch_name: str
     output_text_data: str
 
 
@@ -68,11 +65,13 @@ class ExecutorSubgraph:
         self,
         github_owner: str,
         repository_name: str,
+        dev_branch_name: str,
         save_dir: str,
         max_code_fix_iteration: int = 3,
     ):
         self.github_owner = github_owner
         self.repository_name = repository_name
+        self.branch_name = branch_name
         self.save_dir = save_dir
         self.max_code_fix_iteration = max_code_fix_iteration
         self.headers = {
@@ -87,6 +86,7 @@ class ExecutorSubgraph:
             headers=self.headers,
             github_owner=self.github_owner,
             repository_name=self.repository_name,
+            branch_name=self.branch_name,
             new_method=state["new_method"],
             experiment_code=state["experiment_code"],
         )
@@ -94,7 +94,6 @@ class ExecutorSubgraph:
         return {
             "fix_iteration_count": 0,
             "experiment_session_id": experiment_session_id,
-            "branch_name": experiment_session_id,
             "experiment_devin_url": experiment_devin_url,
         }
 
@@ -115,7 +114,7 @@ class ExecutorSubgraph:
         workflow_run_id = execute_github_actions_workflow(
             github_owner=self.github_owner,
             repository_name=self.repository_name,
-            branch_name=state["branch_name"],
+            branch_name=self.branch_name,
         )
         return {
             "workflow_run_id": workflow_run_id,
@@ -229,19 +228,41 @@ class ExecutorSubgraph:
         return graph_builder.compile()
 
 
-if __name__ == "__main__":
-    graph = ExecutorSubgraph(
-        github_owner="auto-res2",
-        repository_name="auto-research",
-        save_dir="/workspaces/researchgraph/data",
-        max_code_fix_iteration=3,
-    ).build_graph()
+Executor = create_wrapped_subgraph(
+    ExecutorSubgraph,
+    ExecutorSubgraphOutputState,
+)
 
-    for event in graph.stream(executor_subgraph_input_data, stream_mode="updates"):
-        # print(node)
-        node_name = list(event.keys())[0]
-        print(node_name)
-        print(event[node_name])
+if __name__ == "__main__":
+    # graph = ExecutorSubgraph(
+    #     github_owner="auto-res2",
+    #     repository_name="auto-research",
+    #     save_dir="/workspaces/researchgraph/data",
+    #     max_code_fix_iteration=3,
+    # ).build_graph()
+
+    # for event in graph.stream(executor_subgraph_input_data, stream_mode="updates"):
+    #     # print(node)
+    #     node_name = list(event.keys())[0]
+    #     print(node_name)
+    #     print(event[node_name])
 
     # executor_subgraph.output_mermaid
     # result = graph.invoke(executor_subgraph_input_data)
+
+    llm_name = "o1-2024-12-17"
+    github_repository = "auto-res2/test20"
+    branch_name = "test2"
+
+    retriever = Executor(
+        github_repository=github_repository,
+        branch_name=branch_name,
+        save_dir="/workspaces/researchgraph/data",
+        max_code_fix_iteration=3,
+        github_owner="auto-res2",  # TODO:The arguments are duplicated and need to be fixed.
+        repository_name="test20",  # TODO:The arguments are duplicated and need to be fixed.
+        dev_branch_name=branch_name,  # TODO:The arguments are duplicated and need to be fixed.
+    )
+
+    result = retriever.run()
+    print(f"result: {result}")

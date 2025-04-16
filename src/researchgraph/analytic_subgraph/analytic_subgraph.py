@@ -8,10 +8,8 @@ from researchgraph.analytic_subgraph.nodes.analytic_node import analytic_node
 
 from researchgraph.utils.logging_utils import setup_logging
 
-from researchgraph.analytic_subgraph.input_data import (
-    analytic_subgraph_input_data,
-)
 from researchgraph.utils.execution_timers import time_node, ExecutionTimeState
+from researchgraph.github_utils.graph_wrapper import create_wrapped_subgraph
 
 setup_logging()
 logger = logging.getLogger(__name__)
@@ -71,11 +69,25 @@ class AnalyticSubgraph:
         return graph_builder.compile()
 
 
+Analyst = create_wrapped_subgraph(
+    AnalyticSubgraph,
+    AnalyticSubgraphOutputState,
+)
+
 if __name__ == "__main__":
     llm_name = "o1-2024-12-17"
-    subgraph = AnalyticSubgraph(
-        llm_name=llm_name,
-    ).build_graph()
+    # subgraph = AnalyticSubgraph(
+    #     llm_name=llm_name,
+    # ).build_graph()
 
-    result = subgraph.invoke(analytic_subgraph_input_data)
-    print(result["analysis_report"])
+    # result = subgraph.invoke(analytic_subgraph_input_data)
+    # print(result["analysis_report"])
+
+    github_repository = "auto-res2/test20"
+    branch_name = "test2"
+    retriever = Analyst(
+        github_repository=github_repository, branch_name=branch_name, llm_name=llm_name
+    )
+
+    result = retriever.run()
+    print(f"result: {result}")

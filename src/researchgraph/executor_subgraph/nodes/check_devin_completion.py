@@ -18,3 +18,7 @@ def check_devin_completion(headers: dict, session_id: str) -> dict | None:
         method="GET",
         check_condition=should_retry,
     )
+
+
+if __name__ == "__main__":
+    headers = {}
