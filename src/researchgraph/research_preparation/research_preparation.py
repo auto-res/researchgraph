@@ -74,7 +74,7 @@ class ResearchPreparation:
         fork_result = fork_repository(
             repository_name=state["repository_name"],
             device_type=state["device_type"],
-            organization=state["organization"],
+            organization=state.get("organization", ""),
         )
         return {"fork_result": fork_result}
 
