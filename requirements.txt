@@ -146,7 +146,7 @@ numpy==2.2.4
     #   pandas
     #   pydeck
     #   streamlit
-openai==1.72.0
+openai==1.75.0
     # via researchgraph (pyproject.toml)
 orjson==3.10.16
     # via
