@@ -111,21 +111,44 @@ class GithubGraphWrapper:
             branch_name=self.branch_name,
             input_path=self.research_file_path,
         )
-        return {"original_state": deepcopy(original_state)}
+        return {"original_state": original_state}
+    
+    def _prepare_branch(self, state: dict[str, Any]) -> dict[str, Any]:
+        original_state = state.get("original_state", {})
+        has_key_conflict = any(key in original_state for key in self.output_state_keys)
+        if has_key_conflict:
+            final_branch = self._create_branch_name()
+            logger.info(f"Key conflict detected. Created new branch: {final_branch}")
+        else:
+            final_branch = self.branch_name
+            logger.info(f"No key conflict. Using existing branch: {final_branch}")
+        return {
+            "original_state": original_state, 
+            "branch_name": final_branch, 
+        }
 
     # @time_node("wrapper", "run_subgraph")
     def _run_subgraph(self, state: dict[str, Any]) -> dict[str, Any]:
         original_state = state.get("original_state") or {}
-        output_state = self.subgraph.invoke(original_state)
+        branch_name = state.get("branch_name")
+        state_for_subgraph = {
+            **original_state,
+            "github_owner": self.github_owner, 
+            "repository_name": self.repository_name, 
+            "branch_name": branch_name, 
+        }
+        output_state = self.subgraph.invoke(state_for_subgraph)
         return {
             "original_state": original_state,
             "output_state": output_state,
+            "branch_name": branch_name, 
         }
 
     # @time_node("wrapper", "upload_to_github")
     def _upload_to_github(self, state: dict[str, Any]) -> dict[str, bool]:
         original_state = state.get("original_state", {})
         raw_output_state = state.get("output_state", {})
+        branch_to_use = state.get("branch_name", self.branch_name)
         output_state = {
             k: raw_output_state[k]
             for k in self.output_state_keys
@@ -133,20 +156,12 @@ class GithubGraphWrapper:
         }
         merged_state = self._deep_merge(original_state, output_state)
 
-        key_conflict = bool(set(original_state) & set(output_state))
-        if key_conflict:
-            final_branch = self._create_branch_name()
-            logger.info(f"Key conflict detected. Created new branch: {final_branch}")
-        else:
-            final_branch = self.branch_name
-            logger.info(f"No key conflict. Using existing branch: {final_branch}")
-
-        formatted_extra_files = self._format_extra_files(final_branch)
+        formatted_extra_files = self._format_extra_files(branch_to_use)
 
         result = upload_to_github(
             github_owner=self.github_owner,
             repository_name=self.repository_name,
-            branch_name=final_branch,
+            branch_name=branch_to_use,
             output_path=self.research_file_path,
             state=merged_state,
             extra_files=formatted_extra_files,
@@ -172,6 +187,10 @@ class GithubGraphWrapper:
             wrapper.add_node("download_from_github", self._download_from_github)
             wrapper.add_edge(prev, "download_from_github")
             prev = "download_from_github"
+
+            wrapper.add_node("prepare_branch", self._prepare_branch)
+            wrapper.add_edge(prev, "prepare_branch")
+            prev = "prepare_branch"
 
         wrapper.add_node("run_subgraph", self._run_subgraph)
         wrapper.add_edge(prev, "run_subgraph")
