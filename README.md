@@ -1,4 +1,8 @@
 # ResearchGraph
+
+[![Documentation](https://img.shields.io/badge/Documentation-📕-blue)](https://auto-res.github.io/researchgraph/)
+[![Twitter Follow](https://img.shields.io/twitter/follow/fuyu_quant?style=social)](https://x.com/fuyu_quant)
+
 ResearchGraph is created by [AutoRes](https://www.autores.one/english).
 ResearchGraph is an OSS that aims to automate complete machine learning research and to self-improve the automatic research system.  
 
