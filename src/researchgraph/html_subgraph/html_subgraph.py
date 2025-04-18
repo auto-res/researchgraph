@@ -88,8 +88,8 @@ if __name__ == "__main__":
     figures_dir = "/workspaces/researchgraph/data/images"
     pdf_files = glob.glob(os.path.join(figures_dir, "*.pdf"))
 
-    github_repository = "auto-res2/auto-research"
-    branch_name = "devin-87bbb10091ff4885b001b5f49bd7aa11"
+    github_repository = "auto-res2/experiment_script_matsuzawa"
+    branch_name = "base-branch"
     # research_file_path = ".research/research_history.json"
 
     extra_files = [
