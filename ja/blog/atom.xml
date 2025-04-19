@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?><?xml-stylesheet type="text/xsl" href="atom.xsl"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+    <id>https://www.autores.one/researchgraph/ja/blog</id>
+    <title>Research Graph Blog</title>
+    <updated>2024-07-13T11:39:33.000Z</updated>
+    <generator>https://github.com/jpmonette/feed</generator>
+    <link rel="alternate" href="https://www.autores.one/researchgraph/ja/blog"/>
+    <subtitle>Research Graph Blog</subtitle>
+    <icon>https://www.autores.one/researchgraph/ja/img/favicon.ico</icon>
+    <entry>
+        <title type="html"><![CDATA[sample]]></title>
+        <id>https://www.autores.one/researchgraph/ja/blog/sample</id>
+        <link href="https://www.autores.one/researchgraph/ja/blog/sample"/>
+        <updated>2024-07-13T11:39:33.000Z</updated>
+    </entry>
+</feed>
