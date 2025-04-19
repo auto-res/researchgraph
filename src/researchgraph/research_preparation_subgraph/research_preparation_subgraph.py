@@ -178,7 +178,7 @@ class ResearchPreparationSubgraph:
 
     def run(self) -> dict:
         graph = self.build_graph()
-        result = graph.invoke()
+        result = graph.invoke({})
         return result
 
 
