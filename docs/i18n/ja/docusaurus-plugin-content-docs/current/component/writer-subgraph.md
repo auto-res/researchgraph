@@ -2,27 +2,39 @@
 sidebar_position: 11
 ---
 
-# Writer Subgraph
+# Writer サブグラフ
 
-このページではWriter Subgraphの詳細について説明します。
+このページでは Writer サブグラフの詳細について説明します。
 
 ## 概要
 
-Writer Subgraphは文書生成や執筆支援を担当するコンポーネントです。
+Writer サブグラフは、論文執筆やドキュメント生成を担うコンポーネントです。
 
-## 機能
+## 主な機能
 
 - 主な機能1
 - 主な機能2
 - 主な機能3
 
-## 使用方法
+## 使い方
 
 ```python
-# Writer Subgraphの使用例
-# 後で実装予定
+from researchgraph.writer_subgraph.writer_subgraph import PaperWriter
+
+refine_round = 1
+
+paper_writer = PaperWriter(
+    github_repository=github_repository,
+    branch_name=branch_name,
+    llm_name="o3-mini-2025-01-31",
+    save_dir=save_dir,
+    refine_round=refine_round,
+)
+
+result = paper_writer.run({})
+print(f"result: {result}")
 ```
 
 ## API
 
-Writer Subgraphが提供するAPIの詳細については準備中です。
+APIの詳細は準備中です。

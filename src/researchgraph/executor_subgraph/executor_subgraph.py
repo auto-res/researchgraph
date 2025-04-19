@@ -78,10 +78,9 @@ class ExecutorSubgraph:
 
     @time_node("executor_subgraph", "_generate_code_with_devin_node")
     def _generate_code_with_devin_node(self, state: ExecutorSubgraphState) -> dict:
-        logger.info("---ExecutorSubgraph---")
         experiment_session_id, experiment_devin_url = generate_code_with_devin(
             headers=self.headers,
-            github_owner=state["github_owner"], 
+            github_owner=state["github_owner"],
             repository_name=state["repository_name"],
             branch_name=state["branch_name"],
             new_method=state["new_method"],
@@ -227,29 +226,11 @@ class ExecutorSubgraph:
 
 Executor = create_wrapped_subgraph(
     ExecutorSubgraph,
-    ExecutorSubgraphInputState, 
+    ExecutorSubgraphInputState,
     ExecutorSubgraphOutputState,
 )
 
 if __name__ == "__main__":
-    # graph = ExecutorSubgraph(
-    #     github_owner="auto-res2",
-    #     repository_name="auto-research",
-    #     save_dir="/workspaces/researchgraph/data",
-    #     max_code_fix_iteration=3,
-    # ).build_graph()
-
-    # for event in graph.stream(executor_subgraph_input_data, stream_mode="updates"):
-    #     # print(node)
-    #     node_name = list(event.keys())[0]
-    #     print(node_name)
-    #     print(event[node_name])
-
-    # executor_subgraph.output_mermaid
-    # result = graph.invoke(executor_subgraph_input_data)
-
-
-
     llm_name = "o1-2024-12-17"
     github_repository = "auto-res2/experiment_script_matsuzawa"
     branch_name = "base-branch"

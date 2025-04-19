@@ -21,8 +21,16 @@ The Generator Subgraph is a component responsible for generating research artifa
 ## Usage
 
 ```python
-# Example usage of Generator Subgraph
-# To be implemented
+from researchgraph.generator_subgraph.generator_subgraph import Generator
+
+generator = Generator(
+    github_repository=github_repository,
+    branch_name=branch_name,
+    llm_name="o1-2024-12-17",
+)
+
+result = generator.run()
+print(f"result: {result}")
 ```
 
 ## API

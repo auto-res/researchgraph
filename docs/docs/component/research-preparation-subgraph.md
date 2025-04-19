@@ -18,9 +18,20 @@ The Research Preparation Subgraph is a component responsible for the research pr
 
 ## Usage
 
+To use the ResearchPreparationSubgraph module:
+
 ```python
-# Example usage of Research Preparation Subgraph
-# To be implemented
+from researchgraph.research_preparation_subgraph.research_preparation_subgraph import ResearchPreparationSubgraph
+
+preparer = ResearchPreparationSubgraph(
+    github_repository=github_repository,
+    branch_name=branch_name,
+    device_type="gpu",
+    organization="auto-res2",
+)
+
+result = preparer.run()
+print(result)
 ```
 
 ## API

@@ -45,7 +45,6 @@ class GeneratorSubgraph:
 
     @time_node("generator_subgraph", "_generator_node")
     def _generator_node(self, state: GeneratorSubgraphState) -> dict:
-        logger.info("---GeneratorSubgraph---")
         new_method = generator_node(
             llm_name=self.llm_name,
             base_method_text=state["base_method_text"],
@@ -66,7 +65,7 @@ class GeneratorSubgraph:
 
 Generator = create_wrapped_subgraph(
     GeneratorSubgraph,
-    GeneratorSubgraphInputState, 
+    GeneratorSubgraphInputState,
     GeneratorSubgraphOutputState,
 )
 

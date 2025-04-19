@@ -44,10 +44,7 @@ from researchgraph.html_subgraph.html_subgraph import (
     HtmlSubgraph,
     HtmlSubgraphState,
 )
-from researchgraph.upload_subgraph.upload_subgraph import (
-    UploadSubgraph,
-    UploadSubgraphState,
-)
+
 
 from researchgraph.retrieve_paper_subgraph.input_data import (
     retrieve_paper_subgraph_input_data,
@@ -193,7 +190,7 @@ class ResearchGraph:
         def html_subgraph(state: dict):
             subgraph = HtmlSubgraph(
                 llm_name="o3-mini-2025-01-31",
-                save_dir=self.save_dir, 
+                save_dir=self.save_dir,
             ).build_graph()
             return subgraph.invoke(state)
 

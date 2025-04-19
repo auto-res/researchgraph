@@ -4,27 +4,38 @@ title: Executor
 sidebar_position: 2
 ---
 
-# Executor Subgraph
+# Executor サブグラフ
 
-このページではExecutor Subgraphの詳細について説明します。
+このページでは Executor サブグラフの詳細について説明します。
 
 ## 概要
 
-Executor Subgraphは、研究論文からコードを実行し、実験を行うことを担当するコンポーネントです。
+Executor サブグラフは、論文のコード実行や実験の実行を担うコンポーネントです。
 
-## 機能
+## 主な機能
 
 - 主な機能1
 - 主な機能2
 - 主な機能3
 
-## 使用方法
+## 使い方
 
 ```python
-# Executor Subgraphの使用例
-# 後で実装予定
+from researchgraph.executor_subgraph.executor_subgraph import Executor
+
+max_code_fix_iteration = 3
+
+executor = Executor(
+    github_repository=github_repository,
+    branch_name=branch_name,
+    save_dir=save_dir,
+    max_code_fix_iteration=max_code_fix_iteration,
+)
+
+result = executor.run()
+print(f"result: {result}")
 ```
 
 ## API
 
-Executor Subgraphが提供するAPIの詳細については準備中です。
+APIの詳細は準備中です。

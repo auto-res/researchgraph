@@ -23,6 +23,22 @@ The README Subgraph is a component responsible for generating and managing proje
 # To be implemented
 ```
 
+# ReadmeUploader Usage
+
+To use the ReadmeUploader module:
+
+```python
+from researchgraph.readme_subgraph.readme_subgraph import ReadmeUploader
+
+readme_uploader = ReadmeUploader(
+    github_repository=github_repository,
+    branch_name=branch_name,
+)
+
+result = readme_uploader.run()
+print(f"result: {result}")
+```
+
 ## API
 
 Details about the API provided by the README Subgraph are under preparation.

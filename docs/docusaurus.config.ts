@@ -79,7 +79,7 @@ const config: Config = {
     image: 'img/docusaurus-social-card.jpg',
     colorMode: {
       defaultMode: 'dark',
-      disableSwitch: true,
+      disableSwitch: false, // ダーク/ライトテーマ切り替えボタンを有効化
       respectPrefersColorScheme: true,
     },
     navbar: {
@@ -96,6 +96,14 @@ const config: Config = {
           label: 'Tutorial',
         },
         {to: '/blog', label: 'Blog', position: 'left'},
+        // 右端から順に: X, GitHub, 言語切り替え
+        {
+          href: 'https://x.com/fuyu_quant',
+          label: 'X',
+          position: 'right',
+          className: 'header-x-link',
+          'aria-label': 'X (Twitter) link',
+        },
         {
           href: 'https://github.com/auto-res/researchgraph',
           label: 'GitHub',

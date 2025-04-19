@@ -71,7 +71,6 @@ class ExperimentalPlanSubgraph:
     def _retrieve_code_with_devin_node(
         self, state: ExperimentalPlanSubgraphState
     ) -> dict:
-        logger.info("---ExperimentalPlanSubgraph---")
         retrieve_session_id, retrieve_devin_url = retrieve_code_with_devin(
             headers=self.headers,
             github_url=state["base_github_url"],
@@ -211,7 +210,7 @@ class ExperimentalPlanSubgraph:
 
 ExperimentalPlaner = create_wrapped_subgraph(
     ExperimentalPlanSubgraph,
-    ExperimentalPlanSubgraphInputState, 
+    ExperimentalPlanSubgraphInputState,
     ExperimentalPlanSubgraphOutputState,
 )
 

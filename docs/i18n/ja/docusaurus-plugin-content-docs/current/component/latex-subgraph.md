@@ -19,8 +19,26 @@ LaTeX Subgraphは論文やドキュメントのLaTeXフォーマットに関す�
 ## 使用方法
 
 ```python
-# LaTeX Subgraphの使用例
-# 後で実装予定
+from researchgraph.latex_subgraph.latex_subgraph import LatexConverter
+
+extra_files = [
+    {
+        "upload_branch": "{{ branch_name }}",
+        "upload_dir": ".research/",
+        "local_file_paths": [f"{save_dir}/paper.pdf"],
+    }
+]
+
+latex_converter = LatexConverter(
+    github_repository=github_repository,
+    branch_name=branch_name,
+    extra_files=extra_files,
+    llm_name="o3-mini-2025-01-31",
+    save_dir=save_dir,
+)
+
+result = latex_converter.run({})
+print(f"result: {result}")
 ```
 
 ## API
