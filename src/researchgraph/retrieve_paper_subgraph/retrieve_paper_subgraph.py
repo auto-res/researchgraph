@@ -566,6 +566,7 @@ class RetrievePaperSubgraph:
 
 Retriever = create_wrapped_subgraph(
     RetrievePaperSubgraph,
+    RetrievePaperInputState, 
     RetrievePaperOutputState,
 )
 
@@ -581,8 +582,8 @@ if __name__ == "__main__":
     llm_name = "o3-mini-2025-01-31"
     save_dir = "/workspaces/researchgraph/data"
 
-    github_repository = "auto-res2/test20"
-    branch_name = "test"
+    github_repository = "auto-res2/experiment_script_matsuzawa"
+    branch_name = "base-branch"
     input = {
         "queries": ["diffusion model"],
     }

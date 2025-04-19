@@ -71,6 +71,7 @@ class AnalyticSubgraph:
 
 Analyst = create_wrapped_subgraph(
     AnalyticSubgraph,
+    AnalyticSubgraphInputState, 
     AnalyticSubgraphOutputState,
 )
 

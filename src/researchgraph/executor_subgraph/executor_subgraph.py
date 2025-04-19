@@ -227,6 +227,7 @@ class ExecutorSubgraph:
 
 Executor = create_wrapped_subgraph(
     ExecutorSubgraph,
+    ExecutorSubgraphInputState, 
     ExecutorSubgraphOutputState,
 )
 

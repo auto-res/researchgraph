@@ -86,7 +86,11 @@ class LatexSubgraph:
         return graph_builder.compile()
     
 
-LatexConverter =  create_wrapped_subgraph(LatexSubgraph, LatexSubgraphOutputState)
+LatexConverter =  create_wrapped_subgraph(
+    LatexSubgraph, 
+    LatexSubgraphInputState, 
+    LatexSubgraphOutputState
+)
 
 
 if __name__ == "__main__":
