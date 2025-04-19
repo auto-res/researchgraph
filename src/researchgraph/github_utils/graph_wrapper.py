@@ -131,7 +131,7 @@ class GithubGraphWrapper:
         if input_conflict or output_conflict:
             reason = "Input mismatch" if input_conflict else "Output key conflict"
             final_branch = self._create_branch_name()
-            logger.info("%s detected. Created new branch: %s", reason, final_branch)
+            logger.info(f"{reason} detected. Created new branch: {final_branch}")
         else:
             logger.info(f"No conflict. Using existing branch: {final_branch}")
 
