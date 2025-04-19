@@ -48,7 +48,6 @@ class AnalyticSubgraph:
 
     @time_node("analytic_subgraph", "_analytic_node")
     def _analytic_node(self, state: AnalyticSubgraphState) -> dict:
-        logger.info("---AnalyticSubgraph---")
         analysis_report = analytic_node(
             llm_name=self.llm_name,
             new_method=state["new_method"],
@@ -71,19 +70,12 @@ class AnalyticSubgraph:
 
 Analyst = create_wrapped_subgraph(
     AnalyticSubgraph,
-    AnalyticSubgraphInputState, 
+    AnalyticSubgraphInputState,
     AnalyticSubgraphOutputState,
 )
 
 if __name__ == "__main__":
     llm_name = "o1-2024-12-17"
-    # subgraph = AnalyticSubgraph(
-    #     llm_name=llm_name,
-    # ).build_graph()
-
-    # result = subgraph.invoke(analytic_subgraph_input_data)
-    # print(result["analysis_report"])
-
     github_repository = "auto-res2/test20"
     branch_name = "test2"
     retriever = Analyst(

@@ -1,3 +1,5 @@
+import os
+import glob
 import logging
 from typing import TypedDict
 from langgraph.graph import START, END, StateGraph
@@ -77,16 +79,11 @@ class HtmlSubgraph:
 
 
 HtmlConverter = create_wrapped_subgraph(
-    HtmlSubgraph,
-    HtmlSubgraphInputState, 
-    HtmlSubgraphOutputState
+    HtmlSubgraph, HtmlSubgraphInputState, HtmlSubgraphOutputState
 )
 
 
 if __name__ == "__main__":
-    import os
-    import glob
-
     llm_name = "o3-mini-2025-01-31"
     save_dir = "/workspaces/researchgraph/data"
     figures_dir = "/workspaces/researchgraph/data/images"

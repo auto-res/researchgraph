@@ -121,7 +121,6 @@ class RetrievePaperSubgraph:
         os.makedirs(self.selected_papers_dir, exist_ok=True)
 
     def _initialize_state(self, state: RetrievePaperState) -> dict:
-        logger.info("---RetrievePaperSubgraph---")
         return {
             "queries": state["queries"],
             "process_index": 0,
@@ -566,7 +565,7 @@ class RetrievePaperSubgraph:
 
 Retriever = create_wrapped_subgraph(
     RetrievePaperSubgraph,
-    RetrievePaperInputState, 
+    RetrievePaperInputState,
     RetrievePaperOutputState,
 )
 

@@ -2,7 +2,6 @@ import logging
 
 from langgraph.graph import START, END, StateGraph
 from langgraph.graph.graph import CompiledGraph
-from typing import TypedDict
 
 from researchgraph.research_preparation_subgraph.nodes.fork_repository import (
     fork_repository,
@@ -19,9 +18,6 @@ from researchgraph.research_preparation_subgraph.nodes.create_branch import (
 from researchgraph.research_preparation_subgraph.nodes.retrieve_main_branch_sha import (
     retrieve_main_branch_sha,
 )
-from researchgraph.research_preparation_subgraph.input_data import (
-    research_preparation_input_data,
-)
 
 from researchgraph.utils.logging_utils import setup_logging
 
@@ -31,15 +27,18 @@ setup_logging()
 logger = logging.getLogger(__name__)
 
 
-class ResearchPreparationInputState(TypedDict):
+# class ResearchPreparationInputState(TypedDict):
+#     github_repository: str
+#     github_owner: str
+#     repository_name: str
+#     branch_name: str
+#     device_type: str
+#     organization: str
+
+
+class ResearchPreparationState(ExecutionTimeState):
     github_owner: str
     repository_name: str
-    branch_name: str
-    device_type: str
-    organization: str
-
-
-class ResearchPreparationHiddenState(TypedDict):
     repository_exists: bool
     fork_result: bool
     target_branch_sha: str
@@ -47,26 +46,45 @@ class ResearchPreparationHiddenState(TypedDict):
     main_sha: str
 
 
-class ResearchPreparationOutputState(TypedDict):
-    pass
+# class ResearchPreparationOutputState(TypedDict):
+#     pass
 
 
-class ResearchPreparationState(
-    ResearchPreparationInputState,
-    ResearchPreparationHiddenState,
-    ResearchPreparationOutputState,
-    ExecutionTimeState,
-):
-    pass
+# class ResearchPreparationState(
+#     ResearchPreparationInputState,
+#     ResearchPreparationHiddenState,
+#     ResearchPreparationOutputState,
+#     ExecutionTimeState,
+# ):
+#     pass
 
 
 class ResearchPreparationSubgraph:
-    def __init__(self):
-        pass
+    def __init__(
+        self,
+        github_repository: str,
+        branch_name: str,
+        device_type: str = "cpu",
+        organization: str = "",
+    ):
+        self.github_repository = github_repository
+        self.branch_name = branch_name
+        self.device_type = device_type
+        self.organization = organization
+
+    def _init(self, state: dict) -> dict:
+        # github_repository = state.get("github_repository", "")
+        if "/" in self.github_repository:
+            github_owner, repository_name = self.github_repository.split("/", 1)
+        else:
+            raise ValueError("Invalid repository name format.")
+        return {
+            "github_owner": github_owner,
+            "repository_name": repository_name,
+        }
 
     @time_node("research_preparation", "_get_github_repository")
     def _check_github_repository(self, state: ResearchPreparationState) -> dict:
-        logger.info("---ResearchPreparation---")
         repository_exists = check_github_repository(
             github_owner=state["github_owner"],
             repository_name=state["repository_name"],
@@ -77,8 +95,8 @@ class ResearchPreparationSubgraph:
     def _fork_repository(self, state: ResearchPreparationState) -> dict:
         fork_result = fork_repository(
             repository_name=state["repository_name"],
-            device_type=state["device_type"],
-            organization=state.get("organization", ""),
+            device_type=self.device_type,
+            organization=self.organization,
         )
         return {"fork_result": fork_result}
 
@@ -87,7 +105,7 @@ class ResearchPreparationSubgraph:
         target_branch_sha = check_branch_existence(
             github_owner=state["github_owner"],
             repository_name=state["repository_name"],
-            branch_name=state["branch_name"],
+            branch_name=self.branch_name,
         )
         return {"target_branch_sha": target_branch_sha}
 
@@ -104,7 +122,7 @@ class ResearchPreparationSubgraph:
         create_result = create_branch(
             github_owner=state["github_owner"],
             repository_name=state["repository_name"],
-            branch_name=state["branch_name"],
+            branch_name=self.branch_name,
             main_sha=state["main_sha"],
         )
         return {"create_result": create_result}
@@ -124,6 +142,7 @@ class ResearchPreparationSubgraph:
     def build_graph(self) -> CompiledGraph:
         graph_builder = StateGraph(ResearchPreparationState)
         # make nodes
+        graph_builder.add_node("init", self._init)
         graph_builder.add_node("check_github_repository", self._check_github_repository)
         graph_builder.add_node("fork_repository", self._fork_repository)
         graph_builder.add_node("check_branch_existence", self._check_branch_existence)
@@ -133,7 +152,8 @@ class ResearchPreparationSubgraph:
         graph_builder.add_node("create_branch", self._create_branch)
 
         # make edges
-        graph_builder.add_edge(START, "check_github_repository")
+        graph_builder.add_edge(START, "init")
+        graph_builder.add_edge("init", "check_github_repository")
         graph_builder.add_conditional_edges(
             "check_github_repository",
             self._should_fork_repo,
@@ -156,14 +176,19 @@ class ResearchPreparationSubgraph:
 
         return graph_builder.compile()
 
-    def run(self, intput) -> dict:
+    def run(self) -> dict:
         graph = self.build_graph()
-        result = graph.invoke(intput)
+        result = graph.invoke()
         return result
 
 
 if __name__ == "__main__":
-    subgraph = ResearchPreparationSubgraph().build_graph()
+    subgraph = ResearchPreparationSubgraph(
+        github_repository="auto-res2/experiment_script_matsuzawa",
+        branch_name="base-branch",
+        device_type="cpu",
+        organization="auto-res2",
+    )
 
-    result = subgraph.invoke(research_preparation_input_data)
+    result = subgraph.run()
     print(result)

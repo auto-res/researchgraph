@@ -5,7 +5,7 @@ from langgraph.graph.graph import CompiledGraph
 
 from researchgraph.utils.logging_utils import setup_logging
 
-from researchgraph.upload_subgraph.nodes.readme_upload import readme_upload
+from researchgraph.readme_subgraph.nodes.readme_upload import readme_upload
 from researchgraph.utils.execution_timers import time_node, ExecutionTimeState
 from researchgraph.github_utils.graph_wrapper import create_wrapped_subgraph
 
@@ -42,7 +42,6 @@ class ReadmeSubgraph:
 
     @time_node("readme_subgraph", "_readme_upload_node")
     def _readme_upload_node(self, state: ReadmeSubgraphState) -> dict:
-        logger.info("---ReadmeSubgraph---")
         readme_upload_result = readme_upload(
             github_owner=state["github_owner"],
             repository_name=state["repository_name"],
@@ -66,6 +65,7 @@ class ReadmeSubgraph:
 
 ReadmeUploader = create_wrapped_subgraph(
     ReadmeSubgraph,
+    ReadmeSubgraphInputState,
     ReadmeSubgraphOutputState,
 )
 
