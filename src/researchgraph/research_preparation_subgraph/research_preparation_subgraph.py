@@ -27,15 +27,6 @@ setup_logging()
 logger = logging.getLogger(__name__)
 
 
-# class ResearchPreparationInputState(TypedDict):
-#     github_repository: str
-#     github_owner: str
-#     repository_name: str
-#     branch_name: str
-#     device_type: str
-#     organization: str
-
-
 class ResearchPreparationState(ExecutionTimeState):
     github_owner: str
     repository_name: str
@@ -44,19 +35,6 @@ class ResearchPreparationState(ExecutionTimeState):
     target_branch_sha: str
     create_result: bool
     main_sha: str
-
-
-# class ResearchPreparationOutputState(TypedDict):
-#     pass
-
-
-# class ResearchPreparationState(
-#     ResearchPreparationInputState,
-#     ResearchPreparationHiddenState,
-#     ResearchPreparationOutputState,
-#     ExecutionTimeState,
-# ):
-#     pass
 
 
 class ResearchPreparationSubgraph:

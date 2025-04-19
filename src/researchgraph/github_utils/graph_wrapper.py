@@ -15,9 +15,6 @@ from researchgraph.github_utils.github_file_io import (
 setup_logging()
 logger = logging.getLogger(__name__)
 
-# class GraphWrapperState(TypedDict):
-#     github_upload_success: bool
-
 
 class GithubGraphWrapper:
     def __init__(
