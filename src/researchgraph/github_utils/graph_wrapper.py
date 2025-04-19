@@ -192,7 +192,7 @@ class GithubGraphWrapper:
         )
         logger.info("Updated research_history.json.")
         logger.info(
-            f"Check here：https://github.com/{state['github_owner']}/{state['repository_name']}/blob/{state['branch_name']}/.research/research_history.json"
+            f"Check here：https://github.com/{self.github_repository}/blob/{self.branch_name}/.research/research_history.json"
         )
         if formatted_extra_files is not None:
             for file_config in formatted_extra_files:
