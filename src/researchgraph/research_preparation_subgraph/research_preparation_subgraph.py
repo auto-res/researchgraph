@@ -56,7 +56,7 @@ class ResearchPreparationState(
     pass
 
 
-class ResearchPreparation:
+class ResearchPreparationSubgraph:
     def __init__(self):
         pass
 
@@ -154,7 +154,7 @@ class ResearchPreparation:
 
 
 if __name__ == "__main__":
-    subgraph = ResearchPreparation().build_graph()
+    subgraph = ResearchPreparationSubgraph().build_graph()
 
     result = subgraph.invoke(research_preparation_input_data)
     print(result)

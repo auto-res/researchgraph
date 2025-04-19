@@ -9,12 +9,19 @@ const sidebars: SidebarsConfig = {
     },
     {
       type: 'category',
-      label: 'component',
+      label: 'Component',
       items: [
         'component/generator',
         'component/executor',
         'component/html-uploader',
         'component/paper-uploader',
+        'component/analytic-subgraph',
+        'component/experimental-plan-subgraph',
+        'component/latex-subgraph',
+        'component/readme-subgraph',
+        'component/research-preparation-subgraph',
+        'component/review-subgraph',
+        'component/writer-subgraph',
       ],
     },
     {
