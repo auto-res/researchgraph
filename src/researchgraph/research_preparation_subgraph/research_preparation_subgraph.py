@@ -4,18 +4,22 @@ from langgraph.graph import START, END, StateGraph
 from langgraph.graph.graph import CompiledGraph
 from typing import TypedDict
 
-from researchgraph.research_preparation.nodes.fork_repository import fork_repository
-from researchgraph.research_preparation.nodes.check_github_repository import (
+from researchgraph.research_preparation_subgraph.nodes.fork_repository import (
+    fork_repository,
+)
+from researchgraph.research_preparation_subgraph.nodes.check_github_repository import (
     check_github_repository,
 )
-from researchgraph.research_preparation.nodes.check_branch_existence import (
+from researchgraph.research_preparation_subgraph.nodes.check_branch_existence import (
     check_branch_existence,
 )
-from researchgraph.research_preparation.nodes.create_branch import create_branch
-from researchgraph.research_preparation.nodes.retrieve_main_branch_sha import (
+from researchgraph.research_preparation_subgraph.nodes.create_branch import (
+    create_branch,
+)
+from researchgraph.research_preparation_subgraph.nodes.retrieve_main_branch_sha import (
     retrieve_main_branch_sha,
 )
-from researchgraph.research_preparation.input_data import (
+from researchgraph.research_preparation_subgraph.input_data import (
     research_preparation_input_data,
 )
 
@@ -151,6 +155,11 @@ class ResearchPreparationSubgraph:
         graph_builder.add_edge("create_branch", END)
 
         return graph_builder.compile()
+
+    def run(self, intput) -> dict:
+        graph = self.build_graph()
+        result = graph.invoke(intput)
+        return result
 
 
 if __name__ == "__main__":
