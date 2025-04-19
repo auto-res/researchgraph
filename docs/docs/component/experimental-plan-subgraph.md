@@ -20,7 +20,15 @@ The Experimental Plan Subgraph is a component responsible for formulating experi
 
 ```python
 # Example usage of Experimental Plan Subgraph
-# To be implemented
+from researchgraph.experimental_plan_subgraph.experimental_plan_subgraph import ExperimentalPlaner
+
+experimentalplaner = ExperimentalPlaner(
+    github_repository=github_repository,
+    branch_name=branch_name,
+)
+
+result = experimentalplaner.run()
+print(f"result: {result}")
 ```
 
 ## API

@@ -14,7 +14,6 @@ const sidebars: SidebarsConfig = {
         'component/generator',
         'component/executor',
         'component/html-uploader',
-        'component/paper-uploader',
         'component/analytic-subgraph',
         'component/experimental-plan-subgraph',
         'component/latex-subgraph',
@@ -30,6 +29,7 @@ const sidebars: SidebarsConfig = {
       items: [
         'development/local-setup',
         'development/roadmap',
+        'development/MCP'
       ],
     },
   ],

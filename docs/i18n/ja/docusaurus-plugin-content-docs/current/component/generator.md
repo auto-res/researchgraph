@@ -4,27 +4,35 @@ title: Generator
 sidebar_position: 1
 ---
 
-# Generator Subgraph
+# Generator サブグラフ
 
-このページではGenerator Subgraphの詳細について説明します。
+このページでは Generator サブグラフの詳細について説明します。
 
 ## 概要
 
-Generator Subgraphは、論文から研究成果物やコードを生成することを担当するコンポーネントです。
+Generator サブグラフは、論文から研究成果物やコードを生成するコンポーネントです。
 
-## 機能
+## 主な機能
 
 - 主な機能1
 - 主な機能2
 - 主な機能3
 
-## 使用方法
+## 使い方
 
 ```python
-# Generator Subgraphの使用例
-# 後で実装予定
+from researchgraph.generator_subgraph.generator_subgraph import Generator
+
+generator = Generator(
+    github_repository=github_repository,
+    branch_name=branch_name,
+    llm_name="o1-2024-12-17",
+)
+
+result = generator.run()
+print(f"result: {result}")
 ```
 
 ## API
 
-Generator Subgraphが提供するAPIの詳細については準備中です。
+APIの詳細は準備中です。

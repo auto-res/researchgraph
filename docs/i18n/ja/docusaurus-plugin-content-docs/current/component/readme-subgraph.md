@@ -19,8 +19,15 @@ README Subgraphはプロジェクト説明文書の生成や管理を担当す�
 ## 使用方法
 
 ```python
-# README Subgraphの使用例
-# 後で実装予定
+from researchgraph.readme_subgraph.readme_subgraph import ReadmeUploader
+
+readme_uploader = ReadmeUploader(
+    github_repository=github_repository,
+    branch_name=branch_name,
+)
+
+result = readme_uploader.run()
+print(f"result: {result}")
 ```
 
 ## API

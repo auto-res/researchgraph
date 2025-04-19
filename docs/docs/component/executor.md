@@ -20,9 +20,22 @@ The Executor Subgraph is a component responsible for executing code and running 
 
 ## Usage
 
+To use the Executor module:
+
 ```python
-# Example usage of Executor Subgraph
-# To be implemented
+from researchgraph.executor_subgraph.executor_subgraph import Executor
+
+max_code_fix_iteration = 3
+
+executor = Executor(
+    github_repository=github_repository,
+    branch_name=branch_name,
+    save_dir=save_dir,
+    max_code_fix_iteration=max_code_fix_iteration,
+)
+
+result = executor.run()
+print(f"result: {result}")
 ```
 
 ## API

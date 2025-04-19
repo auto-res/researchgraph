@@ -2,27 +2,36 @@
 sidebar_position: 9
 ---
 
-# Research Preparation Subgraph
+# 研究準備サブグラフ（Research Preparation Subgraph）
 
-このページではResearch Preparation Subgraphの詳細について説明します。
+このページでは研究準備サブグラフの詳細について説明します。
 
 ## 概要
 
-Research Preparation Subgraphは研究準備プロセスを担当するコンポーネントです。
+研究準備サブグラフは、研究準備プロセスを担うコンポーネントです。
 
-## 機能
+## 主な機能
 
 - 主な機能1
 - 主な機能2
 - 主な機能3
 
-## 使用方法
+## 使い方
 
 ```python
-# Research Preparation Subgraphの使用例
-# 後で実装予定
+from researchgraph.research_preparation_subgraph.research_preparation_subgraph import ResearchPreparationSubgraph
+
+preparer = ResearchPreparationSubgraph(
+    github_repository=github_repository,
+    branch_name=branch_name,
+    device_type="gpu",
+    organization="auto-res2",
+)
+
+result = preparer.run()
+print(result)
 ```
 
 ## API
 
-Research Preparation Subgraphが提供するAPIの詳細については準備中です。
+APIの詳細は準備中です。
