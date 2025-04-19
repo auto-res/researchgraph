@@ -50,7 +50,7 @@ The value of "latex_full_text" must contain the complete LaTeX text."""
             {"role": "user", "content": prompt},
         ]
 
-        response = openai_client(self.llm_name, message=messages, data_class=LLMOutput)
+        response = openai_client(self.llm_name, message=messages, data_model=LLMOutput)
         if response is not None:
             response = json.loads(response)
             return response["latex_full_text"]
@@ -89,7 +89,7 @@ The value of "latex_full_text" must contain the complete LaTeX text."""
         bib_path = os.path.join(self.latex_save_dir, "references.bib")
         if not os.path.exists(bib_path):
             raise FileNotFoundError(f"references.bib file is missing at: {bib_path}")
-        
+
         with open(bib_path, "r") as f:
             bib_text = f.read()
         missing_cites = [cite for cite in cites if cite.strip() not in bib_text]

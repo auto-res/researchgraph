@@ -24,10 +24,8 @@ from researchgraph.executor_subgraph.nodes.check_devin_completion import (
     check_devin_completion,
 )
 
-from researchgraph.experimental_plan_subgraph.input_data import (
-    experimental_subgraph_input_data,
-)
 from researchgraph.utils.execution_timers import time_node, ExecutionTimeState
+from researchgraph.github_utils.graph_wrapper import create_wrapped_subgraph
 
 setup_logging()
 logger = logging.getLogger(__name__)
@@ -73,7 +71,6 @@ class ExperimentalPlanSubgraph:
     def _retrieve_code_with_devin_node(
         self, state: ExperimentalPlanSubgraphState
     ) -> dict:
-        logger.info("---ExperimentalPlanSubgraph---")
         retrieve_session_id, retrieve_devin_url = retrieve_code_with_devin(
             headers=self.headers,
             github_url=state["base_github_url"],
@@ -211,15 +208,20 @@ class ExperimentalPlanSubgraph:
         return graph_builder.compile()
 
 
+ExperimentalPlaner = create_wrapped_subgraph(
+    ExperimentalPlanSubgraph,
+    ExperimentalPlanSubgraphInputState,
+    ExperimentalPlanSubgraphOutputState,
+)
+
 if __name__ == "__main__":
-    graph = ExperimentalPlanSubgraph().build_graph()
-    # output = graph.invoke(
-    #     experimental_subgraph_input_data,
-    # )
-    # print(output)
-    # graph_nodes = list(graph.nodes.keys())[1:]
-    for event in graph.stream(experimental_subgraph_input_data, stream_mode="updates"):
-        # print(node)
-        node_name = list(event.keys())[0]
-        print(node_name)
-        print(event[node_name])
+    github_repository = "auto-res2/test20"
+    branch_name = "test"
+
+    experimentalplaner = ExperimentalPlaner(
+        github_repository=github_repository,
+        branch_name=branch_name,
+    )
+
+    result = experimentalplaner.run()
+    print(f"result: {result}")

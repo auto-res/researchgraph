@@ -1,7 +1,9 @@
 from pydantic import BaseModel
 from jinja2 import Environment
-import json
-from researchgraph.utils.openai_client import openai_client
+
+# from researchgraph.utils.openai_client import openai_client
+from researchgraph.utils.vertexai_client import vertexai_client
+
 from logging import getLogger
 
 logger = getLogger(__name__)
@@ -33,11 +35,15 @@ def select_best_paper_node(
     env = Environment()
     template = env.from_string(prompt_template)
     prompt = template.render(data)
-    messages = [
-        {"role": "user", "content": f"{prompt}"},
-    ]
-    response = openai_client(llm_name, message=messages, data_class=LLMOutput)
-    response = json.loads(response)
+    # TODO：OpenAI clientと統合した際に修正
+    # messages = [
+    #     {"role": "user", "content": f"{prompt}"},
+    # ]
+    response = vertexai_client(
+        model_name=llm_name, message=prompt, data_model=LLMOutput
+    )
+    # response = openai_client(llm_name, message=messages, data_model=LLMOutput)
+    # response = json.loads(response)
     if "selected_arxiv_id" in response:
         arxiv_id_str = response["selected_arxiv_id"]
         arxiv_id_list = [

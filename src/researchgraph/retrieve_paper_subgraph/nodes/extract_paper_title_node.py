@@ -1,7 +1,11 @@
 from jinja2 import Environment
 from pydantic import BaseModel
+
 import json
 from researchgraph.utils.openai_client import openai_client
+from researchgraph.retrieve_paper_subgraph.prompt.extract_paper_title_node_prompt import (
+    extract_paper_title_node_prompt,
+)
 from logging import getLogger
 
 logger = getLogger(__name__)
@@ -17,25 +21,28 @@ def extract_paper_title_node(
     scraped_results: list,
 ) -> list[str]:
     env = Environment()
-    template = env.from_string(extract_title_prompt)
+    template = env.from_string(extract_paper_title_node_prompt)
 
     aggregated_titles = []
     for result in scraped_results:
         data = {"queries": queries, "result": result}
         prompt = template.render(data)
+
+        # response = vertexai_client(
+        #     model_name=llm_name, message=prompt, data_model=LLMOutput
+        # )
         messages = [
-            {
-                "role": "system",
-                "content": "You are an expert at extracting research paper titles from web content. ",
-            },
             {"role": "user", "content": prompt},
         ]
         response = openai_client(
-            model_name=llm_name, message=messages, data_class=LLMOutput
+            model_name=llm_name, message=messages, data_model=LLMOutput
         )
         if response is None:
-            logger.warning("Error: No response from the model.")
-            break
+            logger.warning("Error: No response from LLM in extract_paper_title_node.")
+            continue
+            # raise ValueError(
+            #     "Error: No response from the model in extract_paper_title_node."
+            # )
         else:
             response = json.loads(response)
             if "paper_titles" in response:
@@ -44,25 +51,8 @@ def extract_paper_title_node(
     return aggregated_titles
 
 
-extract_title_prompt = """\n
-"Queries" represents the user's search keywords.
-"Content" is a block of markdown that lists research papers based on the user's search.
-# Instructions:
-- Extract only the titles of research papers from the "Content".
-  - These titles may appear as the text inside markdown links (e.g., bold text or text inside square brackets [ ] if it represents a paper title).
-- Sort the extracted titles in descending order of relevance to the "Queries" — meaning the most relevant titles should come first.
-- Output the titles as a list of strings.
-# Queries:
---------
-{{ queries }}
---------
-# Content:
---------
-{{ result }}
---------"""
-
 if __name__ == "__main__":
-    llm_name = "gpt-4o-mini-2024-07-18"
+    llm_name = "gemini-2.0-flash-001"
     queries = ["deep leanning"]
     scraped_results = [
         "# ICLR 2024 - Deep Learning Advances\n\nThis paper discusses recent advances in deep learning architectures and training techniques...",

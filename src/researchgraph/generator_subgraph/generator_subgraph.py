@@ -7,10 +7,8 @@ from typing import TypedDict
 from researchgraph.utils.logging_utils import setup_logging
 from researchgraph.generator_subgraph.nodes.generator_node import generator_node
 
-from researchgraph.generator_subgraph.input_data import (
-    generator_subgraph_input_data,
-)
 from researchgraph.utils.execution_timers import time_node, ExecutionTimeState
+from researchgraph.github_utils.graph_wrapper import create_wrapped_subgraph
 
 setup_logging()
 logger = logging.getLogger(__name__)
@@ -47,7 +45,6 @@ class GeneratorSubgraph:
 
     @time_node("generator_subgraph", "_generator_node")
     def _generator_node(self, state: GeneratorSubgraphState) -> dict:
-        logger.info("---GeneratorSubgraph---")
         new_method = generator_node(
             llm_name=self.llm_name,
             base_method_text=state["base_method_text"],
@@ -66,11 +63,22 @@ class GeneratorSubgraph:
         return graph_builder.compile()
 
 
+Generator = create_wrapped_subgraph(
+    GeneratorSubgraph,
+    GeneratorSubgraphInputState,
+    GeneratorSubgraphOutputState,
+)
+
 if __name__ == "__main__":
     llm_name = "o1-2024-12-17"
-    subgraph = GeneratorSubgraph(
-        llm_name=llm_name,
-    ).build_graph()
+    github_repository = "auto-res2/test20"
+    branch_name = "test"
 
-    result = subgraph.invoke(generator_subgraph_input_data)
-    print(result)
+    retriever = Generator(
+        github_repository=github_repository,
+        branch_name=branch_name,
+        llm_name=llm_name,
+    )
+
+    result = retriever.run()
+    print(f"result: {result}")

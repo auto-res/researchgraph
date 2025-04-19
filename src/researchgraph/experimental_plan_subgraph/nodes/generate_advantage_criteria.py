@@ -1,20 +1,23 @@
+from jinja2 import Environment
 from researchgraph.utils.openai_client import openai_client
+from researchgraph.experimental_plan_subgraph.prompt.generate_advantage_criteria_prompt import (
+    generate_advantage_criteria_prompt,
+)
 
 
 def generate_advantage_criteria(llm_name: str, new_method: str) -> str:
-    prompt = f"""
-Please follow the instructions below and tell us about your experimental plan to demonstrate the superiority of the “New Method”.
-- Please tell us up to three things you would like to experiment with.
-- Please make sure that the things you would like to experiment with are realistic and possible to code in python.
-
-# New Methods
-----------------------------------------
-{new_method}
-----------------------------------------"""
+    env = Environment()
+    template = env.from_string(generate_advantage_criteria_prompt)
+    data = {
+        "new_method": new_method,
+    }
+    prompt = template.render(data)
     messages = [
         {"role": "user", "content": prompt},
     ]
     response = openai_client(model_name=llm_name, message=messages)
+    if response is None:
+        raise ValueError("No response from LLM in generate_advantage_criteria.")
     return response
 
 

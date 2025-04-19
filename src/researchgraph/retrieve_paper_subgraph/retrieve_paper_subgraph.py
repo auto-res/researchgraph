@@ -34,10 +34,8 @@ from researchgraph.retrieve_paper_subgraph.nodes.summarize_paper_node import (
 from researchgraph.retrieve_paper_subgraph.nodes.retrieve_arxiv_text_node import (
     RetrievearXivTextNode,
 )
-from researchgraph.retrieve_paper_subgraph.input_data import (
-    retrieve_paper_subgraph_input_data,
-)
 from researchgraph.utils.execution_timers import time_node, ExecutionTimeState
+from researchgraph.github_utils.graph_wrapper import create_wrapped_subgraph
 
 setup_logging()
 logger = logging.getLogger(__name__)
@@ -123,7 +121,6 @@ class RetrievePaperSubgraph:
         os.makedirs(self.selected_papers_dir, exist_ok=True)
 
     def _initialize_state(self, state: RetrievePaperState) -> dict:
-        logger.info("---RetrievePaperSubgraph---")
         return {
             "queries": state["queries"],
             "process_index": 0,
@@ -142,7 +139,7 @@ class RetrievePaperSubgraph:
     @time_node("retrieve_paper_subgraph", "_extract_paper_title_node")
     def _extract_paper_title_node(self, state: RetrievePaperState) -> dict:
         extracted_paper_titles = extract_paper_title_node(
-            llm_name=self.llm_name,
+            llm_name="o3-mini-2025-01-31",
             queries=state["queries"],
             scraped_results=state["scraped_results"],
         )
@@ -193,7 +190,7 @@ class RetrievePaperSubgraph:
         process_index = state["process_index"]
         paper_summary = state["search_paper_list"][process_index]["summary"]
         github_url = ExtractGithubUrlNode(
-            llm_name=self.llm_name,
+            llm_name="gemini-2.0-flash-001",
         ).execute(
             paper_full_text=paper_full_text,
             paper_summary=paper_summary,
@@ -223,7 +220,7 @@ class RetrievePaperSubgraph:
             limitations,
             future_research_directions,
         ) = summarize_paper_node(
-            llm_name=self.llm_name,
+            llm_name="gemini-2.0-flash-001",
             prompt_template=summarize_paper_prompt_base,
             paper_text=paper_full_text,
         )
@@ -264,7 +261,7 @@ class RetrievePaperSubgraph:
         candidate_papers_info_list = state["candidate_base_papers_info_list"]
         # TODO:論文の検索数の制御がうまくいっていない気がする
         selected_arxiv_ids = select_best_paper_node(
-            llm_name=self.llm_name,
+            llm_name="gemini-2.0-flash-001",
             prompt_template=select_base_paper_prompt,
             candidate_papers=candidate_papers_info_list,
         )
@@ -334,7 +331,7 @@ class RetrievePaperSubgraph:
             limitations,
             future_research_directions,
         ) = summarize_paper_node(
-            llm_name=self.llm_name,
+            llm_name="gemini-2.0-flash-001",
             prompt_template=summarize_paper_prompt_base,
             paper_text=paper_full_text,
         )
@@ -375,7 +372,7 @@ class RetrievePaperSubgraph:
         ]
 
         selected_arxiv_ids = select_best_paper_node(
-            llm_name=self.llm_name,
+            llm_name="gemini-2.0-flash-001",
             prompt_template=select_add_paper_prompt,
             candidate_papers=filtered_candidates,
             selected_base_paper_info=state["selected_base_paper_info"],
@@ -566,11 +563,13 @@ class RetrievePaperSubgraph:
         return graph_builder.compile()
 
 
-if __name__ == "__main__":
-    save_dir = "/workspaces/researchgraph/data"
-    os.makedirs(save_dir, exist_ok=True)
+Retriever = create_wrapped_subgraph(
+    RetrievePaperSubgraph,
+    RetrievePaperInputState,
+    RetrievePaperOutputState,
+)
 
-    llm_name = "o3-mini-2025-01-31"
+if __name__ == "__main__":
     scrape_urls = [
         "https://icml.cc/virtual/2024/papers.html?filter=title",
         "https://iclr.cc/virtual/2024/papers.html?filter=title",
@@ -579,15 +578,24 @@ if __name__ == "__main__":
     ]
     add_paper_num = 1
 
-    subgraph = RetrievePaperSubgraph(
+    llm_name = "o3-mini-2025-01-31"
+    save_dir = "/workspaces/researchgraph/data"
+
+    github_repository = "auto-res2/experiment_script_matsuzawa"
+    branch_name = "base-branch"
+    input = {
+        "queries": ["diffusion model"],
+    }
+
+    retriever = Retriever(
+        github_repository=github_repository,
+        branch_name=branch_name,
+        perform_download=False,
         llm_name=llm_name,
         save_dir=save_dir,
         scrape_urls=scrape_urls,
         add_paper_num=add_paper_num,
-    ).build_graph()
+    )
 
-    config = {"recursion_limit": 300}
-    result = subgraph.invoke(retrieve_paper_subgraph_input_data, config=config)
-
-    # print(result.keys())
-    print(result)
+    result = retriever.run(input)
+    print(f"result: {result}")
