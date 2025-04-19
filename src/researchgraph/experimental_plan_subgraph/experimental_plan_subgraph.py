@@ -211,6 +211,7 @@ class ExperimentalPlanSubgraph:
 
 ExperimentalPlaner = create_wrapped_subgraph(
     ExperimentalPlanSubgraph,
+    ExperimentalPlanSubgraphInputState, 
     ExperimentalPlanSubgraphOutputState,
 )
 

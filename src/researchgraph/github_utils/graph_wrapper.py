@@ -23,6 +23,7 @@ class GithubGraphWrapper:
     def __init__(
         self,
         subgraph: CompiledGraph,
+        input_state: type[TypedDict], 
         output_state: type[TypedDict],
         github_repository: str,
         branch_name: str,
@@ -33,6 +34,7 @@ class GithubGraphWrapper:
         public_branch: str = "gh-pages",
     ):
         self.subgraph = subgraph
+        self.input_state = input_state
         self.output_state = output_state
         self.github_repository = github_repository
         self.branch_name = branch_name
@@ -45,6 +47,9 @@ class GithubGraphWrapper:
         self.subgraph_name = getattr(
             subgraph, "__source_subgraph_name__", "subgraph"
         ).lower()
+        self.input_state_keys = (
+            list(input_state.__annotations__.keys()) if input_state else []
+        )
         self.output_state_keys = (
             list(output_state.__annotations__.keys()) if output_state else []
         )
@@ -111,42 +116,62 @@ class GithubGraphWrapper:
             branch_name=self.branch_name,
             input_path=self.research_file_path,
         )
-        return {"original_state": original_state}
+        return {"original_state": original_state, **state}
     
     def _prepare_branch(self, state: dict[str, Any]) -> dict[str, Any]:
         original_state = state.get("original_state", {})
-        has_key_conflict = any(key in original_state for key in self.output_state_keys)
-        if has_key_conflict:
+        input_state = {
+            k: v for k, v in state.items() if k != "original_state"
+        }
+
+        input_conflict = any(k in original_state for k in input_state)
+        output_conflict = any(key in original_state for key in self.output_state_keys)
+        final_branch = self.branch_name
+
+        if input_conflict or output_conflict:
+            reason = "Input mismatch" if input_conflict else "Output key conflict"
             final_branch = self._create_branch_name()
-            logger.info(f"Key conflict detected. Created new branch: {final_branch}")
+            logger.info(f"{reason} detected. Created new branch: {final_branch}")
         else:
-            final_branch = self.branch_name
-            logger.info(f"No key conflict. Using existing branch: {final_branch}")
+            logger.info(f"No conflict. Using existing branch: {final_branch}")
+
         return {
-            "original_state": original_state, 
+            "original_state": original_state,
+            "input_state": input_state,
             "branch_name": final_branch, 
         }
 
     # @time_node("wrapper", "run_subgraph")
     def _run_subgraph(self, state: dict[str, Any]) -> dict[str, Any]:
         original_state = state.get("original_state") or {}
-        branch_name = state.get("branch_name")
+        input_state = state.get("input_state") if "input_state" in state else state
+        merged_input_state   = self._deep_merge(original_state, input_state)
+        branch_name = state.get("branch_name", self.branch_name)
+
         state_for_subgraph = {
-            **original_state,
+            **merged_input_state,
             "github_owner": self.github_owner, 
             "repository_name": self.repository_name, 
             "branch_name": branch_name, 
         }
+
+        missing = [k for k in self.input_state_keys if k not in state_for_subgraph]
+        if missing:
+            raise ValueError(
+                f"run_subgraph: required keys missing: {missing}. "
+                "Check perform_download flag or caller inputs."
+            )
+
         output_state = self.subgraph.invoke(state_for_subgraph)
         return {
-            "original_state": original_state,
+            "merged_input_state": merged_input_state,
             "output_state": output_state,
             "branch_name": branch_name, 
         }
 
     # @time_node("wrapper", "upload_to_github")
     def _upload_to_github(self, state: dict[str, Any]) -> dict[str, bool]:
-        original_state = state.get("original_state", {})
+        merged_input_state = state.get("merged_input_state", {})
         raw_output_state = state.get("output_state", {})
         branch_to_use = state.get("branch_name", self.branch_name)
         output_state = {
@@ -154,7 +179,7 @@ class GithubGraphWrapper:
             for k in self.output_state_keys
             if k in raw_output_state
         }
-        merged_state = self._deep_merge(original_state, output_state)
+        merged_output_state = self._deep_merge(merged_input_state, output_state)
 
         formatted_extra_files = self._format_extra_files(branch_to_use)
 
@@ -163,7 +188,7 @@ class GithubGraphWrapper:
             repository_name=self.repository_name,
             branch_name=branch_to_use,
             output_path=self.research_file_path,
-            state=merged_state,
+            state=merged_output_state,
             extra_files=formatted_extra_files,
             commit_message=f"Update by subgraph: {self.subgraph_name}",
         )
@@ -215,6 +240,7 @@ T = TypeVar("T", bound=BuildableSubgraph)
 # TODO: Add support for subgraph API invocation
 def create_wrapped_subgraph(
     subgraph: type[T],
+    input_state: type[Any], 
     output_state: type[Any],
 ) -> type:
     class GithubGraphRunner(GithubGraphWrapper):
@@ -239,6 +265,7 @@ def create_wrapped_subgraph(
             )
             super().__init__(
                 subgraph=compiled_subgraph,
+                input_state=input_state, 
                 output_state=output_state,
                 github_repository=github_repository,
                 branch_name=branch_name,

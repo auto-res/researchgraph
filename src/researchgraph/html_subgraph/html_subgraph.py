@@ -76,7 +76,11 @@ class HtmlSubgraph:
         return graph_builder.compile()
 
 
-HtmlConverter = create_wrapped_subgraph(HtmlSubgraph, HtmlSubgraphOutputState)
+HtmlConverter = create_wrapped_subgraph(
+    HtmlSubgraph,
+    HtmlSubgraphInputState, 
+    HtmlSubgraphOutputState
+)
 
 
 if __name__ == "__main__":

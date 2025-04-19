@@ -66,6 +66,7 @@ class GeneratorSubgraph:
 
 Generator = create_wrapped_subgraph(
     GeneratorSubgraph,
+    GeneratorSubgraphInputState, 
     GeneratorSubgraphOutputState,
 )
 
