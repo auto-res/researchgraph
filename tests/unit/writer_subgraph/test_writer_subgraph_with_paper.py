@@ -2,7 +2,7 @@ import os
 import pytest
 import glob
 from unittest.mock import patch
-from test.writer_subgraph.utils.writer_subgraph_input_prep import WriterSubgraphInputPrep
+from tests.writer_subgraph.utils.writer_subgraph_input_prep import WriterSubgraphInputPrep
 from researchgraph.writer_subgraph.writer_subgraph import WriterSubgraph
 
 SAMPLE_PAPER_DIR = "test/writer_subgraph/sample_papers/"

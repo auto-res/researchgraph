@@ -1,12 +1,12 @@
-name: ExecutorSubgraph
+name: HtmlSubgraph
 
 on:
   pull_request:
     types: [opened, reopened, synchronize]
     paths: [
-      'src/researchgraph/executor_subgraph/**', 
-      'tests/executor_subgraph/**',
-      '.github/workflows/pytest_executor_subgraph.yml'
+      'src/researchgraph/html_subgraph/**', 
+      'test/html_subgraph/**',
+      '.github/workflows/pytest_html_subgraph.yml'
       ]
 
 defaults:
@@ -14,8 +14,8 @@ defaults:
     shell: bash
 
 jobs:
-  test-executor-subgraph:
-    name: ExecutorSubgraph Components
+  test-html-subgraph:
+    name: HtmlSubgraph Components
     runs-on: ubuntu-latest
     timeout-minutes: 10
     strategy:
@@ -27,7 +27,7 @@ jobs:
           # - llm_decide
           # - FixCodeWithDevinNode
           # - ExecutorSubgraph
-          - check_devin_completion
+          - convert_to_html
         include:
           # - test_name: GenerateCodeWithDevinNode
           #   test_file: test/executor_subgraph/test_generate_code_with_devin.py
@@ -53,9 +53,9 @@ jobs:
           #   test_file: test/executor_subgraph/test_executor_subgraph.py
           #   save_dir: save_dir
 
-          - test_name: check_devin_completion
-            test_file: tests/executor_subgraph/test_check_devin_completion.py
-            save_dir: save_dir
+          - test_name: convert_to_html
+            test_file: tests/unit/html_subgraph/test_convert_to_html.py
+            
     env:
       GITHUB_WORKSPACE: ${{ github.workspace }}
       SAVE_DIR: ${{ github.workspace }}/${{ matrix.save_dir }}
@@ -79,7 +79,7 @@ jobs:
         run: mkdir -p $SAVE_DIR
         
       - name: Run pytest with coverage
-        run: uv run pytest --cov=researchgraph.executor_subgraph --cov-branch -s ${{ matrix.test_file }}
+        run: uv run pytest --cov=researchgraph.html_subgraph --cov-branch --cov-report=term-missing -v ${{ matrix.test_file }}
 
       - name: Ensure pip cache folder exists
         run: mkdir -p /home/runner/.cache/pip  
