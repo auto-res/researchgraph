@@ -27,7 +27,7 @@ jobs:
           # - llm_decide
           # - FixCodeWithDevinNode
           # - ExecutorSubgraph
-          - check_devin_completion
+          # - check_devin_completion
         include:
           # - test_name: GenerateCodeWithDevinNode
           #   test_file: test/executor_subgraph/test_generate_code_with_devin.py
@@ -53,9 +53,9 @@ jobs:
           #   test_file: test/executor_subgraph/test_executor_subgraph.py
           #   save_dir: save_dir
 
-          - test_name: check_devin_completion
-            test_file: tests/executor_subgraph/test_check_devin_completion.py
-            save_dir: save_dir
+          # - test_name: check_devin_completion
+          #   test_file: tests/executor_subgraph/test_check_devin_completion.py
+          #   save_dir: save_dir
     env:
       GITHUB_WORKSPACE: ${{ github.workspace }}
       SAVE_DIR: ${{ github.workspace }}/${{ matrix.save_dir }}

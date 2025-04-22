@@ -20,49 +20,20 @@ jobs:
     timeout-minutes: 10
     strategy:
       matrix:
-        test_name:
-          # - GenerateCodeWithDevinNode
-          # - ExecuteGithubActionsWorkflowNode
-          # - RetrieveGithubActionsArtifactsNode
-          # - llm_decide
-          # - FixCodeWithDevinNode
-          # - ExecutorSubgraph
-          - convert_to_html
         include:
-          # - test_name: GenerateCodeWithDevinNode
-          #   test_file: test/executor_subgraph/test_generate_code_with_devin.py
-          #   save_dir: save_dir
-
-          # - test_name: ExecuteGithubActionsWorkflowNode
-          #   test_file: test/executor_subgraph/test_execute_github_actions_workflow.py
-          #   save_dir: save_dir
-
-          # - test_name: RetrieveGithubActionsArtifactsNode
-          #   test_file: test/executor_subgraph/test_retrieve_github_actions_artifacts.py
-          #   save_dir: save_dir
-
-          # - test_name: llm_decide
-          #   test_file: test/executor_subgraph/test_llm_decide.py
-          #   save_dir: save_dir
-
-          # - test_name: FixCodeWithDevinNode
-          #   test_file: test/executor_subgraph/test_fix_code_with_devin.py
-          #   save_dir: save_dir
-
-          # - test_name: ExecutorSubgraph
-          #   test_file: test/executor_subgraph/test_executor_subgraph.py
-          #   save_dir: save_dir
+          - test_name: render_html
+            test_file: tests/unit/html_subgraph/test_render_html.py
 
           - test_name: convert_to_html
             test_file: tests/unit/html_subgraph/test_convert_to_html.py
             
     env:
       GITHUB_WORKSPACE: ${{ github.workspace }}
-      SAVE_DIR: ${{ github.workspace }}/${{ matrix.save_dir }}
+      SAVE_DIR: ${{ github.workspace }}/save_dir
 
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v4
+      - uses: actions/setup-python@v4 
         with:
           python-version: "3.10"
           cache: "pip"
