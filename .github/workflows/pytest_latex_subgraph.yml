@@ -1,12 +1,12 @@
-name: HtmlSubgraph
+name: LatexSubgraph
 
 on:
   pull_request:
     types: [opened, reopened, synchronize]
     paths: [
-      'src/researchgraph/html_subgraph/**', 
-      'tests/html_subgraph/**',
-      '.github/workflows/pytest_html_subgraph.yml'
+      'src/researchgraph/latex_subgraph/**', 
+      'tests/latex_subgraph/**',
+      '.github/workflows/pytest_latex_subgraph.yml'
       ]
 
 defaults:
@@ -14,18 +14,15 @@ defaults:
     shell: bash
 
 jobs:
-  test-html-subgraph:
-    name: HtmlSubgraph Components
+  test-latex-subgraph:
+    name: LatexSubgraph Components
     runs-on: ubuntu-latest
     timeout-minutes: 10
     strategy:
       matrix:
         include:
-          - test_name: convert_to_html
-            test_file: tests/unit/html_subgraph/test_convert_to_html.py
-            
-          - test_name: render_html
-            test_file: tests/unit/html_subgraph/test_render_html.py
+          - test_name: convert_to_latex
+            test_file: tests/unit/latex_subgraph/test_convert_to_latex.py
             
     env:
       GITHUB_WORKSPACE: ${{ github.workspace }}
@@ -50,7 +47,7 @@ jobs:
         run: mkdir -p $SAVE_DIR
         
       - name: Run pytest with coverage
-        run: uv run pytest --cov=researchgraph.html_subgraph --cov-branch --cov-report=term-missing -v ${{ matrix.test_file }}
+        run: uv run pytest --cov=researchgraph.latex_subgraph --cov-branch --cov-report=term-missing -v ${{ matrix.test_file }}
 
       - name: Ensure pip cache folder exists
         run: mkdir -p /home/runner/.cache/pip  

@@ -34,8 +34,18 @@ def convert_to_html(
     messages = [
         {"role": "user", "content": prompt},
     ]
-    response = openai_client(llm_name, message=messages, data_model=LLMOutput)
-    if response is None:
+    raw_response = openai_client(llm_name, message=messages, data_model=LLMOutput)
+    if not raw_response:
         raise ValueError("Error: No response from the model in convert_to_html.")
-    response = json.loads(response)
-    return response["generated_html_text"]
+    
+    try:
+        response = json.loads(raw_response)
+    except json.JSONDecodeError as e:
+        logger.error(f"Failed to parse LLM response: {e}")
+        raise ValueError("Error: Invalid JSON response from model in convert_to_html.")
+
+    html = response.get("generated_html_text", "")
+    if not html:
+        raise ValueError("Error: Empty HTML content from model in convert_to_html.")
+    
+    return html
