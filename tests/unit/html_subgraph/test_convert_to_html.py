@@ -1,10 +1,12 @@
 import pytest
+import researchgraph.html_subgraph.nodes.convert_to_html as mod
 from researchgraph.html_subgraph.nodes.convert_to_html import convert_to_html
 
 
 def test_convert_to_html_success(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
-        "researchgraph.html_subgraph.nodes.convert_to_html.openai_client",
+        mod, 
+        "openai_client",
         lambda *args, **kwargs: '{"generated_html_text": "<p>OK</p>"}'
     )
 
@@ -27,7 +29,8 @@ def test_convert_to_html_success(monkeypatch: pytest.MonkeyPatch) -> None:
 )
 def test_convert_to_html_errors(monkeypatch: pytest.MonkeyPatch, raw_response, expected_msg) -> None:
     monkeypatch.setattr(
-        "researchgraph.html_subgraph.nodes.convert_to_html.openai_client",
+        mod, 
+        "openai_client",
         lambda *args, **kwargs: raw_response
     )
 
