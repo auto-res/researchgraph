@@ -8,7 +8,7 @@ from researchgraph.latex_subgraph.nodes.compile_to_pdf import LatexNode
 
 
 @pytest.fixture
-def tmp_env(tmp_path):
+def tmp_env(tmp_path) -> dict[str, str]:
     template_dir = tmp_path / "templatex_dir"
     template_dir.mkdir()
     (template_dir / "template.tex").write_text(
@@ -92,7 +92,12 @@ def test_call_llm_success(node):
         ('{"latex_full_text": ""}', "Empty LaTeX content"),
     ],
 )
-def test_call_llm_errors(node: LatexNode, monkeypatch: pytest.MonkeyPatch, raw_response, expected_msg) -> None:
+def test_call_llm_errors(
+    node: LatexNode, 
+    monkeypatch: pytest.MonkeyPatch, 
+    raw_response: str | None, 
+    expected_msg: str, 
+) -> None:
     monkeypatch.setattr(
         mod, 
         "openai_client",
@@ -115,14 +120,14 @@ def test_check_refenrences_missing_entry(node: LatexNode) -> None:
 
 
 @pytest.mark.parametrize("remove_bib", [True])
-def test_check_references_error_missing_bib(node: LatexNode, tmp_env: dict, remove_bib) -> None:
+def test_check_references_error_missing_bib(node: LatexNode, tmp_env: dict[str, str]) -> None:
     node._copy_template()
     os.remove(os.path.join(tmp_env["save_dir"], "latex", "references.bib"))
     with pytest.raises(FileNotFoundError):
         node._check_references("any text")
 
 
-def test_check_figures_success(node: LatexNode, tmp_env: dict) -> None:
+def test_check_figures_success(node: LatexNode, tmp_env: dict[str, str]) -> None:
     fig = os.path.join(tmp_env["figures_dir"], "fig1.pdf")
     open(fig, "w").close()
     node._copy_template()
@@ -179,7 +184,7 @@ def test_fix_latex_errors_with_errors(node: LatexNode, monkeypatch: pytest.Monke
     assert node._fix_latex_errors("bad tex") == "DUMMY"
 
 
-def test_compile_latex_no_exception(node: LatexNode, monkeypatch: pytest.MonkeyPatch, tmp_env: dict) -> None:
+def test_compile_latex_no_exception(node: LatexNode, monkeypatch: pytest.MonkeyPatch, tmp_env: dict[str, str]) -> None:
     monkeypatch.setattr(
         mod.subprocess, 
         "run", 

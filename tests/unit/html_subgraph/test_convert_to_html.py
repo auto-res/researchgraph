@@ -27,7 +27,7 @@ def test_convert_to_html_success(monkeypatch: pytest.MonkeyPatch) -> None:
         ('{"generated_html_text": ""}', "Empty HTML content"),
     ],
 )
-def test_convert_to_html_errors(monkeypatch: pytest.MonkeyPatch, raw_response, expected_msg) -> None:
+def test_convert_to_html_errors(monkeypatch: pytest.MonkeyPatch, raw_response: str | None, expected_msg: str) -> None:
     monkeypatch.setattr(
         mod, 
         "openai_client",

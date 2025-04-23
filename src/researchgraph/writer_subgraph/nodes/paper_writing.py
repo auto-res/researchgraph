@@ -172,18 +172,31 @@ Pay particular attention to fixing any errors such as:
     ) -> dict[str, str]:
         return {key.replace("_", " "): value for key, value in paper_dict.items()}
 
-    def _call_llm(self, prompt: str, system_prompt: str) -> dict[str, str] | None:
+    def _call_llm(self, prompt: str, system_prompt: str) -> dict[str, str]:
         messages = [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": prompt},
         ]
-        response = openai_client(
+        raw_response = openai_client(
             self.llm_name, message=messages, data_model=PaperContent
         )
-        if not response:
-            logger.warning("LLM response is None.")
-            return None
-        return self._replace_underscores_in_keys(json.loads(response))
+        if not raw_response:
+            raise ValueError("Error: No response from the model in paper_writing.")
+
+        try:
+            response = json.loads(raw_response)
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to parse LLM response: {e}")
+            raise ValueError("Error: Invalid JSON response from model in paper_writing.")
+        
+        missing_fields = [
+            field for field in PaperContent.model_fields
+            if field not in response or not response[field].strip()
+        ]
+        if missing_fields:
+            raise ValueError(f"Missing or empty fields in model response: {missing_fields}")
+
+        return self._replace_underscores_in_keys(response)
 
     def _write(self, note: str) -> dict[str, str]:
         prompt = self._generate_write_prompt()

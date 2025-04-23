@@ -1,10 +1,11 @@
 import json
 import pytest
+import researchgraph.latex_subgraph.nodes.convert_to_latex  as mod
 from researchgraph.latex_subgraph.nodes.convert_to_latex import convert_to_latex
 
 
 @pytest.fixture
-def latex_fake_response() -> dict:
+def fake_llm_response() -> dict[str, str]:
     return {
         "Title": "LaTeX Title",
         "Abstract": "This is abstract.",
@@ -18,16 +19,17 @@ def latex_fake_response() -> dict:
     }
 
 
-def test_convert_to_latex_success(monkeypatch: pytest.MonkeyPatch, latex_fake_response) -> None:
+def test_convert_to_latex_success(monkeypatch: pytest.MonkeyPatch, fake_llm_response: dict[str, str]) -> None:
     monkeypatch.setattr(
-        "researchgraph.latex_subgraph.nodes.convert_to_latex.openai_client",
-        lambda *args, **kwargs: json.dumps(latex_fake_response)
+        mod,
+        "openai_client", 
+        lambda *args, **kwargs: json.dumps(fake_llm_response)
     )
 
     result = convert_to_latex(
         llm_name="dummy", 
         prompt_template="", 
-        paper_content={key: "dummy" for key in latex_fake_response.keys()}
+        paper_content={key: "dummy" for key in fake_llm_response.keys()}
     )
     assert result["Title"] == "LaTeX Title"
 
@@ -43,12 +45,13 @@ def test_convert_to_latex_success(monkeypatch: pytest.MonkeyPatch, latex_fake_re
 )
 def test_convert_to_latex_errors(
     monkeypatch: pytest.MonkeyPatch, 
-    latex_fake_response, 
-    raw_response, 
-    expected_msg
+    fake_llm_response: dict[str, str], 
+    raw_response: str | None, 
+    expected_msg: str, 
 ) -> None:
     monkeypatch.setattr(
-        "researchgraph.latex_subgraph.nodes.convert_to_latex.openai_client",
+        mod, 
+        "openai_client", 
         lambda *args, **kwargs: raw_response
     )
 
@@ -56,6 +59,6 @@ def test_convert_to_latex_errors(
         convert_to_latex(
             llm_name="dummy",
             prompt_template="",
-            paper_content={key: "dummy" for key in latex_fake_response.keys()}
+            paper_content={key: "dummy" for key in fake_llm_response.keys()}
         )
     assert expected_msg in str(exc.value)
