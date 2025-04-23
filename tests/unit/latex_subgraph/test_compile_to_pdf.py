@@ -1,7 +1,9 @@
 import os
 import pytest
+import subprocess
 import researchgraph.latex_subgraph.nodes.compile_to_pdf as mod
 from typing import Any, Generator
+from types import SimpleNamespace
 from researchgraph.latex_subgraph.nodes.compile_to_pdf import LatexNode
 
 
@@ -90,7 +92,7 @@ def test_call_llm_success(node):
         ('{"latex_full_text": ""}', "Empty LaTeX content"),
     ],
 )
-def test_call_llm_errors(node: LatexNode, monkeypatch: pytest.MonkeyPatch, raw_response, expected_msg):
+def test_call_llm_errors(node: LatexNode, monkeypatch: pytest.MonkeyPatch, raw_response, expected_msg) -> None:
     monkeypatch.setattr(
         mod, 
         "openai_client",
@@ -99,4 +101,100 @@ def test_call_llm_errors(node: LatexNode, monkeypatch: pytest.MonkeyPatch, raw_r
     with pytest.raises(ValueError, match=expected_msg):
         node._call_llm("prompt")
 
-# TODO: カバレッジを上げる
+
+def test_check_references_success(node: LatexNode) -> None:
+    node._copy_template()
+    tex_valid = "\\documentclass{article}\\begin{document}\\cite{ref1}\\end{document}"
+    assert node._check_references(tex_valid) == tex_valid
+
+
+def test_check_refenrences_missing_entry(node: LatexNode) -> None:
+    node._copy_template()
+    tex_missing = "\\documentclass{article}\\begin{document}\\cite{missing}\\end{document}"
+    assert node._check_references(tex_missing) == "DUMMY"
+
+
+@pytest.mark.parametrize("remove_bib", [True])
+def test_check_references_error_missing_bib(node: LatexNode, tmp_env: dict, remove_bib) -> None:
+    node._copy_template()
+    os.remove(os.path.join(tmp_env["save_dir"], "latex", "references.bib"))
+    with pytest.raises(FileNotFoundError):
+        node._check_references("any text")
+
+
+def test_check_figures_success(node: LatexNode, tmp_env: dict) -> None:
+    fig = os.path.join(tmp_env["figures_dir"], "fig1.pdf")
+    open(fig, "w").close()
+    node._copy_template()
+    tex = "\\includegraphics{fig1.pdf}"
+    assert node._check_figures(tex) == "DUMMY"
+
+
+def test_check_figures_no_graphics(node: LatexNode) -> None:
+    tex = "no graphics here"
+    assert node._check_figures(tex) == tex
+
+
+def test_check_figures_missing_files(node: LatexNode) -> None:
+    node._copy_template()
+    tex = "\\includegraphics{missing.pdf}"
+    assert node._check_figures(tex) == tex
+
+
+@pytest.mark.parametrize("tex_input", [
+    "A \\section{X} B", 
+])
+def test_check_duplicates_no_dup(node: LatexNode, tex_input: str) -> None:
+    assert node._check_duplicates(tex_input, {"section": r"\\section{([^}]*)}"}) == tex_input
+
+
+@pytest.mark.parametrize("tex_input", [
+    "\\section{A}\\section{A}",
+    "\\includegraphics{fig1.pdf}\\includegraphics{fig1.pdf}",
+])
+def test_check_duplicates_with_dup(node: LatexNode, tex_input: str) -> None:
+    result = node._check_duplicates(tex_input, {
+        "section": r"\\section{([^}]*)}",
+        "figure": r"\\includegraphics.*?{(.*?)}",
+    })
+    assert result == "DUMMY"
+
+
+def test_fix_latex_errors_no_errors(node: LatexNode, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(
+        mod.os, 
+        "popen",
+        lambda *args, **kwargs: SimpleNamespace(read=lambda: "")
+    )
+    original = "clean tex"
+    assert node._fix_latex_errors(original) == original
+
+
+def test_fix_latex_errors_with_errors(node: LatexNode, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(
+        mod.os, 
+        "popen", 
+        lambda *args, **kwargs: SimpleNamespace(read=lambda: "1: Undefined control sequence.")
+    )
+    assert node._fix_latex_errors("bad tex") == "DUMMY"
+
+
+def test_compile_latex_no_exception(node: LatexNode, monkeypatch: pytest.MonkeyPatch, tmp_env: dict) -> None:
+    monkeypatch.setattr(
+        mod.subprocess, 
+        "run", 
+        lambda *args, **kwargs: subprocess.CompletedProcess(args=[], returncode=0, stdout="", stderr="")
+    )
+    node._copy_template()
+    node._compile_latex(cwd=os.path.join(tmp_env["save_dir"], "latex"))
+
+
+def test_execute_replaces_and_returns(node: LatexNode) -> None:
+    node._compile_latex = lambda cwd: None
+    content = {"title": "MyT", "abstract": "MyA"}
+
+    result = node.execute(content)
+    assert "TITLE HERE" not in result
+    assert "ABSTRACT HERE" not in result
+    assert "MyT" in result
+    assert "MyA" in result

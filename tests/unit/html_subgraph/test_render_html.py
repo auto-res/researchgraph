@@ -6,14 +6,14 @@ from researchgraph.html_subgraph.nodes.render_html import (
 )
 
 
-def test_wrap_in_html_template_inserts_content() -> None:
+def test_wrap_in_html_template() -> None:
     test_content = "<p>Hello, world!</p>"
     result = _wrap_in_html_template(test_content)
     assert test_content in result
 
 
-@pytest.mark.parametrize("subpath", ["", "no_exist/dir"])
-def test_save_index_html_creates_file_and_dirs(tmp_path: Path, subpath: str) -> None:
+@pytest.mark.parametrize("subpath", ["", "missing_dir"])
+def test_save_index_html_creates_file(tmp_path: Path, subpath: str) -> None:
     test_full_html = "<html><body>Test</body></html>"
     save_dir = tmp_path / subpath
     _save_index_html(test_full_html, str(save_dir))

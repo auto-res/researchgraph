@@ -1,97 +1,56 @@
-# name: WriterSubgraph
+name: WriterSubgraph
 
-# on:
-#   pull_request:
-#     types: [opened, reopened, synchronize]
-#     paths: [
-#       'src/researchgraph/writer_subgraph/**', 
-#       'test/writer_subgraph/**',
-#       '.github/workflows/pytest_writer_subgraph.yml'
-#       ]
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths: [
+      'src/researchgraph/writer_subgraph/**', 
+      'tests/writer_subgraph/**',
+      '.github/workflows/pytest_writer_subgraph.yml'
+      ]
 
-# defaults:
-#   run:
-#     shell: bash
+defaults:
+  run:
+    shell: bash
 
-# jobs:
-#   test-writer-subgraph:
-#     name: WriteupSubgraph Components
-#     runs-on: ubuntu-latest
-#     timeout-minutes: 10
-#     strategy:
-#       matrix:
-#         test_name: 
-#           - WriteupNode
-#           - LatexNode
-#           - GithubUploadNode
-#           - WriterSubgraph
-#         include:
-#           - test_name: WriteupNode
-#             test_file: test/writer_subgraph/test_writeup_node.py
-#             save_dir: save_dir
+jobs:
+  test-writer-subgraph:
+    name: WriterSubgraph Components
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      matrix:
+        include:
+          - test_name: generate_note
+            test_file: tests/unit/writer_subgraph/test_generate_note.py
+            
+          - test_name: paper_writing
+            test_file: tests/unit/writer_subgraph/test_paper_writing.py
+            
+    env:
+      GITHUB_WORKSPACE: ${{ github.workspace }}
+      SAVE_DIR: ${{ github.workspace }}/save_dir
 
-#           - test_name: LatexNode
-#             test_file: test/writer_subgraph/test_latexnode.py
-#             save_dir: data
-#             latex_required: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v4 
+        with:
+          python-version: "3.10"
+          cache: "pip"
 
-#           - test_name: GithubUploadNode
-#             test_file: test/writer_subgraph/test_github_upload_node.py
-#             save_dir: save_dir
+      - name: Install dependencies
+        run: |
+          curl -LsSf https://astral.sh/uv/0.5.5/install.sh | bash || exit 1
+          uv --version
 
-#           - test_name: WriterSubgraph
-#             test_file: test/writer_subgraph/test_writer_subgraph.py
-#             save_dir: save_dir
-#             latex_required: true
-#     env:
-#       GITHUB_WORKSPACE: ${{ github.workspace }}
-#       SAVE_DIR: ${{ github.workspace }}/save_dir
-
-#     steps:
-#       - uses: actions/checkout@v4
-#       - uses: actions/setup-python@v4
-#         with:
-#           python-version: "3.10"
-#           cache: "pip"
-
-#       - name: Install dependencies
-#         run: |
-#           curl -LsSf https://astral.sh/uv/0.5.5/install.sh | bash || exit 1
-#           uv --version
-
-#       - name: Install LaTeX dependencies (if required)
-#         if: matrix.latex_required == true
-#         run: |
-#           sudo apt-get update
-#           DEBIAN_FRONTEND=noninteractive sudo apt-get install -y \
-#             texlive-base texlive-latex-recommended texlive-fonts-recommended \
-#             texlive-latex-extra texlive-science chktex
-
-#       - name: Set PYTHONPATH
-#         run: echo "PYTHONPATH=$PYTHONPATH:$GITHUB_WORKSPACE/src" >> $GITHUB_ENV
+      - name: Set PYTHONPATH
+        run: echo "PYTHONPATH=$PYTHONPATH:$GITHUB_WORKSPACE/src" >> $GITHUB_ENV
         
-#       - name: Create Directory
-#         run: mkdir -p $SAVE_DIR
-
-#       - name: Create images directory and dummy image (if needed)
-#         if: matrix.test_name == 'LatexNode' || matrix.test_name == 'WriterSubgraph'
-#         run: |
-#           mkdir -p ${{ env.GITHUB_WORKSPACE }}/images
-#           touch ${{ env.GITHUB_WORKSPACE }}/images/generated_images.png
+      - name: Create Directory
+        run: mkdir -p $SAVE_DIR
         
-#       - name: Run pytest with coverage
-#         run: uv run pytest --cov=researchgraph.writer_subgraph --cov-branch -s ${{ matrix.test_file }}
+      - name: Run pytest with coverage
+        run: uv run pytest --cov=researchgraph.writer_subgraph --cov-branch --cov-report=term-missing -v ${{ matrix.test_file }}
 
-#       - name: Upload PDF Artifact (if applicable)
-#         if: matrix.latex_required == true
-#         uses: actions/upload-artifact@v4
-#         with:
-#           name: generated-pdfs-${{ matrix.test_name }}
-#           path: ${{ env.SAVE_DIR }}/*.pdf
-
-#       - name: Verify PDF generation (if applicable)
-#         if: matrix.latex_required == true
-#         run: ls ${{ env.SAVE_DIR }}
-
-#       - name: Ensure pip cache folder exists
-#         run: mkdir -p /home/runner/.cache/pip  
+      - name: Ensure pip cache folder exists
+        run: mkdir -p /home/runner/.cache/pip  
