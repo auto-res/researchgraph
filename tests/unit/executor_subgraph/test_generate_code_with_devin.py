@@ -1,93 +1,119 @@
-
 import pytest
-from unittest.mock import patch, MagicMock
-from researchgraph.executor_subgraph.nodes.generate_code_with_devin import GenerateCodeWithDevinNode
+import researchgraph.executor_subgraph.nodes.generate_code_with_devin as mod
 
 
-@pytest.fixture(scope="function")
-def test_environment():
-    """ テスト用の環境変数と入力データを設定 """
+@pytest.fixture
+def fake_headers() -> dict[str, str]:
     return {
-        "github_owner": "test-owner",
-        "repository_name": "test-repo",
-        "repository_url": "https://github.com/test-owner/test-repo",
-        "new_detailed_description_of_methodology": "This is a test methodology.",
-        "new_novelty": "This is a test novelty.",
-        "new_experimental_procedure": "This is a test experimental procedure.",
-        "new_method_code": "print('Hello, world!')",
-        "headers": {
-            "Authorization": "Bearer TEST_DEVIN_API_KEY",
-            "Content-Type": "application/json",
-        }
+        "Authorization": "Bearer token"
     }
 
 
 @pytest.fixture
-def generate_code_with_devin_node():
-    return GenerateCodeWithDevinNode()
-
-
-@patch("researchgraph.executor_subgraph.nodes.generate_code_with_devin.fetch_api_data")
-@patch("researchgraph.executor_subgraph.nodes.generate_code_with_devin.retry_request")
-def test_request_create_session(mock_retry_request, mock_fetch_api_data, generate_code_with_devin_node, test_environment):
-    """ 正常系テスト: Devin のセッション作成リクエストが正常に動作するか """
-    mock_fetch_api_data.return_value = {
-        "session_id": "devin-test-session",
-        "url": "https://devin.test/sessions/devin-test-session",
+def fake_session_response() -> dict[str, str]:
+    return {
+        "session_id": "sess123", 
+        "url": "https://devin.ai/session/sess123"
     }
-    mock_retry_request.side_effect = lambda func, *args, **kwargs: func(*args, **kwargs)
-
-    response = generate_code_with_devin_node._request_create_session(
-        test_environment["repository_url"],
-        test_environment["new_detailed_description_of_methodology"],
-        test_environment["new_novelty"],
-        test_environment["new_experimental_procedure"],
-        test_environment["new_method_code"],
-    )
-    assert response is not None
-    assert response["session_id"] == "devin-test-session"
-    assert response["url"] == "https://devin.test/sessions/devin-test-session"
 
 
-@patch("researchgraph.executor_subgraph.nodes.generate_code_with_devin.fetch_api_data")
-@patch("researchgraph.executor_subgraph.nodes.generate_code_with_devin.retry_request")
-def test_request_devin_output(mock_retry_request, mock_fetch_api_data, generate_code_with_devin_node, test_environment):
-    """ 正常系テスト: Devin の実行結果取得リクエストが正常に動作するか """
-    mock_fetch_api_data.return_value = {
-        "status_enum": "completed",
-        "structured_output": {"branch_name": "devin-test-branch"},
-    }
-    mock_retry_request.side_effect = lambda func, *args, **kwargs: func(*args, **kwargs)
+def test_request_create_session(
+    monkeypatch: pytest.MonkeyPatch, 
+    fake_headers: dict[str, str], 
+    fake_session_response: dict[str, str]
+) -> None:
+    captured = {}
 
-    session_id = "devin-test-session"
-    response = generate_code_with_devin_node._request_devin_output(session_id)
-
-    assert response is not None
-    assert response["status_enum"] == "completed"
-    assert response["structured_output"]["branch_name"] == "devin-test-branch"
-
-
-@patch("researchgraph.executor_subgraph.nodes.generate_code_with_devin.fetch_api_data")
-@patch("researchgraph.executor_subgraph.nodes.generate_code_with_devin.retry_request")
-@patch("time.sleep", return_value=None) 
-def test_execute(mock_time_sleep, mock_retry_request, mock_fetch_api_data, generate_code_with_devin_node, test_environment):
-    """ 正常系テスト: GenerateCodeWithDevinNode の execute メソッドが正しく動作するか """
-    mock_fetch_api_data.return_value = {
-        "session_id": "devin-test-session",
-        "url": "https://devin.test/sessions/devin-test-session",
-    }
-    mock_retry_request.side_effect = lambda func, *args, **kwargs: func(*args, **kwargs)
-
-    session_id, branch_name, devin_url = generate_code_with_devin_node.execute(
-        test_environment["github_owner"],
-        test_environment["repository_name"],
-        test_environment["new_detailed_description_of_methodology"],
-        test_environment["new_novelty"],
-        test_environment["new_experimental_procedure"],
-        test_environment["new_method_code"],
-    )
+    def _fake_retry_request(fn, *args, **kwargs) -> dict[str, str]:
+        captured["fetch_function"] = fn
+        captured.update({
+            "args": args,
+            "kwargs": kwargs
+        })
+        return fake_session_response
     
-    assert session_id == "devin-test-session"
-    assert branch_name == "devin-test-session"
-    assert devin_url == "https://devin.test/sessions/devin-test-session"
-    mock_time_sleep.assert_called_once_with(120)
+    monkeypatch.setattr(
+        mod, 
+        "retry_request", 
+        _fake_retry_request
+    )
+
+    repo_url = "https://github.com/owner/repo"
+    branch = "my-branch"
+    new_method = "do X"
+    exp_code = "print(\'hello\')"
+
+    result = mod._request_create_session(
+        headers=fake_headers, 
+        repository_url=repo_url, 
+        branch_name=branch, 
+        new_method=new_method, 
+        experiment_code=exp_code, 
+    )
+
+    assert result == fake_session_response
+
+    assert captured["fetch_function"] == mod.fetch_api_data
+    assert captured["args"][0] == "https://api.devin.ai/v1/sessions"
+
+    assert captured["kwargs"]["method"] == "POST"
+    assert captured["kwargs"]["headers"] is fake_headers
+
+    payload = captured["kwargs"]["data"]
+    assert payload.get("idempotent") is True
+    prompt = payload.get("prompt", "")
+
+    assert f"## Repository URL\n{repo_url}" in prompt
+    assert f"## Branch Name\n{branch}" in prompt
+    assert "# New Method" in prompt and new_method in prompt
+    assert "# Experiment Code" in prompt and exp_code in prompt
+
+
+def test_generate_code_with_devin_success(
+    monkeypatch: pytest.MonkeyPatch, 
+    fake_headers: dict[str, str], 
+    fake_session_response: dict[str, str]
+) -> None:
+    def _fake_request_create_session(
+        headers: dict[str, str], 
+        repository_url: str, 
+        branch_name: str, 
+        new_method: str, 
+        experiment_code: str, 
+    ) -> dict[str, str]:
+        return fake_session_response
+    
+    monkeypatch.setattr(
+        mod, 
+        "_request_create_session",
+        _fake_request_create_session
+    )
+
+    sid, url = mod.generate_code_with_devin(
+        headers=fake_headers,
+        github_owner='owner',
+        repository_name='repo',
+        branch_name='branch',
+        new_method='NM',
+        experiment_code='EC',
+    )
+    assert sid == fake_session_response['session_id']
+    assert url == fake_session_response['url']
+
+
+def test_generate_code_with_devin_failure(monkeypatch: pytest.MonkeyPatch, fake_headers: dict[str, str]) -> None:
+    monkeypatch.setattr(
+        mod, 
+        "_request_create_session", 
+        lambda *args, **kwargs: None
+    )
+
+    sid, url = mod.generate_code_with_devin(
+        headers=fake_headers,
+        github_owner='owner',
+        repository_name='repo',
+        branch_name='branch',
+        new_method='NM',
+        experiment_code='EC',
+    )
+    assert sid is None and url is None
