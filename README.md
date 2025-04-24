@@ -17,6 +17,56 @@
 
 # Quick Start
 
+```
+uv sync [--dev] [--extra mcp]
+```
+
+- `--dev` to install development packages
+- `--extra mcp` to install MCP-related packages
+
+
+## MCP
+
+Client setting in Claude Desktop
+```json
+{
+    "mcpServers": {
+        "researchgraph": {
+            "type": "stdio",
+            "command": "uv",
+            "env": {
+                "UV_ENV_FILE": "/PATH/TO/REPOSITORY/.env"
+            },
+            "args": [
+                "--directory",
+                "/PATH/TO/REPOSITORY",
+                "run",
+                "src/researchgraph/mcp_server/mcp_server.py"
+            ]
+        }
+    }
+}
+```
+or Visual Studio Code
+```json
+  "mcp": {
+    "servers": {
+      "researchgraph": {
+        "type": "stdio",
+        "command": "uv",
+        "env": {
+            "UV_ENV_FILE": "/PATH/TO/REPOSITORY/.env"
+        },
+        "args": [
+            "--directory",
+            "/PATH/TO/REPOSITORY",
+            "run",
+            "src/researchgraph/mcp_server/mcp_server.py"
+        ]
+      }
+    }
+  }
+```
 
 # Roadmap
 
