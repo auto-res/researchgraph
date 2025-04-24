@@ -38,7 +38,7 @@ class FireCrawlClient(BaseHTTPClient):
         before_sleep=before_sleep_log(logger, logging.WARNING),
         reraise=True,
     )
-    def _request_with_retry(
+    def _send_with_retry(
         self,
         method: str,
         path: str,
@@ -49,7 +49,7 @@ class FireCrawlClient(BaseHTTPClient):
         stream: bool = False,
         timeout: float = 10.0,
     ) -> requests.Response:
-        return super()._do_request(
+        return super()._send(
             method=method,
             path=path,
             headers=headers,

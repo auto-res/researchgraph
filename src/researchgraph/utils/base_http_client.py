@@ -16,7 +16,7 @@ class BaseHTTPClient(ResponseParserMixIn, ABC):
         self.default_headers = default_headers or {}
         self.session = requests.Session()
 
-    def _do_request(
+    def _send(
         self,
         method: str,
         path: str,
@@ -43,7 +43,7 @@ class BaseHTTPClient(ResponseParserMixIn, ABC):
 
 
     @abstractmethod
-    def _request_with_retry(
+    def _send_with_retry(
         self,
         method: str,
         path: str,
@@ -59,7 +59,7 @@ class BaseHTTPClient(ResponseParserMixIn, ABC):
 
         Example:
             @retry(...)
-            def _request_with_retry(...):
+            def _send_with_retry(...):
                 return super()._send(...)
         """
         raise NotImplementedError
@@ -76,7 +76,7 @@ class BaseHTTPClient(ResponseParserMixIn, ABC):
         timeout: float = 10.0,
     ) -> dict | str | bytes | None:
         try:
-            resp = self._request_with_retry(
+            resp = self._send_with_retry(
                 method.upper(),
                 path,
                 headers=headers,
