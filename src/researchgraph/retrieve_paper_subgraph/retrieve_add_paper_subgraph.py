@@ -61,14 +61,14 @@ class CandidatePaperInfo(BaseModel):
 
 
 class RetrieveAddPaperInputState(TypedDict):
-    queries: list[str]
+    base_queries: list[str]
     base_github_url: str
     base_method_text: str
+    add_queries: list[str] | None
 
 class RetrieveAddPaperHiddenState(TypedDict):
     selected_base_paper_info: CandidatePaperInfo
 
-    generated_queries: list[str]
     scraped_results: list[dict]
     extracted_paper_titles: list[str]
     search_paper_list: list[dict]
@@ -82,6 +82,7 @@ class RetrieveAddPaperHiddenState(TypedDict):
 
 
 class RetrieveAddPaperOutputState(TypedDict):
+    generated_queries: list[str]
     add_github_urls: list[str]
     add_method_texts: list[str]
 
@@ -125,18 +126,20 @@ class RetrieveAddPaperSubgraph:
         selected_base_paper_info = TypeAdapter(CandidatePaperInfo).validate_python(selected_base_paper_info)
         return {
             "selected_base_paper_info": selected_base_paper_info, 
-            "generated_queries": state.get("queries", []),
+            "generated_queries": [],
             "process_index": 0,
             "candidate_add_papers_info_list": [],
         }
 
     @time_node("retrieve_add_paper_subgraph", "_generate_queries_node")
     def _generate_queries_node(self, state: RetrieveAddPaperState) -> dict:
+        add_queries = state.get("add_queries") or []
+        all_queries = state["base_queries"] + add_queries + state["generated_queries"]
         new_generated_queries = generate_queries_node(
             llm_name=self.llm_name,
             prompt_template=generate_queries_prompt_add,
             selected_base_paper_info=state["selected_base_paper_info"],
-            queries=state["generated_queries"],
+            queries=all_queries,
         )
         return {
             "generated_queries": state["generated_queries"] + new_generated_queries, 
@@ -145,16 +148,20 @@ class RetrieveAddPaperSubgraph:
 
     @time_node("retrieve_add_paper_subgraph", "_web_scrape_node")
     def _web_scrape_node(self, state: RetrieveAddPaperState) -> dict:
+        add_queries = state.get("add_queries") or []
+        all_queries = state["base_queries"] + add_queries + state["generated_queries"]
         scraped_results = web_scrape_node(
-            queries=state["generated_queries"], scrape_urls=self.scrape_urls
+            queries=all_queries, scrape_urls=self.scrape_urls   # TODO: 2週目移行で無駄なクエリ検索が生じるため修正する
         )
         return {"scraped_results": scraped_results}
     
     @time_node("retrieve_add_paper_subgraph", "_extract_paper_title_node")
     def _extract_paper_title_node(self, state: RetrieveAddPaperState) -> dict:
+        add_queries = state.get("add_queries") or []
+        all_queries = state["base_queries"] + add_queries + state["generated_queries"]
         extracted_paper_titles = extract_paper_title_node(
             llm_name="o3-mini-2025-01-31",
-            queries=state["generated_queries"],
+            queries=all_queries,
             scraped_results=state["scraped_results"],
         )
         return {"extracted_paper_titles": extracted_paper_titles}
@@ -404,6 +411,9 @@ if __name__ == "__main__":
 
     github_repository = "auto-res2/experiment_script_matsuzawa"
     branch_name = "base-branch"
+    input = {
+        "add_queries": ["vision"],
+    }
 
     add_paper_retriever = AddPaperRetriever(
         github_repository=github_repository,
@@ -414,5 +424,5 @@ if __name__ == "__main__":
         add_paper_num=add_paper_num,
     )
 
-    result = add_paper_retriever.run()
+    result = add_paper_retriever.run(input)
     print(f"result: {result}")

@@ -56,7 +56,7 @@ class CandidatePaperInfo(BaseModel):
 
 
 class RetrieveBasePaperInputState(TypedDict):
-    queries: list[str]
+    base_queries: list[str]
 
 
 class RetrieveBasePaperHiddenState(TypedDict):
@@ -109,7 +109,7 @@ class RetrieveBasePaperSubgraph:
 
     def _initialize_state(self, state: RetrieveBasePaperState) -> dict:
         return {
-            "queries": state["queries"],
+            "base_queries": state["base_queries"],
             "process_index": 0,
             "candidate_base_papers_info_list": [],
         }
@@ -117,7 +117,7 @@ class RetrieveBasePaperSubgraph:
     @time_node("retrieve_base_paper_subgraph", "_web_scrape_node")
     def _web_scrape_node(self, state: RetrieveBasePaperState) -> dict:
         scraped_results = web_scrape_node(
-            queries=state["queries"],  # TODO: abstractもスクレイピングする
+            queries=state["base_queries"],  # TODO: abstractもスクレイピングする
             scrape_urls=self.scrape_urls,
         )
         return {"scraped_results": scraped_results}
@@ -126,7 +126,7 @@ class RetrieveBasePaperSubgraph:
     def _extract_paper_title_node(self, state: RetrieveBasePaperState) -> dict:
         extracted_paper_titles = extract_paper_title_node(
             llm_name="o3-mini-2025-01-31",
-            queries=state["queries"],
+            queries=state["base_queries"],
             scraped_results=state["scraped_results"],
         )
         return {"extracted_paper_titles": extracted_paper_titles}
@@ -343,7 +343,7 @@ if __name__ == "__main__":
     github_repository = "auto-res2/experiment_script_matsuzawa"
     branch_name = "base-branch"
     input = {
-        "queries": ["transformer"],
+        "base_queries": ["transformer"],
     }
 
     base_paper_retriever = BasePaperRetriever(
