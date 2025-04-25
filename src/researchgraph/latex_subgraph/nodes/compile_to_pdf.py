@@ -40,7 +40,7 @@ class LatexNode:
         os.makedirs(self.latex_save_dir, exist_ok=True)
         self.template_copy_file = os.path.join(self.latex_save_dir, "template.tex")
 
-    def _call_llm(self, prompt: str) -> str | None:
+    def _call_llm(self, prompt: str) -> str:
         system_prompt = """\n
 You are a helpful LaTeX rewriting assistant.
 The value of "latex_full_text" must contain the complete LaTeX text."""
@@ -50,12 +50,21 @@ The value of "latex_full_text" must contain the complete LaTeX text."""
             {"role": "user", "content": prompt},
         ]
 
-        response = openai_client(self.llm_name, message=messages, data_model=LLMOutput)
-        if response is not None:
-            response = json.loads(response)
-            return response["latex_full_text"]
-        else:
-            return None
+        raw_response = openai_client(self.llm_name, message=messages, data_model=LLMOutput)
+        if not raw_response:
+            raise ValueError("Error: No response from the model in compile_to_pdf.")
+        
+        try:
+            response = json.loads(raw_response)
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to parse LLM response: {e}")
+            raise ValueError("Error: Invalid JSON response from model in compile_to_pdf.")
+
+        latex = response.get("latex_full_text", "")
+        if not latex:
+            raise ValueError("Error: Empty LaTeX content from model in compile_to_pdf.")
+        
+        return latex
 
     def _copy_template(self):
         try:
@@ -331,29 +340,3 @@ Return the complete corrected LaTeX text."""
         except Exception as e:
             logger.info(f"Error occurred during compiling: {e}")
             return tex_text
-
-
-if __name__ == "__main__":
-    state = {
-        "paper_content": {
-            "title": "test title",
-            "abstract": "Test Abstract.",
-            "introduction": "This is the introduction.",
-        },
-        "tex_text": "",
-    }
-    paper_content = state["paper_content"]
-    tex_text = state["tex_text"]
-    llm_name = "o3-mini-2025-01-31"
-    save_dir = "/workspaces/researchgraph/data"
-    figures_dir = "/workspaces/researchgraph/data/images"
-    os.makedirs(figures_dir, exist_ok=True)
-
-    pdf_file_path = "/workspaces/researchgraph/data/test_output.pdf"
-    tex_text = LatexNode(
-        llm_name=llm_name,
-        save_dir=save_dir,
-        figures_dir=figures_dir,
-        pdf_file_path=pdf_file_path,
-        timeout=30,
-    ).execute(paper_content)

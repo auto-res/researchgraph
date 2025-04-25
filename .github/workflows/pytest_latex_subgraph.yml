@@ -1,12 +1,12 @@
-name: WriterSubgraph
+name: LatexSubgraph
 
 on:
   pull_request:
     types: [opened, reopened, synchronize]
     paths: [
-      'src/researchgraph/writer_subgraph/**', 
-      'tests/writer_subgraph/**',
-      '.github/workflows/pytest_writer_subgraph.yml'
+      'src/researchgraph/latex_subgraph/**', 
+      'tests/latex_subgraph/**',
+      '.github/workflows/pytest_latex_subgraph.yml'
       ]
 
 defaults:
@@ -14,18 +14,18 @@ defaults:
     shell: bash
 
 jobs:
-  test-writer-subgraph:
-    name: WriterSubgraph Components
+  test-latex-subgraph:
+    name: LatexSubgraph Components
     runs-on: ubuntu-latest
     timeout-minutes: 10
     strategy:
       matrix:
         include:
-          - test_name: generate_note
-            test_file: tests/unit/writer_subgraph/test_generate_note.py
-            
-          - test_name: paper_writing
-            test_file: tests/unit/writer_subgraph/test_paper_writing.py
+          - test_name: convert_to_latex
+            test_file: tests/unit/latex_subgraph/test_convert_to_latex.py
+
+          - test_name: convert_to_latex
+            test_file: tests/unit/latex_subgraph/test_convert_to_latex.py
             
     env:
       GITHUB_WORKSPACE: ${{ github.workspace }}
@@ -43,6 +43,14 @@ jobs:
           curl -LsSf https://astral.sh/uv/0.5.5/install.sh | bash || exit 1
           uv --version
 
+      - name: Install LaTeX dependencies
+        if: matrix.latex_required == true
+        run: |
+          sudo apt-get update
+          DEBIAN_FRONTEND=noninteractive sudo apt-get install -y \
+            texlive-base texlive-latex-recommended texlive-fonts-recommended \
+            texlive-latex-extra texlive-science chktex
+
       - name: Set PYTHONPATH
         run: echo "PYTHONPATH=$PYTHONPATH:$GITHUB_WORKSPACE/src" >> $GITHUB_ENV
         
@@ -50,7 +58,7 @@ jobs:
         run: mkdir -p $SAVE_DIR
         
       - name: Run pytest with coverage
-        run: uv run pytest --cov=researchgraph.writer_subgraph --cov-branch --cov-report=term-missing -v ${{ matrix.test_file }}
+        run: uv run pytest --cov=researchgraph.latex_subgraph --cov-branch --cov-report=term-missing -v ${{ matrix.test_file }}
 
       - name: Ensure pip cache folder exists
         run: mkdir -p /home/runner/.cache/pip  
