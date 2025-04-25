@@ -1,12 +1,12 @@
-name: IntegrateGeneratorSubgraph
+# name: IntegrateGeneratorSubgraph
 
-on:
-  workflow_dispatch:
+# on:
+#   workflow_dispatch:
 
-jobs:
-  do-nothing:
-    name: Do Nothing Job
-    runs-on: ubuntu-latest
-    steps:
-      - name: Print Message
-        run: echo "This workflow does nothing."
+# jobs:
+#   do-nothing:
+#     name: Do Nothing Job
+#     runs-on: ubuntu-latest
+#     steps:
+#       - name: Print Message
+#         run: echo "This workflow does nothing."

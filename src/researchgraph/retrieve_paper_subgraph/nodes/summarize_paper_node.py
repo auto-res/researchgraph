@@ -1,7 +1,8 @@
 from pydantic import BaseModel
-from litellm import completion
 from jinja2 import Environment
-import ast
+
+# from researchgraph.utils.openai_client import openai_client
+from researchgraph.utils.vertexai_client import vertexai_client
 
 
 class LLMOutput(BaseModel):
@@ -12,13 +13,12 @@ class LLMOutput(BaseModel):
     future_research_directions: str
 
 
+# TODO：Changed to gemini because the prompt is very long.
 def summarize_paper_node(
     llm_name: str,
     prompt_template: str,
     paper_text: str,
 ) -> tuple[str, str, str, str, str]:
-    MAX_LENGTH = 500000
-    paper_text = paper_text[:MAX_LENGTH]
     data = {
         "paper_text": paper_text,
     }
@@ -26,21 +26,20 @@ def summarize_paper_node(
     env = Environment()
     template = env.from_string(prompt_template)
     prompt = template.render(data)
-
-    response = completion(
-        model=llm_name,
-        messages=[
-            {"role": "user", "content": f"{prompt}"},
-        ],
-        response_format=LLMOutput,
+    # TODO：OpenAI clientと統合した際に修正
+    # messages = [
+    #     {"role": "user", "content": f"{prompt}"},
+    # ]
+    response = vertexai_client(
+        model_name=llm_name, message=prompt, data_model=LLMOutput
     )
-    output = response.choices[0].message.content
-    output_dict = ast.literal_eval(output)
-    main_contributions = output_dict["main_contributions"]
-    methodology = output_dict["methodology"]
-    experimental_setup = output_dict["experimental_setup"]
-    limitations = output_dict["limitations"]
-    future_research_directions = output_dict["future_research_directions"]
+    # response = openai_client(llm_name, message=messages, data_model=LLMOutput)
+    # response = json.loads(response)
+    main_contributions = response["main_contributions"]
+    methodology = response["methodology"]
+    experimental_setup = response["experimental_setup"]
+    limitations = response["limitations"]
+    future_research_directions = response["future_research_directions"]
 
     return (
         main_contributions,

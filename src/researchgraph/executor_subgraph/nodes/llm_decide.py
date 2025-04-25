@@ -1,7 +1,7 @@
 from pydantic import BaseModel
-from litellm import completion
 from jinja2 import Environment
 import json
+from researchgraph.utils.openai_client import openai_client
 
 llm_decide_prompt = """
 # Instructions:
@@ -26,31 +26,22 @@ def llm_decide(
     output_text_data: str,
     error_text_data: str,
     prompt_template: str = llm_decide_prompt,
-    max_retries: int = 3, 
-) -> bool:
+) -> bool | None:
     data = {"output_text_data": output_text_data, "error_text_data": error_text_data}
 
     env = Environment()
     template = env.from_string(prompt_template)
     prompt = template.render(data)
-
-    for attempt in range(max_retries):
-        try:
-            response = completion(
-                model=llm_name,
-                messages=[
-                    {"role": "user", "content": f"{prompt}"},
-                ],
-                response_format=LLMOutput,
-            )
-            output = response.choices[0].message.content
-            output_dict = json.loads(output)
-            judgment_result = output_dict["judgment_result"]
-            return judgment_result
-        except Exception as e:
-            print(f"[Attempt {attempt+1}/{max_retries}] Error calling LLM: {e}")
-    print("Exceeded maximum retries for LLM call.")
-    return None   
+    messages = [
+        {"role": "user", "content": prompt},
+    ]
+    response = openai_client(llm_name, message=messages, data_model=LLMOutput)
+    response = json.loads(response)
+    if "judgment_result" in response:
+        judgment_result = response["judgment_result"]
+        return judgment_result
+    else:
+        return None
 
 
 if __name__ == "__main__":

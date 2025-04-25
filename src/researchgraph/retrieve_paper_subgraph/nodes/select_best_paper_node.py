@@ -1,7 +1,12 @@
 from pydantic import BaseModel
-from litellm import completion
 from jinja2 import Environment
-import ast
+
+# from researchgraph.utils.openai_client import openai_client
+from researchgraph.utils.vertexai_client import vertexai_client
+
+from logging import getLogger
+
+logger = getLogger(__name__)
 
 
 class LLMOutput(BaseModel):
@@ -13,32 +18,43 @@ def select_best_paper_node(
     prompt_template: str,
     candidate_papers,
     selected_base_paper_info=None,
-) -> tuple[str, str]:
+    add_paper_num: int = 3,
+) -> list[str]:
     if selected_base_paper_info is None:
         data = {
             "candidate_papers": candidate_papers,
+            "add_paper_num": add_paper_num,
         }
     else:
         data = {
             "candidate_papers": candidate_papers,
             "selected_base_paper": selected_base_paper_info,
+            "add_paper_num": add_paper_num,
         }
 
     env = Environment()
     template = env.from_string(prompt_template)
     prompt = template.render(data)
-
-    response = completion(
-        model=llm_name,
-        messages=[
-            {"role": "user", "content": f"{prompt}"},
-        ],
-        response_format=LLMOutput,
+    # TODO：OpenAI clientと統合した際に修正
+    # messages = [
+    #     {"role": "user", "content": f"{prompt}"},
+    # ]
+    response = vertexai_client(
+        model_name=llm_name, message=prompt, data_model=LLMOutput
     )
-    output = response.choices[0].message.content
-    output_dict = ast.literal_eval(output)
-    selected_arxiv_id = output_dict["selected_arxiv_id"]
-    return selected_arxiv_id
+    # response = openai_client(llm_name, message=messages, data_model=LLMOutput)
+    # response = json.loads(response)
+    if "selected_arxiv_id" in response:
+        arxiv_id_str = response["selected_arxiv_id"]
+        arxiv_id_list = [
+            arxiv_id.strip()
+            for arxiv_id in arxiv_id_str.split("\n")
+            if arxiv_id.strip()
+        ]
+        return arxiv_id_list
+    else:
+        logger.warning("No 'selected_arxiv_id' found in the response.")
+        return []
 
 
 select_base_paper_prompt = """
@@ -86,7 +102,7 @@ Below is a list of papers with their details:
 
 select_add_paper_prompt = """
 You are an expert research assistant tasked with selecting the most relevant and high-quality research paper from a list of candidate papers. 
-Your goal is to identify a paper (Research B) that can be effectively synthesized with a given foundational paper (Research A) to create a novel and non-trivial research direction.
+Your goal is to identify {{ add_paper_num }} papers that can be effectively synthesized with a given foundational paper (Research A) to create a novel and non-trivial research direction.
 
 **Research A (Base Paper):**
 - **Title:** {{ selected_base_paper.title }}
@@ -102,7 +118,7 @@ Your goal is to identify a paper (Research B) that can be effectively synthesize
 - **Limitations:** {{ selected_base_paper.limitations }}
 - **Future Research Directions:** {{ selected_base_paper.future_research_directions }}
 
-Below is a list of candidate papers (Research B candidates):
+Below is a list of candidate papers (Patch paper candidates):
 
 {% for paper in candidate_papers %}
 **Paper (ID: {{ paper.arxiv_id }})**
@@ -126,12 +142,7 @@ Below is a list of candidate papers (Research B candidates):
 **Instructions:**
 1. Carefully review the details of each candidate paper.
 2. Evaluate each paper based on the selection criteria above.
-3. Select the **single most relevant and high-quality paper (Research B)** that, when synthesized with Research A, enables a non-trivial and novel research direction.
-4. Return the **arxiv_id** of the selected paper.
-5. Provide your response in the following JSON format:
-```json
-{
-"selected_arxiv_id": "{arxiv_id}"
-}
-```
+3. Select {{ add_paper_num }} papers from the candidate papers that are relevant and of high-quality, when synthesized with Research A, enables a non-trivial and novel research direction.
+4. Output the ""arxiv_id** of the selected paper as a single plain text string, with each title separated by a newline character.
+5. Return your answer in JSON format with a single key "selected_arxiv_id". Do not include any additional commentary or formatting.
 """

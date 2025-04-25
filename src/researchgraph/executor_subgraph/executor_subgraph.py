@@ -1,145 +1,178 @@
+import os
+import logging
 from typing import TypedDict
 from langgraph.graph import START, END, StateGraph
 from langgraph.graph.graph import CompiledGraph
 
+from researchgraph.utils.logging_utils import setup_logging
+
 from researchgraph.executor_subgraph.nodes.generate_code_with_devin import (
-    GenerateCodeWithDevinNode,
+    generate_code_with_devin,
 )
 from researchgraph.executor_subgraph.nodes.execute_github_actions_workflow import (
-    ExecuteGithubActionsWorkflowNode,
+    execute_github_actions_workflow,
 )
 from researchgraph.executor_subgraph.nodes.retrieve_github_actions_artifacts import (
-    RetrieveGithubActionsArtifactsNode,
+    retrieve_github_actions_artifacts,
 )
 from researchgraph.executor_subgraph.nodes.fix_code_with_devin import (
-    FixCodeWithDevinNode,
+    fix_code_with_devin,
+)
+from researchgraph.executor_subgraph.nodes.check_devin_completion import (
+    check_devin_completion,
 )
 from researchgraph.executor_subgraph.nodes.llm_decide import llm_decide
 
-from researchgraph.executor_subgraph.input_data import (
-    executor_subgraph_input_data,
-)
+from researchgraph.utils.execution_timers import time_node, ExecutionTimeState
+from researchgraph.github_utils.graph_wrapper import create_wrapped_subgraph
+
+setup_logging()
+logger = logging.getLogger(__name__)
+
+DEVIN_API_KEY = os.getenv("DEVIN_API_KEY")
 
 
-class ExecutorState(TypedDict):
-    new_detailed_description_of_methodology: str
-    new_novelty: str
-    new_experimental_procedure: str
-    new_method_code: str
-
+class ExecutorSubgraphInputState(TypedDict):
+    new_method: str
+    experiment_code: str
     branch_name: str
     github_owner: str
     repository_name: str
-    workflow_run_id: int
-    save_dir: str
+
+
+class ExecutorSubgraphHiddenState(TypedDict):
+    experiment_session_id: str
+    devin_completion: bool
     fix_iteration_count: int
-    session_id: str
-    output_text_data: str
     error_text_data: str
-    devin_url: str
     judgment_result: bool
+    workflow_run_id: int
+
+
+class ExecutorSubgraphOutputState(TypedDict):
+    experiment_devin_url: str
+    output_text_data: str
+
+
+class ExecutorSubgraphState(
+    ExecutorSubgraphInputState,
+    ExecutorSubgraphHiddenState,
+    ExecutorSubgraphOutputState,
+    ExecutionTimeState,
+):
+    pass
 
 
 class ExecutorSubgraph:
     def __init__(
         self,
-        max_fix_iteration: int = 3,
+        save_dir: str,
+        max_code_fix_iteration: int = 3,
     ):
-        self.max_fix_iteration = max_fix_iteration
+        self.save_dir = save_dir
+        self.max_code_fix_iteration = max_code_fix_iteration
+        self.headers = {
+            "Authorization": f"Bearer {DEVIN_API_KEY}",
+            "Content-Type": "application/json",
+        }
 
-    def _generate_code_with_devin_node(self, state: ExecutorState) -> dict:
-        print("---ExecutorSubgraph---")
-
-        print("generate_code_with_devin_node")
-        session_id, branch_name, devin_url = GenerateCodeWithDevinNode().execute(
+    @time_node("executor_subgraph", "_generate_code_with_devin_node")
+    def _generate_code_with_devin_node(self, state: ExecutorSubgraphState) -> dict:
+        experiment_session_id, experiment_devin_url = generate_code_with_devin(
+            headers=self.headers,
             github_owner=state["github_owner"],
             repository_name=state["repository_name"],
-            new_detailed_description_of_methodology=state[
-                "new_detailed_description_of_methodology"
-            ],
-            new_novelty=state["new_novelty"],
-            new_experimental_procedure=state["new_experimental_procedure"],
-            new_method_code=state["new_method_code"],
+            branch_name=state["branch_name"],
+            new_method=state["new_method"],
+            experiment_code=state["experiment_code"],
         )
 
         return {
-            "session_id": session_id,
-            "branch_name": branch_name,
-            "devin_url": devin_url,
+            "fix_iteration_count": 0,
+            "experiment_session_id": experiment_session_id,
+            "experiment_devin_url": experiment_devin_url,
         }
 
-    def _execute_github_actions_workflow_node(self, state: ExecutorState) -> dict:
-        print("execute_github_actions_workflow_node")
-        github_owner = state["github_owner"]
-        repository_name = state["repository_name"]
-        branch_name = state["branch_name"]
-        workflow_run_id = ExecuteGithubActionsWorkflowNode().execute(
-            github_owner=github_owner,
-            repository_name=repository_name,
-            branch_name=branch_name,
+    @time_node("executor_subgraph", "_check_devin_completion_node")
+    def _check_devin_completion_node(self, state: ExecutorSubgraphState) -> dict:
+        result = check_devin_completion(
+            headers=self.headers,
+            session_id=state["experiment_session_id"],
+        )
+        if result is None:
+            return {"devin_completion": False}
+        return {"devin_completion": True}
+
+    @time_node("executor_subgraph", "_execute_github_actions_workflow_node")
+    def _execute_github_actions_workflow_node(
+        self, state: ExecutorSubgraphState
+    ) -> dict:
+        workflow_run_id = execute_github_actions_workflow(
+            github_owner=state["github_owner"],
+            repository_name=state["repository_name"],
+            branch_name=state["branch_name"],
         )
         return {
             "workflow_run_id": workflow_run_id,
         }
 
-    def _retrieve_github_actions_artifacts_node(self, state: ExecutorState) -> dict:
-        print("retrieve_github_actions_artifacts_node")
-        github_owner = state["github_owner"]
-        repository_name = state["repository_name"]
-        workflow_run_id = state["workflow_run_id"]
-        save_dir = state["save_dir"]
-        fix_iteration_count = state["fix_iteration_count"]
-        output_text_data, error_text_data = (
-            RetrieveGithubActionsArtifactsNode().execute(github_owner=github_owner, repository_name=repository_name, workflow_run_id=workflow_run_id, save_dir=save_dir, fix_iteration_count=fix_iteration_count)
+    @time_node("executor_subgraph", "_retrieve_github_actions_artifacts_node")
+    def _retrieve_github_actions_artifacts_node(
+        self, state: ExecutorSubgraphState
+    ) -> dict:
+        output_text_data, error_text_data = retrieve_github_actions_artifacts(
+            github_owner=state["github_owner"],
+            repository_name=state["repository_name"],
+            workflow_run_id=state["workflow_run_id"],
+            save_dir=self.save_dir,
+            fix_iteration_count=state["fix_iteration_count"],
         )
         return {
             "output_text_data": output_text_data,
             "error_text_data": error_text_data,
         }
 
-    def _llm_decide_node(self, state: ExecutorState) -> dict:
-        print("llm_decide_node")
-        output_text_data = state["output_text_data"]
-        error_text_data = state["error_text_data"]
+    @time_node("executor_subgraph", "_llm_decide_node")
+    def _llm_decide_node(self, state: ExecutorSubgraphState) -> dict:
         judgment_result = llm_decide(
-            llm_name="gpt-4o-mini-2024-07-18",
-            output_text_data=output_text_data,
-            error_text_data=error_text_data,
+            llm_name="o3-mini-2025-01-31",
+            output_text_data=state["output_text_data"],
+            error_text_data=state["error_text_data"],
         )
         return {
             "judgment_result": judgment_result,
         }
 
-    def _fix_code_with_devin_node(self, state: ExecutorState) -> dict:
-        print("fix_code_with_devin_node")
-        session_id = state["session_id"]
-        output_text_data = state["output_text_data"]
-        error_text_data = state["error_text_data"]
-        fix_iteration_count = state["fix_iteration_count"]
-        fix_iteration_count = FixCodeWithDevinNode().execute(
-            session_id=session_id,
-            output_text_data=output_text_data,
-            error_text_data=error_text_data,
-            fix_iteration_count=fix_iteration_count,
+    @time_node("executor_subgraph", "_fix_code_with_devin_node")
+    def _fix_code_with_devin_node(self, state: ExecutorSubgraphState) -> dict:
+        fix_iteration_count = fix_code_with_devin(
+            headers=self.headers,
+            session_id=state["experiment_session_id"],
+            output_text_data=state["output_text_data"],
+            error_text_data=state["error_text_data"],
+            fix_iteration_count=state["fix_iteration_count"],
         )
         return {
             "fix_iteration_count": fix_iteration_count,
         }
 
-    def iteration_function(self, state: ExecutorState):
+    def iteration_function(self, state: ExecutorSubgraphState):
         if state["judgment_result"] is True:
             return "finish"
         else:
-            if state["fix_iteration_count"] < self.max_fix_iteration:
+            if state["fix_iteration_count"] < self.max_code_fix_iteration:
                 return "correction"
             else:
                 return "finish"
 
     def build_graph(self) -> CompiledGraph:
-        graph_builder = StateGraph(ExecutorState)
+        graph_builder = StateGraph(ExecutorSubgraphState)
         # make nodes
         graph_builder.add_node(
             "generate_code_with_devin_node", self._generate_code_with_devin_node
+        )
+        graph_builder.add_node(
+            "check_devin_completion_node", self._check_devin_completion_node
         )
         graph_builder.add_node(
             "execute_github_actions_workflow_node",
@@ -157,7 +190,15 @@ class ExecutorSubgraph:
         # make edges
         graph_builder.add_edge(START, "generate_code_with_devin_node")
         graph_builder.add_edge(
-            "generate_code_with_devin_node", "execute_github_actions_workflow_node"
+            "generate_code_with_devin_node", "check_devin_completion_node"
+        )
+        graph_builder.add_conditional_edges(
+            "check_devin_completion_node",
+            path=lambda state: state["devin_completion"],
+            path_map={
+                True: "execute_github_actions_workflow_node",
+                False: END,
+            },
         )
         graph_builder.add_edge(
             "execute_github_actions_workflow_node",
@@ -175,15 +216,31 @@ class ExecutorSubgraph:
             },
         )
         graph_builder.add_edge(
-            "fix_code_with_devin_node", "execute_github_actions_workflow_node"
+            "fix_code_with_devin_node", "check_devin_completion_node"
+        )
+        graph_builder.add_edge(
+            "check_devin_completion_node", "execute_github_actions_workflow_node"
         )
         return graph_builder.compile()
 
 
-if __name__ == "__main__":
-    graph = ExecutorSubgraph(
-        max_fix_iteration=3,
-    ).build_graph()
+Executor = create_wrapped_subgraph(
+    ExecutorSubgraph,
+    ExecutorSubgraphInputState,
+    ExecutorSubgraphOutputState,
+)
 
-    # executor_subgraph.output_mermaid
-    result = graph.invoke(executor_subgraph_input_data)
+if __name__ == "__main__":
+    llm_name = "o1-2024-12-17"
+    github_repository = "auto-res2/experiment_script_matsuzawa"
+    branch_name = "base-branch"
+
+    retriever = Executor(
+        github_repository=github_repository,
+        branch_name=branch_name,
+        save_dir="/workspaces/researchgraph/data",
+        max_code_fix_iteration=3,
+    )
+
+    result = retriever.run()
+    print(f"result: {result}")
