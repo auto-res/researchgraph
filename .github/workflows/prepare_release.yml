@@ -22,7 +22,7 @@ jobs:
         run: |
           pip install toml-cli semver
 
-      - name: Bump version, commit, and tag
+      - name: Bump version, commit, and create PR
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -32,14 +32,16 @@ jobs:
           NEXT_VERSION=$(python -c "import semver; print(semver.bump_patch('$CURRENT_VERSION'))")
           echo "Next version: $NEXT_VERSION"
 
-          # pyproject.tomlを更新
           toml set --toml-path pyproject.toml project.version "$NEXT_VERSION"
 
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          BRANCH_NAME="bump-version-$NEXT_VERSION"
+          git checkout -b "$BRANCH_NAME"
+
           git add pyproject.toml
           git commit -m "Bump version to $NEXT_VERSION"
-          git push origin main
+          git push origin "$BRANCH_NAME"
 
-          git tag "v$NEXT_VERSION"
-          git push origin "v$NEXT_VERSION"
+          gh pr create --fill --base main --head "$BRANCH_NAME"
