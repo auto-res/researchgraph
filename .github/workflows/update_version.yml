@@ -14,6 +14,15 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install tools
+        run: |
+          pip install toml-cli semver
+      
       - name: Bump version, commit, and create PR
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
