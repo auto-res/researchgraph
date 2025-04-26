@@ -1,6 +1,6 @@
 <!-- Title Image Placeholder -->
 <p align="center">
-  <img src="https://via.placeholder.com/600x150?text=ResearchGraph" alt="ResearchGraph" />
+  AIRAS
 </p>
 
 <p align="center">
@@ -88,14 +88,14 @@ This OSS is developed as part of the [AutoRes](https://www.autores.one/english) 
 
 # Citation
 
-If you use ResearchGraph in your research, please cite as follows:
+If you use AIRAS in your research, please cite as follows:
 
 ```
-@software{research_graph2025,
+@software{airas2025,
   author = {Toma Tanaka},
-  title = {ResearchGraph},
+  title = {AIRAS},
   year = {2025},
   publisher = {GitHub},
-  url = {https://github.com/auto-res/researchgraph}
+  url = {https://github.com/auto-res/airas}
 }
 ```

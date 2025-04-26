@@ -1,15 +1,15 @@
 services:
-  researchgraph:
+  airas:
     build:
       context: ../
       dockerfile: ./.devcontainer/dev.Dockerfile
     env_file:
       - ../.env
     volumes:
-      - ..:/workspaces/researchgraph:cached
+      - ..:/workspaces/airas:cached
     environment:
-      - PYTHONPATH=/workspaces/researchgraph/src
-#   researchgraph-gpu:
+      - PYTHONPATH=/workspaces/airas/src
+#   airas-gpu:
 #     build:
 #       context: ../
 #       dockerfile: ./.devcontainer/dev-gpu.Dockerfile
@@ -23,8 +23,8 @@ services:
 #     env_file:
 #       - ../.env
 #     volumes:
-#       - ..:/workspaces/researchgraph:cached
+#       - ..:/workspaces/airas:cached
 #     environment:
-#       - PYTHONPATH=/workspaces/researchgraph/src
+#       - PYTHONPATH=/workspaces/airas/src
 #       - NVIDIA_VISIBLE_DEVICES=all
 #       - NVIDIA_DRIVER_CAPABILITIES=compute,utility

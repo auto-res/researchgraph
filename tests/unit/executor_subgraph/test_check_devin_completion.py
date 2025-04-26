@@ -1,6 +1,6 @@
 import pytest
-from unittest.mock import patch, MagicMock
-from researchgraph.executor_subgraph.nodes.check_devin_completion import check_devin_completion
+from unittest.mock import patch
+from airas.executor_subgraph.nodes.check_devin_completion import check_devin_completion
 
 
 @pytest.fixture
@@ -24,7 +24,9 @@ def test_check_devin_completion_retries(
     """status_enum の値に応じて retry されるかを確認"""
     mock_fetch.side_effect = [response_data] * expected_called_times
 
-    with patch("researchgraph.executor_subgraph.nodes.check_devin_completion.retry_request") as mock_retry:
+    with patch(
+        "researchgraph.executor_subgraph.nodes.check_devin_completion.retry_request"
+    ) as mock_retry:
         mock_retry.return_value = response_data
 
         result = check_devin_completion(mock_headers, "test-session")
@@ -38,7 +40,9 @@ def test_check_devin_completion_retries(
 
 def test_check_devin_completion_returns_none_on_failure(mock_headers):
     """fetch_api_data が例外を投げた場合 None が返るか"""
-    with patch("researchgraph.executor_subgraph.nodes.check_devin_completion.retry_request") as mock_retry:
+    with patch(
+        "researchgraph.executor_subgraph.nodes.check_devin_completion.retry_request"
+    ) as mock_retry:
         mock_retry.return_value = None
 
         result = check_devin_completion(mock_headers, "invalid-session")
@@ -50,7 +54,9 @@ def test_check_devin_completion_max_retries_exceeded(mock_fetch, mock_headers):
     """fetch_api_data が常に retry 対象を返すと、最終的に None が返る"""
 
     mock_fetch.return_value = {"status_enum": "running"}  # 常に retry 対象
-    with patch("researchgraph.executor_subgraph.nodes.check_devin_completion.retry_request") as mock_retry:
+    with patch(
+        "researchgraph.executor_subgraph.nodes.check_devin_completion.retry_request"
+    ) as mock_retry:
         # 模擬的に retry が全失敗するようにする
         mock_retry.return_value = None
 

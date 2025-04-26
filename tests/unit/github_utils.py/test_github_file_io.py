@@ -1,9 +1,9 @@
-import base64
 import json
 import pytest
 from unittest.mock import patch
 
-from researchgraph.github_utils.github_file_io import download_from_github
+from airas.github_utils.github_file_io import download_from_github
+
 
 # 正常な JSON (dict) を返すケース
 @patch("researchgraph.github_utils.github_file_io._download_file_bytes_from_github")
@@ -16,6 +16,7 @@ def test_download_from_github_valid_json(mock_download):
     result = download_from_github("owner", "repo", "branch", "path/to/file")
     assert result == expected_data, "有効な JSON 辞書が復元されるべき"
 
+
 # JSON 形式だが dict ではなく list のケース
 @patch("researchgraph.github_utils.github_file_io._download_file_bytes_from_github")
 def test_download_from_github_non_dict_json(mock_download):
@@ -27,6 +28,7 @@ def test_download_from_github_non_dict_json(mock_download):
         download_from_github("owner", "repo", "branch", "path/to/file")
     assert "Decoded input is not a dictionary" in str(excinfo.value)
 
+
 # JSON としてパースできない文字列の場合
 @patch("researchgraph.github_utils.github_file_io._download_file_bytes_from_github")
 def test_download_from_github_invalid_json(mock_download):
@@ -36,6 +38,7 @@ def test_download_from_github_invalid_json(mock_download):
     with pytest.raises(Exception) as excinfo:
         download_from_github("owner", "repo", "branch", "path/to/file")
     assert "Failed to parse full-state JSON" in str(excinfo.value)
+
 
 # ファイルが見つからなかった場合 (None を返す)
 @patch("researchgraph.github_utils.github_file_io._download_file_bytes_from_github")
