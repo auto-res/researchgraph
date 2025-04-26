@@ -128,8 +128,10 @@ numpy==2.2.4
     # via
     #   langchain-community
     #   pandas
-openai==1.72.0
-    # via airas (pyproject.toml)
+    #   pydeck
+    #   streamlit
+openai==1.75.0
+    # via researchgraph (pyproject.toml)
 orjson==3.10.16
     # via
     #   langgraph-sdk
