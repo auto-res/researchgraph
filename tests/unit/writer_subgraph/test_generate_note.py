@@ -1,6 +1,7 @@
 import pytest
 from pathlib import Path
-from researchgraph.writer_subgraph.nodes.generate_note import generate_note
+from airas.writer_subgraph.nodes.generate_note import generate_note
+
 
 @pytest.fixture
 def state() -> dict[str, str]:
@@ -44,15 +45,18 @@ def test_generate_note_with_figures(tmp_path: Path, state: dict[str, str]) -> No
     assert "- fig2.pdf" in result
 
 
-@pytest.mark.parametrize("missing_key", [
-    "base_method_text",
-    "new_method",
-    "verification_policy",
-    "experiment_details",
-    "experiment_code",
-    "output_text_data",
-    "analysis_report",
-])
+@pytest.mark.parametrize(
+    "missing_key",
+    [
+        "base_method_text",
+        "new_method",
+        "verification_policy",
+        "experiment_details",
+        "experiment_code",
+        "output_text_data",
+        "analysis_report",
+    ],
+)
 def test_generate_note_missing_key(state: dict[str, str], missing_key: str) -> None:
     state.pop(missing_key)
     with pytest.raises(KeyError) as exc:

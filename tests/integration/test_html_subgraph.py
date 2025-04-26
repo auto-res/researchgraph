@@ -1,7 +1,8 @@
 import pytest
 from unittest.mock import patch
-from researchgraph.html_subgraph.html_subgraph import HtmlSubgraph
-from researchgraph.github_utils.graph_wrapper import create_wrapped_subgraph
+from airas.html_subgraph.html_subgraph import HtmlSubgraph
+from airas.github_utils.graph_wrapper import create_wrapped_subgraph
+
 
 @pytest.fixture
 def mock_paper_content():

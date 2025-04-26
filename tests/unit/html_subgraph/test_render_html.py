@@ -1,6 +1,6 @@
 import pytest
 from pathlib import Path
-from researchgraph.html_subgraph.nodes.render_html import (
+from airas.html_subgraph.nodes.render_html import (
     _wrap_in_html_template,
     _save_index_html,
 )

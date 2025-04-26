@@ -5,20 +5,20 @@ import type * as Preset from '@docusaurus/preset-classic';
 // This runs in Node.js - Don't use client-side code here (browser APIs, JSX...)
 
 const config: Config = {
-  title: 'Research Graph',
-  tagline: 'Research assistant powered by LLMs',
+  title: 'AIRAS',
+  tagline: 'AI Research Automation System',
   favicon: 'img/favicon.ico',
 
   // Set the production url of your site here
   url: 'https://www.autores.one',
   // Set the /<baseUrl>/ pathname under which your site is served
   // For GitHub pages deployment, it is often '/<projectName>/'
-  baseUrl: '/researchgraph/',
+  baseUrl: '/airas/',
 
   // GitHub pages deployment config.
   // If you aren't using GitHub pages, you don't need these.
   organizationName: 'auto-res', // Usually your GitHub org/user name.
-  projectName: 'researchgraph', // Usually your repo name.
+  projectName: 'airas', // Usually your repo name.
   deploymentBranch: 'gh-pages',   
   onBrokenLinks: 'throw',
   onBrokenMarkdownLinks: 'warn',
@@ -50,7 +50,7 @@ const config: Config = {
           // Please change this to your repo.
           // Remove this to remove the "edit this page" links.
           editUrl:
-            'https://github.com/auto-res/researchgraph/tree/main/docs/',
+            'https://github.com/auto-res/airas/tree/main/docs/',
         },
         blog: {
           showReadingTime: true,
@@ -61,7 +61,7 @@ const config: Config = {
           // Please change this to your repo.
           // Remove this to remove the "edit this page" links.
           editUrl:
-            'https://github.com/auto-res/researchgraph/tree/main/docs/',
+            'https://github.com/auto-res/airas/tree/main/docs/',
           // Useful options to enforce blogging best practices
           onInlineTags: 'warn',
           onInlineAuthors: 'warn',
@@ -83,9 +83,9 @@ const config: Config = {
       respectPrefersColorScheme: true,
     },
     navbar: {
-      title: 'Research Graph',
+      title: 'AIRAS',
       logo: {
-        alt: 'Research Graph',
+        alt: 'AIRAS',
         src: 'img/logo.svg',
       },
       items: [
@@ -105,7 +105,7 @@ const config: Config = {
           'aria-label': 'X (Twitter) link',
         },
         {
-          href: 'https://github.com/auto-res/researchgraph',
+          href: 'https://github.com/auto-res/airas',
           label: 'GitHub',
           position: 'right',
         },
@@ -132,7 +132,7 @@ const config: Config = {
           items: [
             {
               label: 'GitHub Discussions',
-              href: 'https://github.com/auto-res/researchgraph/discussions',
+              href: 'https://github.com/auto-res/airas/discussions',
             },
           ],
         },
@@ -145,12 +145,12 @@ const config: Config = {
             },
             {
               label: 'GitHub',
-              href: 'https://github.com/auto-res/researchgraph',
+              href: 'https://github.com/auto-res/airas',
             },
           ],
         },
       ],
-      copyright: `Copyright © ${new Date().getFullYear()} Research Graph. Built with Docusaurus.`,
+      copyright: `Copyright © ${new Date().getFullYear()} AIRAS. Built with Docusaurus.`,
     },
     prism: {
       theme: prismThemes.github,

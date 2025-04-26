@@ -2,12 +2,13 @@ import requests
 import unittest.mock
 from pydantic import BaseModel, Field
 from langgraph.graph import StateGraph
-from researchgraph.nodes.retrievenode.github.extract_github_urls import ExtractGithubUrlsNode
+from airas.nodes.retrievenode.github.extract_github_urls import ExtractGithubUrlsNode
 
 
 class State(BaseModel):
     paper_text: str = Field(default="")
     github_url: list[str] = Field(default_factory=list)
+
 
 # NOTE：It is executed by Github actions.
 def test_extract_github_url_node():
@@ -47,8 +48,10 @@ def test_extract_github_url_node():
     with unittest.mock.patch("requests.get") as mock_get:
         mock_response = unittest.mock.Mock()
         mock_response.status_code = 404
-        mock_response.raise_for_status.side_effect = requests.exceptions.HTTPError("404 Client Error: Not Found")
+        mock_response.raise_for_status.side_effect = requests.exceptions.HTTPError(
+            "404 Client Error: Not Found"
+        )
         mock_get.return_value = mock_response
         result = graph.invoke(state, debug=True)
         assert "github_url" in result
-        assert len(result["github_url"]) == 0 
+        assert len(result["github_url"]) == 0
