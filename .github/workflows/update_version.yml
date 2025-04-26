@@ -3,7 +3,7 @@ name: Update Version and Create PR
 on:
   push:
     branches:
-      - main
+      - develop
 
 jobs:
   prepare-release:
