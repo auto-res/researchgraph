@@ -5,7 +5,7 @@ from typing import Any, Protocol, TypeVar, TypedDict
 from langgraph.graph import StateGraph, START, END
 from langgraph.graph.graph import CompiledGraph
 from airas.utils.logging_utils import setup_logging
-from airas.github_utils.github_file_io import (
+from airas.utils.github_utils.github_file_io import (
     download_from_github,
     upload_to_github,
     create_branch_on_github,
