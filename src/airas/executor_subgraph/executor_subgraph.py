@@ -110,8 +110,8 @@ class ExecutorSubgraph:
         self, state: ExecutorSubgraphState
     ) -> dict:
         workflow_run_id = execute_github_actions_workflow(
-            github_owner=self.github_owner,
-            repository_name=self.repository_name,
+            github_owner=state["github_owner"],
+            repository_name=state["repository_name"],
             branch_name=state["branch_name"],
         )
         return {
@@ -123,8 +123,8 @@ class ExecutorSubgraph:
         self, state: ExecutorSubgraphState
     ) -> dict:
         output_text_data, error_text_data = retrieve_github_actions_artifacts(
-            github_owner=self.github_owner,
-            repository_name=self.repository_name,
+            github_owner=state["github_owner"],
+            repository_name=state["repository_name"],
             workflow_run_id=state["workflow_run_id"],
             save_dir=self.save_dir,
             fix_iteration_count=state["fix_iteration_count"],
