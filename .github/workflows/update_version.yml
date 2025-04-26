@@ -51,14 +51,11 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          BRANCH_NAME="bump-version-$NEXT_VERSION"
-          git checkout -b "$BRANCH_NAME"
+          git checkout develop
+          git pull origin develop
 
           git add pyproject.toml
           git commit -m "Bump version to $NEXT_VERSION"
-          git push origin "$BRANCH_NAME"
-
-          gh pr create --fill --base main --head "$BRANCH_NAME"
-
+          git push origin develop
 
 
