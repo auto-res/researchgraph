@@ -6,7 +6,7 @@ on:
       - main
 
 jobs:
-  update_release_draft:
+  update-release-draft:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

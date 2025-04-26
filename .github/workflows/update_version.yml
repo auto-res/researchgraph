@@ -6,7 +6,7 @@ on:
       - develop
 
 jobs:
-  update_version_pr:
+  update-version-pr:
     if: "!contains(github.event.head_commit.message, 'Bump version to')"
     runs-on: ubuntu-latest
 
