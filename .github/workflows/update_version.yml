@@ -14,15 +14,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
-
-      - name: Install tools
-        run: |
-          pip install toml-cli semver
-
       - name: Bump version, commit, and create PR
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -31,19 +22,19 @@ jobs:
           echo "Current version: $CURRENT_VERSION"
 
           NEXT_VERSION=$(python -c "
-import re
-import semver
+            import re
+            import semver
 
-current = '$CURRENT_VERSION'
+            current = '$CURRENT_VERSION'
 
-m = re.match(r'(\\d+)\\.(\\d+)\\.(\\d+)\\.dev(\\d+)', current)
-if m:
-    major, minor, patch, dev = m.groups()
-    print(f'{major}.{minor}.{patch}.dev{int(dev) + 1}')
-else:
-    next_patch = semver.bump_patch(current)
-    print(f'{next_patch}.dev1')
-")
+            m = re.match(r'(\\d+)\\.(\\d+)\\.(\\d+)\\.dev(\\d+)', current)
+            if m:
+                major, minor, patch, dev = m.groups()
+                print(f'{major}.{minor}.{patch}.dev{int(dev) + 1}')
+            else:
+                next_patch = semver.bump_patch(current)
+                print(f'{next_patch}.dev1')
+          ")
           echo "Next version: $NEXT_VERSION"
 
           toml set --toml-path pyproject.toml project.version "$NEXT_VERSION"
@@ -59,5 +50,6 @@ else:
           git push origin "$BRANCH_NAME"
 
           gh pr create --fill --base main --head "$BRANCH_NAME"
+
 
 
