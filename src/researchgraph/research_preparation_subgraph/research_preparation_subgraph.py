@@ -1,10 +1,12 @@
 import logging
+from typing import TypedDict
 
 from langgraph.graph import START, END, StateGraph
 from langgraph.graph.graph import CompiledGraph
 
 from researchgraph.research_preparation_subgraph.nodes.fork_repository import (
     fork_repository,
+    DEVICETYPE,
 )
 from researchgraph.research_preparation_subgraph.nodes.check_github_repository import (
     check_github_repository,
@@ -23,11 +25,17 @@ from researchgraph.utils.logging_utils import setup_logging
 
 from researchgraph.utils.execution_timers import time_node, ExecutionTimeState
 
+
 setup_logging()
 logger = logging.getLogger(__name__)
 
 
-class ResearchPreparationState(ExecutionTimeState):
+class ResearchPreparationStartState(TypedDict):
+    github_repository: str
+    branch_name: str
+
+
+class ResearchPreparationHiddenState(TypedDict):
     github_owner: str
     repository_name: str
     repository_exists: bool
@@ -37,29 +45,33 @@ class ResearchPreparationState(ExecutionTimeState):
     main_sha: str
 
 
+class ResearchPreparationState(
+    ExecutionTimeState,
+    ResearchPreparationStartState,
+    ResearchPreparationHiddenState,
+):
+    pass
+
+
 class ResearchPreparationSubgraph:
     def __init__(
         self,
-        github_repository: str,
-        branch_name: str,
-        device_type: str = "cpu",
+        device_type: DEVICETYPE = "cpu",
         organization: str = "",
     ):
-        self.github_repository = github_repository
-        self.branch_name = branch_name
         self.device_type = device_type
         self.organization = organization
 
     def _init(self, state: dict) -> dict:
-        # github_repository = state.get("github_repository", "")
-        if "/" in self.github_repository:
-            github_owner, repository_name = self.github_repository.split("/", 1)
+        github_repository = state["github_repository"]
+        if "/" in github_repository:
+            github_owner, repository_name = github_repository.split("/", 1)
+            return {
+                "github_owner": github_owner,
+                "repository_name": repository_name,
+            }
         else:
             raise ValueError("Invalid repository name format.")
-        return {
-            "github_owner": github_owner,
-            "repository_name": repository_name,
-        }
 
     @time_node("research_preparation", "_get_github_repository")
     def _check_github_repository(self, state: ResearchPreparationState) -> dict:
@@ -83,7 +95,7 @@ class ResearchPreparationSubgraph:
         target_branch_sha = check_branch_existence(
             github_owner=state["github_owner"],
             repository_name=state["repository_name"],
-            branch_name=self.branch_name,
+            branch_name=state["branch_name"],
         )
         return {"target_branch_sha": target_branch_sha}
 
@@ -100,7 +112,7 @@ class ResearchPreparationSubgraph:
         create_result = create_branch(
             github_owner=state["github_owner"],
             repository_name=state["repository_name"],
-            branch_name=self.branch_name,
+            branch_name=state["branch_name"],
             main_sha=state["main_sha"],
         )
         return {"create_result": create_result}
@@ -154,19 +166,25 @@ class ResearchPreparationSubgraph:
 
         return graph_builder.compile()
 
-    def run(self) -> dict:
+    def run(self, input: dict) -> dict:
         graph = self.build_graph()
-        result = graph.invoke({})
+        result = graph.invoke(input)
         return result
 
 
 if __name__ == "__main__":
+    github_repository = "auto-res2/test-tanaka-2"
+    # github_repository = "fuyu-quant/test-1"
+    branch_name = "test"
+
     subgraph = ResearchPreparationSubgraph(
-        github_repository="auto-res2/experiment_script_matsuzawa",
-        branch_name="base-branch",
-        device_type="cpu",
+        device_type="gpu",
         organization="auto-res2",
     )
 
-    result = subgraph.run()
+    input = {
+        "github_repository": github_repository,
+        "branch_name": branch_name,
+    }
+    result = subgraph.run(input)
     print(result)

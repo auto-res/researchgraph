@@ -71,7 +71,7 @@ Generator = create_wrapped_subgraph(
 
 if __name__ == "__main__":
     llm_name = "o1-2024-12-17"
-    github_repository = "auto-res2/test20"
+    github_repository = "auto-res2/test-tanaka-2"
     branch_name = "test"
 
     retriever = Generator(

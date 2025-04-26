@@ -581,8 +581,8 @@ if __name__ == "__main__":
     llm_name = "o3-mini-2025-01-31"
     save_dir = "/workspaces/researchgraph/data"
 
-    github_repository = "auto-res2/experiment_script_matsuzawa"
-    branch_name = "base-branch"
+    github_repository = "auto-res2/test-tanaka-2"
+    branch_name = "test"
     input = {
         "queries": ["diffusion model"],
     }
