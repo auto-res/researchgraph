@@ -23,9 +23,6 @@ from airas.executor_subgraph.nodes.check_devin_completion import (
 )
 from airas.executor_subgraph.nodes.llm_decide import llm_decide
 
-from airas.executor_subgraph.input_data import (
-    executor_subgraph_input_data,
-)
 from airas.utils.execution_timers import time_node, ExecutionTimeState
 from airas.utils.github_utils.graph_wrapper import create_wrapped_subgraph
 
@@ -38,6 +35,8 @@ DEVIN_API_KEY = os.getenv("DEVIN_API_KEY")
 class ExecutorSubgraphInputState(TypedDict):
     new_method: str
     experiment_code: str
+    github_owner: str
+    repository_name: str
 
 
 class ExecutorSubgraphHiddenState(TypedDict):
@@ -67,13 +66,13 @@ class ExecutorSubgraphState(
 class ExecutorSubgraph:
     def __init__(
         self,
-        github_owner: str,
-        repository_name: str,
+        # github_owner: str,
+        # repository_name: str,
         save_dir: str,
         max_code_fix_iteration: int = 3,
     ):
-        self.github_owner = github_owner
-        self.repository_name = repository_name
+        # self.github_owner = github_owner
+        # self.repository_name = repository_name
         self.save_dir = save_dir
         self.max_code_fix_iteration = max_code_fix_iteration
         self.headers = {
@@ -86,8 +85,9 @@ class ExecutorSubgraph:
         logger.info("---ExecutorSubgraph---")
         experiment_session_id, experiment_devin_url = generate_code_with_devin(
             headers=self.headers,
-            github_owner=self.github_owner,
-            repository_name=self.repository_name,
+            github_owner=state["github_owner"],
+            repository_name=state["repository_name"],
+            branch_name=state["branch_name"],
             new_method=state["new_method"],
             experiment_code=state["experiment_code"],
         )
@@ -237,18 +237,17 @@ Executor = create_wrapped_subgraph(
 )
 
 if __name__ == "__main__":
-    graph = ExecutorSubgraph(
-        github_owner="auto-res2",
-        repository_name="auto-research",
-        save_dir="/workspaces/researchgraph/data",
-        max_code_fix_iteration=3,
-    ).build_graph()
+    max_code_fix_iteration = 3
+    github_repository = "auto-res2/test-tanaka-3"
+    branch_name = "test"
+    save_dir = "/workspaces/airas/data"
 
-    for event in graph.stream(executor_subgraph_input_data, stream_mode="updates"):
-        # print(node)
-        node_name = list(event.keys())[0]
-        print(node_name)
-        print(event[node_name])
+    executor = Executor(
+        github_repository=github_repository,
+        branch_name=branch_name,
+        save_dir=save_dir,
+        max_code_fix_iteration=max_code_fix_iteration,
+    )
 
-    # executor_subgraph.output_mermaid
-    # result = graph.invoke(executor_subgraph_input_data)
+    result = executor.run()
+    print(f"result: {result}")
