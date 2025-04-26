@@ -42,7 +42,7 @@ exceptiongroup==1.2.2
     #   pytest
 feedparser==6.0.11
     # via arxiv
-frozenlist==1.5.0
+frozenlist==1.6.0
     # via
     #   aiohttp
     #   aiosignal
