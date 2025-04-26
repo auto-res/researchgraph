@@ -1,4 +1,4 @@
-name: Update Version
+name: Update Version PR
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
       - develop
 
 jobs:
-  prepare-release:
+  update_version_pr:
     if: "!contains(github.event.head_commit.message, 'Bump version to')"
     runs-on: ubuntu-latest
 
@@ -51,11 +51,13 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          git checkout develop
-          git pull origin develop
+          BRANCH_NAME="bump-version-$NEXT_VERSION"
+          git checkout -b "$BRANCH_NAME"
 
           git add pyproject.toml
           git commit -m "Bump version to $NEXT_VERSION"
-          git push origin develop
+          git push origin "$BRANCH_NAME"
+
+          gh pr create --fill --base develop --head "$BRANCH_NAME"
 
 
