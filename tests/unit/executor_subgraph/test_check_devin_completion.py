@@ -17,7 +17,7 @@ def mock_headers():
         ({"status_enum": "running"}, 3),  # Retry 2回まで想定
     ],
 )
-@patch("researchgraph.executor_subgraph.nodes.check_devin_completion.fetch_api_data")
+@patch("airas.executor_subgraph.nodes.check_devin_completion.fetch_api_data")
 def test_check_devin_completion_retries(
     mock_fetch, response_data, expected_called_times, mock_headers
 ):
@@ -25,7 +25,7 @@ def test_check_devin_completion_retries(
     mock_fetch.side_effect = [response_data] * expected_called_times
 
     with patch(
-        "researchgraph.executor_subgraph.nodes.check_devin_completion.retry_request"
+        "airas.executor_subgraph.nodes.check_devin_completion.retry_request"
     ) as mock_retry:
         mock_retry.return_value = response_data
 
@@ -41,7 +41,7 @@ def test_check_devin_completion_retries(
 def test_check_devin_completion_returns_none_on_failure(mock_headers):
     """fetch_api_data が例外を投げた場合 None が返るか"""
     with patch(
-        "researchgraph.executor_subgraph.nodes.check_devin_completion.retry_request"
+        "airas.executor_subgraph.nodes.check_devin_completion.retry_request"
     ) as mock_retry:
         mock_retry.return_value = None
 
@@ -49,13 +49,13 @@ def test_check_devin_completion_returns_none_on_failure(mock_headers):
         assert result is None
 
 
-@patch("researchgraph.executor_subgraph.nodes.check_devin_completion.fetch_api_data")
+@patch("airas.executor_subgraph.nodes.check_devin_completion.fetch_api_data")
 def test_check_devin_completion_max_retries_exceeded(mock_fetch, mock_headers):
     """fetch_api_data が常に retry 対象を返すと、最終的に None が返る"""
 
     mock_fetch.return_value = {"status_enum": "running"}  # 常に retry 対象
     with patch(
-        "researchgraph.executor_subgraph.nodes.check_devin_completion.retry_request"
+        "airas.executor_subgraph.nodes.check_devin_completion.retry_request"
     ) as mock_retry:
         # 模擬的に retry が全失敗するようにする
         mock_retry.return_value = None
@@ -64,7 +64,7 @@ def test_check_devin_completion_max_retries_exceeded(mock_fetch, mock_headers):
         assert result is None
 
 
-@patch("researchgraph.executor_subgraph.nodes.check_devin_completion.retry_request")
+@patch("airas.executor_subgraph.nodes.check_devin_completion.retry_request")
 def test_check_devin_completion_url_format(mock_retry, mock_headers):
     """session_id が URL に正しく埋め込まれているか"""
     mock_retry.return_value = {"status_enum": "completed"}

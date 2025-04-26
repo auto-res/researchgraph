@@ -1,6 +1,6 @@
 [project]
-name = "researchgraph"
-version = "0.0.75"
+name = "airas"
+version = "0.0.76"
 description = "Add your description here"
 readme = "README.md"
 authors = [
@@ -28,7 +28,7 @@ dependencies = [
 
 [project.urls]
 Homepage = "https://www.autores.one/english"
-Issues = "https://github.com/auto-res/researchgraph/issues"
+Issues = "https://github.com/auto-res/airas/issues"
 
 [project.optional-dependencies]
 mcp = [

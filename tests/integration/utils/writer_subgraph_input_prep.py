@@ -25,12 +25,14 @@ class WriterSubgraphInputPrep:
         pages = loader.load_and_split()
         full_text = "".join(page.page_content.replace("\n", "") for page in pages)
         return full_text
-    
-    def _call_llm(self, prompt_template: str, full_text: dict, max_retries: int = 3) -> Optional[str]:
+
+    def _call_llm(
+        self, prompt_template: str, full_text: dict, max_retries: int = 3
+    ) -> Optional[str]:
         template = self.env.from_string(prompt_template)
         prompt = template.render(full_text)
 
-        for attempt in range(max_retries): 
+        for attempt in range(max_retries):
             try:
                 response = completion(
                     model=self.llm_name,
@@ -45,7 +47,7 @@ class WriterSubgraphInputPrep:
                 print(f"[Attempt {attempt+1}/{max_retries}] Unexpected error: {e}")
         print("Exceeded maximum retries for LLM call.")
         return None
-    
+
     def _save_summary_to_file(self, summary_data: dict, pdf_path: str):
         base_name = os.path.basename(pdf_path).replace(".pdf", "_summary.txt")
         summary_file_path = os.path.join(self.output_dir, base_name)
@@ -68,22 +70,24 @@ class WriterSubgraphInputPrep:
     def execute(self, pdf_path):
         full_text = self._parse_pdf(pdf_path)
 
-        writer_input_data = self._call_llm(writer_subgraph_input_prep_prompt, {"full_text": full_text})
+        writer_input_data = self._call_llm(
+            writer_subgraph_input_prep_prompt, {"full_text": full_text}
+        )
         print(f"writer_input_data: {writer_input_data}")
 
         if writer_input_data is None:
             raise ValueError("LLM failed to generate structured output.")
-        
+
         self._save_summary_to_file(writer_input_data, pdf_path)
 
         return {
             "objective": writer_input_data["objective"],
             "new_method_text": writer_input_data["new_method_text"],
             "new_method_code": "def new_optimizer(): pass",
-            "new_method_results": writer_input_data["new_method_results"], 
+            "new_method_results": writer_input_data["new_method_results"],
             "new_method_analysis": writer_input_data["new_method_analysis"],
-            "github_url": "https://github.com/example/repo", 
-            "paper_content": {}, 
+            "github_url": "https://github.com/example/repo",
+            "paper_content": {},
             "tex_text": "",
             "github_owner": "mock_owner",
             "repository_name": "mock_repo",
@@ -91,8 +95,9 @@ class WriterSubgraphInputPrep:
             "add_github_url": "mock_add_url",
             "base_github_url": "mock_base_url",
             "completion": False,
-            "devin_url": "mock_devin_url", 
+            "devin_url": "mock_devin_url",
         }
+
 
 writer_subgraph_input_prep_prompt = """
 Extract detailed, structured information from the research paper for automated scientific writing.  
