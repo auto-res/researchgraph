@@ -60,9 +60,9 @@ gitpython==3.1.44
     # via streamlit
 greenlet==3.1.1
     # via sqlalchemy
-h11==0.14.0
+h11==0.16.0
     # via httpcore
-httpcore==1.0.7
+httpcore==1.0.8
     # via httpx
 httpx==0.28.1
     # via
@@ -128,7 +128,7 @@ langsmith==0.3.27
     #   langchain-core
 markupsafe==3.0.2
     # via jinja2
-marshmallow==3.26.1
+marshmallow==4.0.0
     # via dataclasses-json
 multidict==6.2.0
     # via
@@ -166,7 +166,7 @@ pandas==2.2.3
     # via
     #   researchgraph (pyproject.toml)
     #   streamlit
-pillow==11.1.0
+pillow==11.2.1
     # via streamlit
 pluggy==1.5.0
     # via pytest
