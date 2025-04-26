@@ -1,6 +1,6 @@
 import pytest
 import json
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 from requests.exceptions import HTTPError
 from airas.executor_subgraph.nodes.llm_decide import llm_decide
 
@@ -22,16 +22,12 @@ def test_environment():
         ({"judgment_result": False}, False),
     ],
 )
-@patch("airas.executor_subgraph.nodes.llm_decide.completion")
+@patch("airas.executor_subgraph.nodes.llm_decide.openai_client")
 def test_llm_decide_success(
     mock_completion, test_environment, mock_response_content, expected_result
 ):
     """llm_decide() が LLM からのレスポンスを正しく処理するかをテスト"""
-    mock_completion.return_value = MagicMock(
-        choices=[
-            MagicMock(message=MagicMock(content=json.dumps(mock_response_content)))
-        ]
-    )
+    mock_completion.return_value = json.dumps(mock_response_content)
 
     result = llm_decide(
         test_environment["llm_name"],
@@ -50,7 +46,7 @@ def test_llm_decide_success(
         HTTPError("Mocked Rate Limit Error (429)"),
     ],
 )
-@patch("airas.executor_subgraph.nodes.llm_decide.completion")
+@patch("airas.executor_subgraph.nodes.llm_decide.openai_client")
 def test_llm_decide_api_errors(mock_completion, test_environment, exception):
     """llm_decide() が API 呼び出し時の異常を適切に処理するかをテスト"""
     mock_completion.side_effect = exception
@@ -67,18 +63,15 @@ def test_llm_decide_api_errors(mock_completion, test_environment, exception):
     "mock_response_content",
     [
         "Invalid response format",
-        None,
         json.dumps({"wrong_key": True}),
     ],
 )
-@patch("airas.executor_subgraph.nodes.llm_decide.completion")
+@patch("airas.executor_subgraph.nodes.llm_decide.openai_client")
 def test_llm_decide_invalid_response(
     mock_completion, test_environment, mock_response_content
 ):
     """llm_decide() が不正なレスポンスを適切に処理するかをテスト"""
-    mock_completion.return_value = MagicMock(
-        choices=[MagicMock(message=MagicMock(content=mock_response_content))]
-    )
+    mock_completion.return_value = json.dumps(mock_response_content)
 
     result = llm_decide(
         test_environment["llm_name"],

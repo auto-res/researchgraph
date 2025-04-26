@@ -4,7 +4,7 @@ on:
   pull_request:
     types: [opened, reopened, synchronize]
     paths: [
-      'src/researchgraph/writer_subgraph/**', 
+      'src/airas/writer_subgraph/**', 
       'tests/writer_subgraph/**',
       '.github/workflows/pytest_writer_subgraph.yml'
       ]
@@ -50,7 +50,7 @@ jobs:
         run: mkdir -p $SAVE_DIR
         
       - name: Run pytest with coverage
-        run: uv run pytest --cov=researchgraph.writer_subgraph --cov-branch --cov-report=term-missing -v ${{ matrix.test_file }}
+        run: uv run pytest --cov=airas.writer_subgraph --cov-branch --cov-report=term-missing -v ${{ matrix.test_file }}
 
       - name: Ensure pip cache folder exists
         run: mkdir -p /home/runner/.cache/pip  
