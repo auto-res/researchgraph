@@ -1,12 +1,12 @@
-name: Publish Python Package
+name: Publish to Test PyPI
 
 on:
   push:
-    tags:
-      - 'v*.*.*'
+    branches:
+      - main
 
 jobs:
-  publish:
+  publish-testpypi:
     runs-on: ubuntu-latest
 
     permissions:
@@ -30,8 +30,8 @@ jobs:
         run: |
           uv build
 
-      - name: Publish the package
+      - name: Publish to Test PyPI
         env:
-          UV_PUBLISH_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
+          UV_PUBLISH_TOKEN: ${{ secrets.TEST_PYPI_API_TOKEN }}
         run: |
-          uv publish
+          uv publish --index testpypi

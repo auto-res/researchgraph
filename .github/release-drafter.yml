@@ -11,7 +11,7 @@ version-resolver:
   patch:
     labels:
       - 'bug'
-      - 'chore'
+      - 'documentation'
       - 'refactor'
   default: patch
 
@@ -24,7 +24,7 @@ categories:
       - 'bug'
   - title: '🛠 Maintenance'
     labels:
-      - 'chore'
+      - 'documentation'
       - 'refactor'
 
 change-template: '- $TITLE (#$NUMBER)'
