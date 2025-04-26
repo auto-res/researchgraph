@@ -21,11 +21,14 @@ def mock_paper_content():
     }
 
 
-@patch("researchgraph.github_utils.graph_wrapper.download_from_github")
-@patch("researchgraph.github_utils.graph_wrapper.upload_to_github")
+@patch("airas.github_utils.graph_wrapper.download_from_github")
+@patch("airas.github_utils.graph_wrapper.upload_to_github")
 def test_html_subgraph_end_to_end(
     mock_upload_to_github, mock_download_from_github, mock_paper_content
 ):
+    """
+    Test the end-to-end functionality of the HTML subgraph creation and GitHub upload process.
+    """
     mock_download_from_github.return_value = mock_paper_content
     mock_upload_to_github.return_value = True
 

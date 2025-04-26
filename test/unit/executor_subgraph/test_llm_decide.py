@@ -22,7 +22,7 @@ def test_environment():
         ({"judgment_result": False}, False),
     ],
 )
-@patch("researchgraph.executor_subgraph.nodes.llm_decide.completion")
+@patch("airas.executor_subgraph.nodes.llm_decide.completion")
 def test_llm_decide_success(
     mock_completion, test_environment, mock_response_content, expected_result
 ):
@@ -50,7 +50,7 @@ def test_llm_decide_success(
         HTTPError("Mocked Rate Limit Error (429)"),
     ],
 )
-@patch("researchgraph.executor_subgraph.nodes.llm_decide.completion")
+@patch("airas.executor_subgraph.nodes.llm_decide.completion")
 def test_llm_decide_api_errors(mock_completion, test_environment, exception):
     """llm_decide() が API 呼び出し時の異常を適切に処理するかをテスト"""
     mock_completion.side_effect = exception
@@ -71,7 +71,7 @@ def test_llm_decide_api_errors(mock_completion, test_environment, exception):
         json.dumps({"wrong_key": True}),
     ],
 )
-@patch("researchgraph.executor_subgraph.nodes.llm_decide.completion")
+@patch("airas.executor_subgraph.nodes.llm_decide.completion")
 def test_llm_decide_invalid_response(
     mock_completion, test_environment, mock_response_content
 ):
