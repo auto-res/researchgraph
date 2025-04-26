@@ -17,6 +17,7 @@ DEVICETYPE = Literal["cpu", "gpu"]
 
 def fork_repository(
     repository_name: str,
+    # NOTE:Make it possible to respond simply by rewriting run_experiment.yml.
     device_type: DEVICETYPE = "cpu",
     organization: str = "",
     max_retries: int = 10,
@@ -53,14 +54,20 @@ def fork_repository(
                 logger.info("Fork of the repository was successful.")
                 return True
             elif response.status_code == 400:
-                raise RuntimeError(f"Bad request: {url}")
+                raise RuntimeError(
+                    f"Error code：{response.status_code} Bad request: {url}"
+                )
             elif response.status_code == 403:
-                raise RuntimeError(f"Forbidden: {url}")
+                raise RuntimeError(
+                    f"Error code：{response.status_code} The access token may be incorrect.: {url}"
+                )
             elif response.status_code == 404:
-                raise RuntimeError(f"Resource not found: {url}")
+                raise RuntimeError(
+                    f"Error code：{response.status_code} Resource not found: {url}"
+                )
             elif response.status_code == 422:
                 raise RuntimeError(
-                    f"Validation failed, or the endpoint has been spammed: {url}"
+                    f"Error code：{response.status_code} Validation failed, or the endpoint has been spammed: {url}"
                 )
             else:
                 logger.error(
