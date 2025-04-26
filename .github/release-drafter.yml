@@ -1,6 +1,20 @@
 name-template: 'v$RESOLVED_VERSION'
 tag-template: 'v$RESOLVED_VERSION'
 
+version-resolver:
+  major:
+    labels:
+      - 'breaking-change'
+  minor:
+    labels:
+      - 'feature'
+  patch:
+    labels:
+      - 'bug'
+      - 'chore'
+      - 'refactor'
+  default: patch
+
 categories:
   - title: '🚀 Features'
     labels:

@@ -2,8 +2,10 @@ name: Deploy Docs to GitHub Pages
 
 on:
   push:
-    tags:
-      - 'v*.*.*'
+    branches:
+      - develop
+    paths:
+      - 'docs/**'
 
 jobs:
   deploy:
