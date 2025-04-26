@@ -66,13 +66,9 @@ class ExecutorSubgraphState(
 class ExecutorSubgraph:
     def __init__(
         self,
-        # github_owner: str,
-        # repository_name: str,
         save_dir: str,
         max_code_fix_iteration: int = 3,
     ):
-        # self.github_owner = github_owner
-        # self.repository_name = repository_name
         self.save_dir = save_dir
         self.max_code_fix_iteration = max_code_fix_iteration
         self.headers = {
