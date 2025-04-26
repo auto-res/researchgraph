@@ -22,5 +22,6 @@
         "ms-python.mypy-type-checker" // Mypy
 			]
 		}
-	}
+	},
+	"postCreateCommand": "uv sync && uv run pre-commit install"
 }
