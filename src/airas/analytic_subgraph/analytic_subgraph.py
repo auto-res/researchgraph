@@ -9,7 +9,7 @@ from airas.analytic_subgraph.nodes.analytic_node import analytic_node
 from airas.utils.logging_utils import setup_logging
 
 from airas.utils.execution_timers import time_node, ExecutionTimeState
-from airas.github_utils.graph_wrapper import create_wrapped_subgraph
+from airas.utils.github_utils.graph_wrapper import create_wrapped_subgraph
 
 setup_logging()
 logger = logging.getLogger(__name__)

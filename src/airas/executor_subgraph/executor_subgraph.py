@@ -27,6 +27,7 @@ from airas.executor_subgraph.input_data import (
     executor_subgraph_input_data,
 )
 from airas.utils.execution_timers import time_node, ExecutionTimeState
+from airas.utils.github_utils.graph_wrapper import create_wrapped_subgraph
 
 setup_logging()
 logger = logging.getLogger(__name__)
@@ -228,6 +229,12 @@ class ExecutorSubgraph:
         )
         return graph_builder.compile()
 
+
+Executor = create_wrapped_subgraph(
+    ExecutorSubgraph,
+    ExecutorSubgraphInputState,
+    ExecutorSubgraphOutputState,
+)
 
 if __name__ == "__main__":
     graph = ExecutorSubgraph(

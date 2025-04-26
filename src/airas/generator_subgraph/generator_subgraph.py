@@ -11,6 +11,7 @@ from airas.generator_subgraph.input_data import (
     generator_subgraph_input_data,
 )
 from airas.utils.execution_timers import time_node, ExecutionTimeState
+from airas.utils.github_utils.graph_wrapper import create_wrapped_subgraph
 
 setup_logging()
 logger = logging.getLogger(__name__)
@@ -65,6 +66,12 @@ class GeneratorSubgraph:
 
         return graph_builder.compile()
 
+
+Generator = create_wrapped_subgraph(
+    GeneratorSubgraph,
+    GeneratorSubgraphInputState,
+    GeneratorSubgraphOutputState,
+)
 
 if __name__ == "__main__":
     llm_name = "o1-2024-12-17"

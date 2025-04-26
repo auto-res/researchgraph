@@ -12,7 +12,7 @@ from airas.latex_subgraph.nodes.convert_to_latex import (
 )
 from airas.latex_subgraph.nodes.compile_to_pdf import LatexNode
 from airas.utils.execution_timers import time_node, ExecutionTimeState
-from airas.github_utils.graph_wrapper import create_wrapped_subgraph
+from airas.utils.github_utils.graph_wrapper import create_wrapped_subgraph
 
 setup_logging()
 logger = logging.getLogger(__name__)
