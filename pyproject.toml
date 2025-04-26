@@ -1,6 +1,6 @@
 [project]
-name = "researchgraph"
-version = "0.0.75"
+name = "airas"
+version = "0.0.76"
 description = "Add your description here"
 readme = "README.md"
 authors = [
@@ -28,10 +28,21 @@ dependencies = [
 
 [project.urls]
 Homepage = "https://www.autores.one/english"
-Issues = "https://github.com/auto-res/researchgraph/issues"
+Issues = "https://github.com/auto-res/airas/issues"
 
-[tool.uv]
-dev-dependencies = [
+[project.optional-dependencies]
+mcp = [
+    "asyncio>=3.4.3",
+    "mcp[cli]>=1.6.0",
+    "python-dotenv>=1.0.1",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
     "ipykernel>=6.29.5",
     "jupyter>=1.1.1",
     "mypy>=1.15.0",
