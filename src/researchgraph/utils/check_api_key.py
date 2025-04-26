@@ -9,6 +9,7 @@ def check_api_key(
     devin_api_check: bool = True,
     fire_crawl_api_check: bool = True,
     github_personal_access_token_check: bool = True,
+    vertex_ai_api_check: bool = True,
 ) -> None:
     missing_keys = []
 
@@ -49,6 +50,16 @@ def check_api_key(
                     "name": "GitHub Personal Access Token",
                     "env": "GITHUB_PERSONAL_ACCESS_TOKEN",
                     "url": "https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens#creating-a-fine-grained-personal-access-token",
+                }
+            )
+
+    if vertex_ai_api_check:
+        if not os.getenv("VERTEX_AI_API_KEY"):
+            missing_keys.append(
+                {
+                    "name": "Vertex AI API Key",
+                    "env": "VERTEX_AI_API_KEY",
+                    "url": "https://aistudio.google.com/apikey",
                 }
             )
 

@@ -112,9 +112,11 @@ def execute_github_actions_workflow(
             "Successfully retrieved information on Github actions prior to execution of workflow."
         )
     else:
-        logger.warning(
-            "Failure to retrieve information on Github actions before executing workflow."
-        )
+        logger.error(
+        f"Failed to fetch workflow info before execution. "
+        f"Owner: {github_owner}, Repo: {repository_name}, Branch: {branch_name}"
+    )
+        raise RuntimeError("Failed to fetch workflow info before execution.")
     num_workflow_runs_before_execution = _count_github_actions_workflow_runs(
         response_before_execution
     )
@@ -138,14 +140,16 @@ def execute_github_actions_workflow(
         branch_name,
         num_workflow_runs_before_execution,
     )
-    if response_before_execution:
+    if response_after_execution:
         logger.info(
             "Successfully retrieved information on Github actions after execution of workflow."
         )
     else:
-        logger.warning(
-            "Failure to retrieve information on Github actions after executing workflow."
-        )
+        logger.error(
+        f"Failed to fetch workflow info after execution. "
+        f"Owner: {github_owner}, Repo: {repository_name}, Branch: {branch_name}"
+    )
+        raise RuntimeError("Failed to fetch workflow info after execution.")
 
     workflow_run_id = _parse_workflow_run_id(response_after_execution)
 
