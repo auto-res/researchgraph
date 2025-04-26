@@ -1,12 +1,13 @@
 from pydantic import BaseModel, Field
 from langgraph.graph import StateGraph
-from researchgraph.nodes.retrievenode.search_papers_node import SearchPapersNode
-from unittest.mock import patch, MagicMock
+from airas.nodes.retrievenode.search_papers_node import SearchPapersNode
+from unittest.mock import patch
 
 
 class State(BaseModel):
     queries: list = Field(default_factory=list)
     search_results: list[dict] = Field(default_factory=list)
+
 
 # NOTE：It is executed by Github actions.
 def test_search_paper_node():
@@ -23,8 +24,8 @@ def test_search_paper_node():
             input_key=input_key,
             output_key=output_key,
             period_days=period_days,
-            num_retrieve_paper=num_retrieve_paper, 
-            api_type=api_type, 
+            num_retrieve_paper=num_retrieve_paper,
+            api_type=api_type,
         ),
     )
     graph_builder.set_entry_point("search_papers_node")
@@ -33,7 +34,9 @@ def test_search_paper_node():
     state = {
         "queries": ["deep learning"],
     }
-    with patch("researchgraph.nodes.retrievenode.arxiv_api.arxiv_api_node.ArxivNode.search_paper") as mock_search_paper:
+    with patch(
+        "researchgraph.nodes.retrievenode.arxiv_api.arxiv_api_node.ArxivNode.search_paper"
+    ) as mock_search_paper:
         mock_search_paper.return_value = [
             {
                 "arxiv_id": "1234.5678",
@@ -56,7 +59,7 @@ def test_search_paper_node():
         ]
         result = graph.invoke(state, debug=True)
         assert result == {
-            "queries": ["deep learning"], 
+            "queries": ["deep learning"],
             "search_results": [
                 {
                     "arxiv_id": "1234.5678",
@@ -76,5 +79,5 @@ def test_search_paper_node():
                     "journal": "Journal 2",
                     "externalIds": {"ArXiv": "2345.6789"},
                 },
-            ]
+            ],
         }

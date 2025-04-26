@@ -2,7 +2,7 @@ import os
 from pydantic import BaseModel, Field
 from langgraph.graph import START, END, StateGraph
 
-from researchgraph.nodes.retrievenode import RetrievearXivTextNode
+from airas.nodes.retrievenode import RetrievearXivTextNode
 # from researchgraph.nodes.retrievenode import RetrieveGithubRepositoryNode
 
 

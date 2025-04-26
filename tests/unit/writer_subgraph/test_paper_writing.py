@@ -1,7 +1,7 @@
 import json
 import pytest
-import researchgraph.writer_subgraph.nodes.paper_writing as mod
-from researchgraph.writer_subgraph.nodes.paper_writing import WritingNode
+import airas.writer_subgraph.nodes.paper_writing as mod
+from airas.writer_subgraph.nodes.paper_writing import WritingNode
 
 
 @pytest.fixture
@@ -21,9 +21,7 @@ def fake_llm_response() -> dict[str, str]:
 
 @pytest.fixture
 def node() -> WritingNode:
-    node = WritingNode(
-        llm_name="dummy"
-    )
+    node = WritingNode(llm_name="dummy")
     return node
 
 
@@ -33,19 +31,27 @@ def test_replace_underscores_in_keys(node: WritingNode) -> None:
     assert out == {"A B": "x", "C": "y"}
 
 
-def test_call_llm_success(node: WritingNode, monkeypatch: pytest.MonkeyPatch, fake_llm_response: dict[str, str]) -> None:
+def test_call_llm_success(
+    node: WritingNode,
+    monkeypatch: pytest.MonkeyPatch,
+    fake_llm_response: dict[str, str],
+) -> None:
     monkeypatch.setattr(
-        mod,
-        "openai_client",
-        lambda *args, **kwargs: json.dumps(fake_llm_response)
+        mod, "openai_client", lambda *args, **kwargs: json.dumps(fake_llm_response)
     )
     result = node._call_llm(prompt="p", system_prompt="s")
     assert result["Related Work"] == fake_llm_response["Related_Work"]
-    
+
     expected_keys = [
-        "Title", "Abstract", "Introduction", "Related Work",
-        "Background", "Method", "Experimental Setup",
-        "Results", "Conclusions"
+        "Title",
+        "Abstract",
+        "Introduction",
+        "Related Work",
+        "Background",
+        "Method",
+        "Experimental Setup",
+        "Results",
+        "Conclusions",
     ]
     for k in expected_keys:
         assert k in result
@@ -54,23 +60,19 @@ def test_call_llm_success(node: WritingNode, monkeypatch: pytest.MonkeyPatch, fa
 @pytest.mark.parametrize(
     "raw_response, expected_msg",
     [
-        (None,                          "No response"),
-        ("",                            "No response"),
-        ("{}",                          "Missing or empty"),
+        (None, "No response"),
+        ("", "No response"),
+        ("{}", "Missing or empty"),
         ('{"Title": ""}', "Missing or empty"),
     ],
 )
 def test_call_llm_errors(
-    node: WritingNode, 
-    monkeypatch: pytest.MonkeyPatch, 
-    raw_response: str | None, 
-    expected_msg: str, 
+    node: WritingNode,
+    monkeypatch: pytest.MonkeyPatch,
+    raw_response: str | None,
+    expected_msg: str,
 ) -> None:
-    monkeypatch.setattr(
-        mod, 
-        "openai_client",
-        lambda *args, **kwargs: raw_response
-    )
+    monkeypatch.setattr(mod, "openai_client", lambda *args, **kwargs: raw_response)
     with pytest.raises(ValueError) as exc:
         node._call_llm(prompt="p", system_prompt="s")
     assert expected_msg in str(exc.value)
@@ -97,11 +99,13 @@ def test_render_system_prompt(node: WritingNode) -> None:
     assert "## Abstract Tips" in sys_prompt
 
 
-def test_execute_full(node: WritingNode, monkeypatch: pytest.MonkeyPatch, fake_llm_response: dict[str, str]) -> None:
+def test_execute_full(
+    node: WritingNode,
+    monkeypatch: pytest.MonkeyPatch,
+    fake_llm_response: dict[str, str],
+) -> None:
     monkeypatch.setattr(
-        mod,
-        "openai_client",
-        lambda *args, **kwargs: json.dumps(fake_llm_response)
+        mod, "openai_client", lambda *args, **kwargs: json.dumps(fake_llm_response)
     )
     result = node.execute(note="My paper context")
     assert result["Title"] == fake_llm_response["Title"]
@@ -115,17 +119,23 @@ def test_execute_refine_only_without_content() -> None:
     assert "paper_content must be provided" in str(exc.value)
 
 
-def test_execute_refine_only(monkeypatch: pytest.MonkeyPatch, fake_llm_response: dict[str, str]) -> None:
+def test_execute_refine_only(
+    monkeypatch: pytest.MonkeyPatch, fake_llm_response: dict[str, str]
+) -> None:
     node_refine = WritingNode(llm_name="dummy", refine_only=True)
     initial_content = {
-        "Title": "Init", "Abstract": "A", "Introduction": "I",
-        "Related Work": "RW", "Background": "BG", "Method": "M",
-        "Experimental Setup": "ES", "Results": "R", "Conclusions": "C"
+        "Title": "Init",
+        "Abstract": "A",
+        "Introduction": "I",
+        "Related Work": "RW",
+        "Background": "BG",
+        "Method": "M",
+        "Experimental Setup": "ES",
+        "Results": "R",
+        "Conclusions": "C",
     }
     monkeypatch.setattr(
-        mod,
-        "openai_client",
-        lambda *args, **kwargs: json.dumps(fake_llm_response)
+        mod, "openai_client", lambda *args, **kwargs: json.dumps(fake_llm_response)
     )
     result = node_refine.execute(note="ctx", paper_content=initial_content)
     assert result["Title"] == fake_llm_response["Title"]

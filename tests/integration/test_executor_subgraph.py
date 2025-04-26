@@ -1,6 +1,6 @@
 import pytest
-from unittest.mock import patch, MagicMock
-from researchgraph.executor_subgraph.executor_subgraph import ExecutorSubgraph, ExecutorState
+from unittest.mock import patch
+from airas.executor_subgraph.executor_subgraph import ExecutorSubgraph, ExecutorState
 
 
 @pytest.fixture(scope="function")
@@ -31,27 +31,43 @@ def mock_nodes():
     mocks = {}
     fix_iteration_counter = [0]
 
-    def fix_code_side_effect(session_id, output_text_data, error_text_data, fix_iteration_count):
+    def fix_code_side_effect(
+        session_id, output_text_data, error_text_data, fix_iteration_count
+    ):
         fix_iteration_counter[0] += 1
-        print(f"Mocked fix_code_with_devin returning fix_iteration_count={fix_iteration_counter[0]}")
+        print(
+            f"Mocked fix_code_with_devin returning fix_iteration_count={fix_iteration_counter[0]}"
+        )
         return fix_iteration_counter[0]
 
-    with patch("researchgraph.executor_subgraph.nodes.generate_code_with_devin.GenerateCodeWithDevinNode.execute",
-            return_value=("mock_session", "mock_branch", "https://devin.ai/mock")) as mock_generate, \
-        patch("researchgraph.executor_subgraph.nodes.execute_github_actions_workflow.ExecuteGithubActionsWorkflowNode.execute",
-            return_value=123456) as mock_execute_workflow, \
-        patch("researchgraph.executor_subgraph.nodes.retrieve_github_actions_artifacts.RetrieveGithubActionsArtifactsNode.execute",
-            return_value=("Mock output", "Mock error")) as mock_retrieve_artifacts, \
-        patch("researchgraph.executor_subgraph.executor_subgraph.llm_decide", return_value=False) as mock_llm_decide, \
-        patch("researchgraph.executor_subgraph.nodes.fix_code_with_devin.FixCodeWithDevinNode.execute", 
-            side_effect=fix_code_side_effect) as mock_fix_code:
-        
+    with (
+        patch(
+            "researchgraph.executor_subgraph.nodes.generate_code_with_devin.GenerateCodeWithDevinNode.execute",
+            return_value=("mock_session", "mock_branch", "https://devin.ai/mock"),
+        ) as mock_generate,
+        patch(
+            "researchgraph.executor_subgraph.nodes.execute_github_actions_workflow.ExecuteGithubActionsWorkflowNode.execute",
+            return_value=123456,
+        ) as mock_execute_workflow,
+        patch(
+            "researchgraph.executor_subgraph.nodes.retrieve_github_actions_artifacts.RetrieveGithubActionsArtifactsNode.execute",
+            return_value=("Mock output", "Mock error"),
+        ) as mock_retrieve_artifacts,
+        patch(
+            "researchgraph.executor_subgraph.executor_subgraph.llm_decide",
+            return_value=False,
+        ) as mock_llm_decide,
+        patch(
+            "researchgraph.executor_subgraph.nodes.fix_code_with_devin.FixCodeWithDevinNode.execute",
+            side_effect=fix_code_side_effect,
+        ) as mock_fix_code,
+    ):
         mocks["generate_code_with_devin"] = mock_generate
         mocks["execute_github_actions_workflow"] = mock_execute_workflow
         mocks["retrieve_github_actions_artifacts"] = mock_retrieve_artifacts
         mocks["llm_decide"] = mock_llm_decide
         mocks["fix_code_with_devin"] = mock_fix_code
-        
+
         yield mocks
 
 
@@ -87,7 +103,9 @@ def test_generate_code_with_devin_node(mock_nodes, test_state, executor_subgraph
     assert result["devin_url"] == "https://devin.ai/mock"
 
 
-def test_execute_github_actions_workflow_node(mock_nodes, test_state, executor_subgraph):
+def test_execute_github_actions_workflow_node(
+    mock_nodes, test_state, executor_subgraph
+):
     """LangGraphを通じた ExecuteGithubActionsWorkflowNode の統合テスト"""
     result = executor_subgraph.invoke(test_state)
     mock_nodes["execute_github_actions_workflow"].assert_called()
@@ -95,7 +113,9 @@ def test_execute_github_actions_workflow_node(mock_nodes, test_state, executor_s
     assert result["workflow_run_id"] == 123456
 
 
-def test_retrieve_github_actions_artifacts_node(mock_nodes, test_state, executor_subgraph):
+def test_retrieve_github_actions_artifacts_node(
+    mock_nodes, test_state, executor_subgraph
+):
     """LangGraphを通じた RetrieveGithubActionsArtifactsNode の統合テスト"""
     result = executor_subgraph.invoke(test_state)
     mock_nodes["retrieve_github_actions_artifacts"].assert_called()
