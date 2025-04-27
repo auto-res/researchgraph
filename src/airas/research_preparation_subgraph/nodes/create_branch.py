@@ -53,7 +53,7 @@ def create_branch(
                 )
             else:
                 response.raise_for_status()
-        except requests.exceptions.HTTPError as e:
+        except requests.RequestException as e:
             logger.error(f"Request failed: {e}")
 
         retries += 1

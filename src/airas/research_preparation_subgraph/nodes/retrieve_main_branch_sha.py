@@ -44,7 +44,7 @@ def retrieve_main_branch_sha(
                 raise RuntimeError(f"Moved permanently: {url}")
             else:
                 response.raise_for_status()
-        except requests.exceptions.HTTPError as e:
+        except requests.RequestException as e:
             logger.error(f"Request failed: {e}")
 
         retries += 1
