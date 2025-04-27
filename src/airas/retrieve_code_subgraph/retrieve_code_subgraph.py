@@ -15,7 +15,7 @@ from airas.retrieve_code_subgraph.input_data import retrieve_code_subgraph_input
 
 from airas.utils.logging_utils import setup_logging
 from airas.utils.execution_timers import time_node, ExecutionTimeState
-
+from airas.utils.github_utils.graph_wrapper import create_wrapped_subgraph
 
 setup_logging()
 logger = logging.getLogger(__name__)
@@ -86,11 +86,11 @@ class RetrieveCodeSubgraph:
         return graph_builder.compile()
 
 
-# CodeRetriever = create_wrapped_subgraph(
-#     RetrieveCodeSubgraph,
-#     RetrieveCodeSubgraphInputState,
-#     RetrieveCodeSubgraphOutputState,
-# )
+CodeRetriever = create_wrapped_subgraph(
+    RetrieveCodeSubgraph,
+    RetrieveCodeSubgraphInputState,
+    RetrieveCodeSubgraphOutputState,
+)
 
 if __name__ == "__main__":
     subgraph = RetrieveCodeSubgraph()

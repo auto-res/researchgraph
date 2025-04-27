@@ -15,7 +15,9 @@ from airas.experimental_plan_subgraph.nodes.generate_experiment_details import (
 from airas.experimental_plan_subgraph.nodes.generate_experiment_code import (
     generate_experiment_code,
 )
-
+from airas.experimental_plan_subgraph.input_data import (
+    experimental_plan_subgraph_input_data,
+)
 from airas.utils.execution_timers import time_node, ExecutionTimeState
 from airas.utils.github_utils.graph_wrapper import create_wrapped_subgraph
 
@@ -25,8 +27,9 @@ logger = logging.getLogger(__name__)
 
 class ExperimentalPlanSubgraphInputState(TypedDict):
     new_method: str
-    # base_github_url: str
     base_method_text: str
+    base_experimental_code: str
+    base_experimental_info: str
 
 
 class ExperimentalPlanSubgraphHiddenState(TypedDict):
@@ -69,9 +72,8 @@ class ExperimentalPlanSubgraph:
         experimet_details = generate_experiment_details(
             llm_name="o3-mini-2025-01-31",
             verification_policy=state["verification_policy"],
-            experiment_info_of_source_research=state[
-                "experiment_info_of_source_research"
-            ],
+            base_experimental_code=state["base_experimental_code"],
+            base_experimental_info=state["base_experimental_info"],
         )
         return {"experiment_details": experimet_details}
 
@@ -82,9 +84,8 @@ class ExperimentalPlanSubgraph:
         experiment_code = generate_experiment_code(
             llm_name="o3-mini-2025-01-31",
             experiment_details=state["experiment_details"],
-            experiment_info_of_source_research=state[
-                "experiment_info_of_source_research"
-            ],
+            base_experimental_code=state["base_experimental_code"],
+            base_experimental_info=state["base_experimental_info"],
         )
         return {"experiment_code": experiment_code}
 
@@ -121,13 +122,19 @@ ExperimentalPlaner = create_wrapped_subgraph(
 )
 
 if __name__ == "__main__":
-    github_repository = "auto-res2/test20"
-    branch_name = "test"
-
-    experimentalplaner = ExperimentalPlaner(
-        github_repository=github_repository,
-        branch_name=branch_name,
+    subgraph = ExperimentalPlanSubgraph()
+    graph = subgraph.build_graph()
+    output = graph.invoke(
+        experimental_plan_subgraph_input_data,
     )
+    print(f"output: {output}")
+    # github_repository = "auto-res2/test20"
+    # branch_name = "test"
 
-    result = experimentalplaner.run()
-    print(f"result: {result}")
+    # experimentalplaner = ExperimentalPlaner(
+    #     github_repository=github_repository,
+    #     branch_name=branch_name,
+    # )
+
+    # result = experimentalplaner.run()
+    # print(f"result: {result}")

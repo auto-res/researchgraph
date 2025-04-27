@@ -9,7 +9,6 @@ from logging import getLogger
 logger = getLogger(__name__)
 
 VERTEX_AI_API_KEY = os.getenv("VERTEX_AI_API_KEY")
-client = genai.Client(api_key=VERTEX_AI_API_KEY)
 
 VERTEXAI_MODEL = Literal[
     "gemini-2.0-flash-001",
@@ -30,6 +29,10 @@ VERTEXAI_MODEL_INFO = {
 }
 
 
+def get_vertexai_client():
+    return genai.Client(api_key=VERTEX_AI_API_KEY)
+
+
 def vertexai_client(
     model_name: VERTEXAI_MODEL,
     message: str,  # TODO: OpenAI APIのようにlist[dict[str, str]]形式にする
@@ -37,8 +40,7 @@ def vertexai_client(
     max_retries: int = 30,
     delay: int = 1,
 ) -> dict | None:
-    client = genai.Client(api_key=VERTEX_AI_API_KEY)
-
+    client = get_vertexai_client()
     while True:
         try:
             if data_model is None:
@@ -48,7 +50,6 @@ def vertexai_client(
                 )
                 output = response.text
             else:
-                # data_model = basemodel_to_typeddict(data_model)
                 response = client.models.generate_content(
                     model=model_name,
                     contents=message,
@@ -72,7 +73,6 @@ def vertexai_client(
         if "null" in output:
             output = output.replace("null", "None")
         output_list = ast.literal_eval(output)
-        # NOTE:Since gemini can receive multiple data models, it returns multiple outputs in list format. Here, only one data model is given, so only the first element is retrieved.
         FIRST_INDEX_OF_LIST = 0
         return output_list[FIRST_INDEX_OF_LIST]
     else:

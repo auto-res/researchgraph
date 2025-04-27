@@ -6,13 +6,17 @@ from airas.experimental_plan_subgraph.prompt.generate_experiment_code_prompt imp
 
 
 def generate_experiment_code(
-    llm_name: str, experiment_details: str, experiment_info_of_source_research: str
+    llm_name: str,
+    experiment_details: str,
+    base_experimental_code: str,
+    base_experimental_info: str,
 ) -> str:
     env = Environment()
     template = env.from_string(generate_experiment_code_prompt)
     data = {
         "experiment_details": experiment_details,
-        "experiment_info_of_source_research": experiment_info_of_source_research,
+        "base_experimental_code": base_experimental_code,
+        "base_experimental_info": base_experimental_info,
     }
     prompt = template.render(data)
     messages = [

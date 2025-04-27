@@ -8,12 +8,15 @@ Please follow the instructions below and tell us the details of the experiment f
 - Please make sure that the content of each experiment does not overlap too much. If several verification items can be confirmed in one experiment, please combine them into one experiment.
 - Please consider the details of the experiment on the assumption that Pytorch will be used for implementation.
 - Please keep in mind that you should use existing python libraries as much as possible, and avoid implementing things from scratch.
-- The section 'Experimental information from the research on which it is based' includes details about the experiments conducted in the original research. Please use this information to make your experimental setup as close as possible to the original.
+- The section 'Experimental code from the research on which it is based' and 'Experimental information from the research on which it is based' includes details about the experiments conducted in the original research. Please use this information to make your experimental setup as close as possible to the original.
 # Verification Policy
 -------------------------
 {{ verification_policy }}
 --------------------------
+# Experimental code from the research on which it is based
+---------------------------
+{{ base_experimental_code }}
+---------------------------
 # Experimental information from the research on which it is based
 ---------------------------
-{{ experiment_info_of_source_research }}
----------------------------"""
+{{ base_experimental_info }}"""

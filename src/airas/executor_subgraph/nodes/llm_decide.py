@@ -35,8 +35,14 @@ def llm_decide(
     messages = [
         {"role": "user", "content": prompt},
     ]
-    response = openai_client(llm_name, message=messages, data_model=LLMOutput)
-    response = json.loads(response)
+    try:
+        response = openai_client(llm_name, message=messages, data_model=LLMOutput)
+        response = json.loads(response)
+    except Exception as e:
+        import logging
+
+        logging.getLogger(__name__).error(f"openai_client error: {e}")
+        return None  # 例外時はNoneを返す
     if "judgment_result" in response:
         judgment_result = response["judgment_result"]
         return judgment_result
