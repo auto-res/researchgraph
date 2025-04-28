@@ -5,7 +5,7 @@ on:
     types: [opened, reopened, synchronize]
     paths: [
       'src/airas/html_subgraph/**', 
-      'tests/html_subgraph/**',
+      'tests/unit/html_subgraph/**',
       '.github/workflows/pytest_html_subgraph.yml'
       ]
 

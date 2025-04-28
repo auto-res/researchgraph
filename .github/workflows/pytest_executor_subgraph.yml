@@ -5,7 +5,7 @@ on:
     types: [opened, reopened, synchronize]
     paths: [
       'src/airas/executor_subgraph/**', 
-      'tests/executor_subgraph/**',
+      'tests/unit/executor_subgraph/**',
       '.github/workflows/pytest_executor_subgraph.yml'
       ]
 
