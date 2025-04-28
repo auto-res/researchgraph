@@ -7,8 +7,9 @@
     "python.analysis.typeCheckingMode": "standard",
     // pytestの設定
     "python.testing.pytestArgs": [
-      "test"
+      "tests"
     ],
     "python.testing.unittestEnabled": false,
-    "python.testing.pytestEnabled": true
+    "python.testing.pytestEnabled": true,
+    "editor.fontSize": 18
 }

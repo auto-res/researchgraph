@@ -10,7 +10,7 @@
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
-            "pythonPath": "/workspaces/researchgraph/.venv/bin/python3"
+            "pythonPath": "/workspaces/airas/.venv/bin/python3"
         }
     ]
 }

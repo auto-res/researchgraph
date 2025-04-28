@@ -4,8 +4,8 @@ on:
   pull_request:
     types: [opened, reopened, synchronize]
     paths: [
-      'src/researchgraph/executor_subgraph/**', 
-      'test/executor_subgraph/**',
+      'src/airas/executor_subgraph/**', 
+      'tests/executor_subgraph/**',
       '.github/workflows/pytest_executor_subgraph.yml'
       ]
 
@@ -20,49 +20,17 @@ jobs:
     timeout-minutes: 10
     strategy:
       matrix:
-        test_name:
-          # - GenerateCodeWithDevinNode
-          # - ExecuteGithubActionsWorkflowNode
-          # - RetrieveGithubActionsArtifactsNode
-          # - llm_decide
-          # - FixCodeWithDevinNode
-          # - ExecutorSubgraph
-          - check_devin_completion
         include:
-          # - test_name: GenerateCodeWithDevinNode
-          #   test_file: test/executor_subgraph/test_generate_code_with_devin.py
-          #   save_dir: save_dir
+          - test_name: generate_code_with_devin
+            test_file: tests/unit/executor_subgraph/test_generate_code_with_devin.py
 
-          # - test_name: ExecuteGithubActionsWorkflowNode
-          #   test_file: test/executor_subgraph/test_execute_github_actions_workflow.py
-          #   save_dir: save_dir
-
-          # - test_name: RetrieveGithubActionsArtifactsNode
-          #   test_file: test/executor_subgraph/test_retrieve_github_actions_artifacts.py
-          #   save_dir: save_dir
-
-          # - test_name: llm_decide
-          #   test_file: test/executor_subgraph/test_llm_decide.py
-          #   save_dir: save_dir
-
-          # - test_name: FixCodeWithDevinNode
-          #   test_file: test/executor_subgraph/test_fix_code_with_devin.py
-          #   save_dir: save_dir
-
-          # - test_name: ExecutorSubgraph
-          #   test_file: test/executor_subgraph/test_executor_subgraph.py
-          #   save_dir: save_dir
-
-          - test_name: check_devin_completion
-            test_file: test/executor_subgraph/test_check_devin_completion.py
-            save_dir: save_dir
     env:
       GITHUB_WORKSPACE: ${{ github.workspace }}
-      SAVE_DIR: ${{ github.workspace }}/${{ matrix.save_dir }}
+      SAVE_DIR: ${{ github.workspace }}/save_dir
 
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.10"
           cache: "pip"
@@ -79,7 +47,7 @@ jobs:
         run: mkdir -p $SAVE_DIR
         
       - name: Run pytest with coverage
-        run: uv run pytest --cov=researchgraph.executor_subgraph --cov-branch -s ${{ matrix.test_file }}
+        run: uv run pytest --cov=airas.executor_subgraph --cov-branch --cov-report=term-missing -v ${{ matrix.test_file }}
 
       - name: Ensure pip cache folder exists
         run: mkdir -p /home/runner/.cache/pip  
