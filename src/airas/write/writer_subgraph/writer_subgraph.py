@@ -6,10 +6,9 @@ from langgraph.graph.graph import CompiledGraph
 
 from airas.utils.logging_utils import setup_logging
 
-from airas.writer_subgraph.nodes.generate_note import generate_note
-from airas.writer_subgraph.nodes.paper_writing import WritingNode
+from airas.write.writer_subgraph.nodes.generate_note import generate_note
+from airas.write.writer_subgraph.nodes.paper_writing import WritingNode
 
-# from researchgraph.writer_subgraph.input_data import writer_subgraph_input_data
 from airas.utils.execution_timers import time_node, ExecutionTimeState
 from airas.utils.github_utils.graph_wrapper import create_wrapped_subgraph
 
