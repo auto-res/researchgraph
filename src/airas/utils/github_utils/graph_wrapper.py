@@ -119,7 +119,7 @@ class GithubGraphWrapper:
         original_state = state.get("original_state", {})
         input_state = {k: v for k, v in state.items() if k != "original_state"}
 
-        input_conflict = any(k in original_state for k in input_state)
+        input_conflict = any(k in original_state for k in input_state)  # NOTE: If the key for this newly passed input is a duplicate
         output_conflict = any(key in original_state for key in self.output_state_keys)
         final_branch = self.branch_name
 
