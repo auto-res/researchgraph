@@ -1,4 +1,4 @@
-import ast
+import json
 import tiktoken
 from openai import OpenAI
 from pydantic import BaseModel
@@ -150,7 +150,7 @@ class OpenAIClient:
             text_format=data_model,
         )
         output = response.output_text
-        output = ast.literal_eval(output)
+        output = json.loads(output)
         cost = self._calculate_cost(
             model_name,
             response.usage.input_tokens,
