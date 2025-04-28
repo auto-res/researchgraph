@@ -51,6 +51,6 @@ def test_real_structured_outputs_all_models(model_name):
         )
         assert isinstance(output, dict)
         assert "name" in output and "description" in output
-        assert isinstance(cost, str)
+        assert isinstance(cost, float)
     except Exception as e:
         pytest.fail(f"API call failed for model {model_name}: {e}")
