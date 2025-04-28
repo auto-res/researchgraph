@@ -1,6 +1,5 @@
 import os
 import logging
-import requests
 from logging import getLogger
 from tenacity import (
     retry, retry_if_exception_type, 
@@ -8,7 +7,7 @@ from tenacity import (
     before_log, before_sleep_log, 
 )
 from requests.exceptions import HTTPError, ConnectionError, Timeout, RequestException
-from researchgraph.utils.base_http_client import BaseHTTPClient
+from airas.utils.base_http_client import BaseHTTPClient
 
 logger = getLogger(__name__)
 FIRE_CRAWL_API_KEY = os.getenv("FIRE_CRAWL_API_KEY")
@@ -38,27 +37,6 @@ class FireCrawlClient(BaseHTTPClient):
         before_sleep=before_sleep_log(logger, logging.WARNING),
         reraise=True,
     )
-    def _send_with_retry(
-        self,
-        method: str,
-        path: str,
-        *,
-        headers: dict[str, str] | None = None,
-        params: dict | None = None,
-        json: dict | None = None,
-        stream: bool = False,
-        timeout: float = 10.0,
-    ) -> requests.Response:
-        return super()._send(
-            method=method,
-            path=path,
-            headers=headers,
-            params=params,
-            json=json,
-            stream=stream,
-            timeout=timeout,
-        )
-    
     def scrape(
         self,
         url: str,

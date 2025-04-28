@@ -8,29 +8,29 @@ from pydantic import BaseModel
 from langgraph.graph import START, END, StateGraph
 from langgraph.graph.graph import CompiledGraph
 
-from researchgraph.utils.logging_utils import setup_logging
+from airas.utils.logging_utils import setup_logging
 
-from researchgraph.retrieve_paper_subgraph.nodes.web_scrape_node_2 import web_scrape_node   # NOTE: `web_scrape_node_2.py`を使用
-from researchgraph.retrieve_paper_subgraph.nodes.extract_paper_title_node import (
+from airas.retrieve_base_paper_subgraph.nodes.web_scrape_node import web_scrape_node   # NOTE: `firecrawl_client.py`を使用
+from airas.retrieve_base_paper_subgraph.nodes.extract_paper_title_node import (
     extract_paper_title_node,
 )
-from researchgraph.retrieve_paper_subgraph.nodes.arxiv_api_node_2 import ArxivNode  # NOTE: `arxiv_api_node_2.py`を使用
-from researchgraph.retrieve_paper_subgraph.nodes.extract_github_url_node import (
+from airas.retrieve_base_paper_subgraph.nodes.arxiv_api_node import ArxivNode  # NOTE: `arxiv_client.py`を使用
+from airas.retrieve_base_paper_subgraph.nodes.extract_github_url_node import (
     ExtractGithubUrlNode,
 )
-from researchgraph.retrieve_paper_subgraph.nodes.select_best_paper_node import (
+from airas.retrieve_base_paper_subgraph.nodes.select_best_paper_node import (
     select_best_paper_node,
     select_base_paper_prompt,
 )
-from researchgraph.retrieve_paper_subgraph.nodes.summarize_paper_node import (
+from airas.retrieve_base_paper_subgraph.nodes.summarize_paper_node import (
     summarize_paper_node,
     summarize_paper_prompt_base,
 )
-from researchgraph.retrieve_paper_subgraph.nodes.retrieve_arxiv_text_node import (
+from airas.retrieve_base_paper_subgraph.nodes.retrieve_arxiv_text_node import (
     RetrievearXivTextNode,
 )
-from researchgraph.utils.execution_timers import time_node, ExecutionTimeState
-from researchgraph.github_utils.graph_wrapper import create_wrapped_subgraph
+from airas.utils.execution_timers import time_node, ExecutionTimeState
+from airas.utils.github_utils.graph_wrapper import create_wrapped_subgraph
 
 setup_logging()
 logger = logging.getLogger(__name__)

@@ -5,7 +5,7 @@ on:
     types: [opened, reopened, synchronize]
     paths: [
       'src/airas/latex_subgraph/**', 
-      'tests/latex_subgraph/**',
+      'tests/unit/latex_subgraph/**',
       '.github/workflows/pytest_latex_subgraph.yml'
       ]
 

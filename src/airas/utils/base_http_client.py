@@ -1,7 +1,8 @@
+import httpx
 import requests
 import logging
-from abc import ABC, abstractmethod
-from researchgraph.utils.parser_mixin import ResponseParserMixIn
+from abc import ABC
+from airas.utils.parser_mixin import ResponseParserMixIn
 
 logger = logging.getLogger(__name__)
 
@@ -41,29 +42,6 @@ class BaseHTTPClient(ResponseParserMixIn, ABC):
         resp.raise_for_status()
         return resp
 
-
-    @abstractmethod
-    def _send_with_retry(
-        self,
-        method: str,
-        path: str,
-        *,
-        headers: dict[str, str] | None = None,
-        params: dict | None = None,
-        json: dict | None = None,
-        stream: bool = False,
-        timeout: float = 10.0,
-    ) -> requests.Response:
-        """
-        Abstract method to be implemented in subclasses with a retry decorator.
-
-        Example:
-            @retry(...)
-            def _send_with_retry(...):
-                return super()._send(...)
-        """
-        raise NotImplementedError
-
     def request(
         self, 
         method: str, 
@@ -76,7 +54,7 @@ class BaseHTTPClient(ResponseParserMixIn, ABC):
         timeout: float = 10.0,
     ) -> dict | str | bytes | None:
         try:
-            resp = self._send_with_retry(
+            resp = self._send(
                 method.upper(),
                 path,
                 headers=headers,
@@ -89,3 +67,20 @@ class BaseHTTPClient(ResponseParserMixIn, ABC):
         except Exception as e:
             logger.warning(f"Error during API request: {e}")
             return None # TODO
+        
+
+class AsyncBaseHTTPClient(ResponseParserMixIn, ABC):
+    def __init__(
+        self, 
+        base_url: str, 
+        default_headers: dict[str, str] | None = None
+    ):
+        self.base_url = base_url.rstrip("/")
+        self.default_headers = default_headers or {}
+        self.session = httpx.AsyncClient()
+
+    async def _send():
+        ...
+
+    async def request():
+        ...
