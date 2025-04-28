@@ -117,9 +117,18 @@ class GithubGraphWrapper:
 
     def _prepare_branch(self, state: dict[str, Any]) -> dict[str, Any]:
         original_state = state.get("original_state", {})
-        input_state = {k: v for k, v in state.items() if k != "original_state"}
+        user_input_state = {k: v for k, v in state.items() if k != "original_state"}
 
-        input_conflict = any(k in original_state for k in input_state)  # NOTE: If the key for this newly passed input is a duplicate
+        if not self.perform_download:
+            final_branch = self._create_branch_name()
+            logger.info(f"perform_download is set to False; creating a new branch for safety: {final_branch}")
+            return {
+                "original_state": original_state,
+                "user_input_state": user_input_state,
+                "branch_name": final_branch,
+            }
+
+        input_conflict = any(k in original_state for k in user_input_state)  # NOTE: If the key for this newly passed input is a duplicate
         output_conflict = any(key in original_state for key in self.output_state_keys)
         final_branch = self.branch_name
 
@@ -132,15 +141,15 @@ class GithubGraphWrapper:
 
         return {
             "original_state": original_state,
-            "input_state": input_state,
+            "user_input_state": user_input_state,
             "branch_name": final_branch,
         }
 
     # @time_node("wrapper", "run_subgraph")
     def _run_subgraph(self, state: dict[str, Any]) -> dict[str, Any]:
         original_state = state.get("original_state") or {}
-        input_state = state.get("input_state") if "input_state" in state else state
-        merged_input_state = self._deep_merge(original_state, input_state)
+        user_input_state = state.get("user_input_state") if "user_input_state" in state else state
+        merged_input_state = self._deep_merge(original_state, user_input_state)
         branch_name = state.get("branch_name", self.branch_name)
 
         state_for_subgraph = {
@@ -212,9 +221,9 @@ class GithubGraphWrapper:
             wrapper.add_edge(prev, "download_from_github")
             prev = "download_from_github"
 
-            wrapper.add_node("prepare_branch", self._prepare_branch)
-            wrapper.add_edge(prev, "prepare_branch")
-            prev = "prepare_branch"
+        wrapper.add_node("prepare_branch", self._prepare_branch)
+        wrapper.add_edge(prev, "prepare_branch")
+        prev = "prepare_branch"
 
         wrapper.add_node("run_subgraph", self._run_subgraph)
         wrapper.add_edge(prev, "run_subgraph")
@@ -275,9 +284,9 @@ def create_wrapped_subgraph(
                 public_branch=public_branch,
             )
 
-        def run(self, inputs: dict[str, Any] = {}) -> dict[str, Any]:
+        def run(self, use_input: dict[str, Any] = {}) -> dict[str, Any]:
             graph = self.build_graph()
             config = {"recursion_limit": 300}  # NOTE:
-            return graph.invoke(inputs, config=config)
+            return graph.invoke(use_input, config=config)
 
     return GithubGraphRunner
