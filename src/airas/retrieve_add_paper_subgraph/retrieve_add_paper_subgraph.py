@@ -11,7 +11,7 @@ from langgraph.graph.graph import CompiledGraph
 
 from airas.utils.logging_utils import setup_logging
 
-from airas.retrieve_paper_subgraph.nodes.web_scrape_node_2 import web_scrape_node   # NOTE: `firecrawl_client.py`を使用
+from airas.retrieve_paper_subgraph.nodes.web_scrape_node import web_scrape_node   # NOTE: `firecrawl_client.py`を使用
 from airas.retrieve_paper_subgraph.nodes.extract_paper_title_node import (
     extract_paper_title_node,
 )
