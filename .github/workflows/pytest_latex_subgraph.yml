@@ -4,8 +4,9 @@ on:
   pull_request:
     types: [opened, reopened, synchronize]
     paths: [
-      'src/airas/latex_subgraph/**', 
-      'tests/unit/latex_subgraph/**',
+      'src/airas/publication/latex_subgraph/**', 
+      'tests/integration/publication/test_latex_subgraph.py',
+      'tests/unit/publication/latex_subgraph/**',
       '.github/workflows/pytest_latex_subgraph.yml'
       ]
 
@@ -22,10 +23,11 @@ jobs:
       matrix:
         include:
           - test_name: convert_to_latex
-            test_file: tests/unit/latex_subgraph/test_convert_to_latex.py
-
+            test_file: tests/unit/publication/latex_subgraph/test_convert_to_latex.py
           - test_name: convert_to_latex
-            test_file: tests/unit/latex_subgraph/test_convert_to_latex.py
+            test_file: tests/unit/publication/latex_subgraph/test_convert_to_latex.py
+          - test_name: integration_test_for_latex_subgraph
+            test_file: tests/integration/publication/test_latex_subgraph.py
             
     env:
       GITHUB_WORKSPACE: ${{ github.workspace }}
