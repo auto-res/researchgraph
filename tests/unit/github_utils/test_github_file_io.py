@@ -2,11 +2,11 @@ import json
 import pytest
 from unittest.mock import patch
 
-from airas.github_utils.github_file_io import download_from_github
+from airas.utils.github_utils.github_file_io import download_from_github
 
 
 # 正常な JSON (dict) を返すケース
-@patch("airas.github_utils.github_file_io._download_file_bytes_from_github")
+@patch("airas.utils.github_utils.github_file_io._download_file_bytes_from_github")
 def test_download_from_github_valid_json(mock_download):
     # 辞書型データをJSON文字列に変換して、バイト列にエンコードする
     expected_data = {"key": "value"}
@@ -18,7 +18,7 @@ def test_download_from_github_valid_json(mock_download):
 
 
 # JSON 形式だが dict ではなく list のケース
-@patch("airas.github_utils.github_file_io._download_file_bytes_from_github")
+@patch("airas.utils.github_utils.github_file_io._download_file_bytes_from_github")
 def test_download_from_github_non_dict_json(mock_download):
     non_dict_data = ["item1", "item2"]
     json_bytes = json.dumps(non_dict_data).encode("utf-8")
@@ -30,7 +30,7 @@ def test_download_from_github_non_dict_json(mock_download):
 
 
 # JSON としてパースできない文字列の場合
-@patch("airas.github_utils.github_file_io._download_file_bytes_from_github")
+@patch("airas.utils.github_utils.github_file_io._download_file_bytes_from_github")
 def test_download_from_github_invalid_json(mock_download):
     # JSON ではない文字列をバイト列として返す
     mock_download.return_value = b"not a valid json"
@@ -41,7 +41,7 @@ def test_download_from_github_invalid_json(mock_download):
 
 
 # ファイルが見つからなかった場合 (None を返す)
-@patch("airas.github_utils.github_file_io._download_file_bytes_from_github")
+@patch("airas.utils.github_utils.github_file_io._download_file_bytes_from_github")
 def test_download_from_github_file_not_found(mock_download):
     mock_download.return_value = None
 

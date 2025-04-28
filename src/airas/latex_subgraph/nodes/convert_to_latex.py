@@ -3,7 +3,7 @@ from jinja2 import Environment
 from logging import getLogger
 from pydantic import BaseModel
 
-from airas.utils.openai_client import openai_client
+from airas.utils.api_client.openai_client import openai_client
 
 logger = getLogger(__name__)
 

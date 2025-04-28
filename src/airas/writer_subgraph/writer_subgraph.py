@@ -11,7 +11,7 @@ from airas.writer_subgraph.nodes.paper_writing import WritingNode
 
 # from researchgraph.writer_subgraph.input_data import writer_subgraph_input_data
 from airas.utils.execution_timers import time_node, ExecutionTimeState
-from airas.github_utils.graph_wrapper import create_wrapped_subgraph
+from airas.utils.github_utils.graph_wrapper import create_wrapped_subgraph
 
 setup_logging()
 logger = logging.getLogger(__name__)

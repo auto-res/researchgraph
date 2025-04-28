@@ -3,7 +3,7 @@ import requests
 from jinja2 import Environment
 
 # from researchgraph.utils.openai_client import openai_client
-from airas.utils.vertexai_client import vertexai_client
+from airas.utils.api_client.google_genai_client import vertexai_client
 from airas.retrieve_paper_subgraph.prompt.extract_github_url_node_prompt import (
     extract_github_url_node_prompt,
 )

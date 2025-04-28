@@ -1,5 +1,5 @@
 from jinja2 import Environment
-from airas.utils.openai_client import openai_client
+from airas.utils.api_client.openai_client import openai_client
 from airas.experimental_plan_subgraph.prompt.generate_experiment_code_prompt import (
     generate_experiment_code_prompt,
 )

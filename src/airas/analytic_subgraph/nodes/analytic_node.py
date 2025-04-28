@@ -2,7 +2,7 @@ import json
 from pydantic import BaseModel
 from jinja2 import Environment
 
-from airas.utils.openai_client import openai_client
+from airas.utils.api_client.openai_client import openai_client
 from airas.analytic_subgraph.prompt.analytic_node_prompt import (
     analytic_node_prompt,
 )

@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from jinja2 import Environment
-from airas.utils.vertexai_client import vertexai_client, VERTEXAI_MODEL
+from airas.utils.api_client.google_genai_client import vertexai_client, VERTEXAI_MODEL
 from airas.retrieve_code_subgraph.prompt.extract_experimental_info_prompt import (
     extract_experimental_info_prompt,
 )

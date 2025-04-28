@@ -2,7 +2,7 @@ from pydantic import BaseModel
 from jinja2 import Environment
 
 # from researchgraph.utils.openai_client import openai_client
-from airas.utils.vertexai_client import vertexai_client
+from airas.utils.api_client.google_genai_client import vertexai_client
 
 from logging import getLogger
 

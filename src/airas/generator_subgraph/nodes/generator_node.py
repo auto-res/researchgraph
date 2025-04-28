@@ -1,5 +1,5 @@
 from jinja2 import Environment
-from airas.utils.openai_client import openai_client
+from airas.utils.api_client.openai_client import openai_client
 from airas.generator_subgraph.prompt.generator_node_prompt import (
     generator_node_prompt,
 )

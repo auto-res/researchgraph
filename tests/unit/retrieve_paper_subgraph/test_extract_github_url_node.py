@@ -1,57 +1,55 @@
-import requests
-import unittest.mock
-from pydantic import BaseModel, Field
-from langgraph.graph import StateGraph
-from airas.nodes.retrievenode.github.extract_github_urls import ExtractGithubUrlsNode
+from unittest.mock import patch, MagicMock
+from airas.retrieve_paper_subgraph.nodes.extract_github_url_node import (
+    ExtractGithubUrlNode,
+)
 
 
-class State(BaseModel):
-    paper_text: str = Field(default="")
-    github_url: list[str] = Field(default_factory=list)
+# Normal case test: returns correct GitHub URL from text and LLM
+@patch(
+    "airas.retrieve_paper_subgraph.nodes.extract_github_url_node.vertexai_client",
+    return_value={"index": 0},
+)
+@patch(
+    "airas.retrieve_paper_subgraph.nodes.extract_github_url_node.requests.get",
+    return_value=MagicMock(status_code=200, raise_for_status=lambda: None),
+)
+def test_extract_github_url_success(mock_requests, mock_vertexai):
+    node = ExtractGithubUrlNode(llm_name="dummy-llm")
+    text = "Check this repo: https://github.com/user/repo"
+    summary = "summary"
+    result = node.execute(text, summary)
+    assert result == "https://github.com/user/repo"
 
 
-# NOTE：It is executed by Github actions.
-def test_extract_github_url_node():
-    input_key = ["paper_text"]
-    output_key = ["github_url"]
+# Abnormal case test: returns empty string if no valid GitHub URL
+@patch(
+    "airas.retrieve_paper_subgraph.nodes.extract_github_url_node.vertexai_client",
+    return_value=None,
+)
+@patch(
+    "airas.retrieve_paper_subgraph.nodes.extract_github_url_node.requests.get",
+    return_value=MagicMock(status_code=404, raise_for_status=lambda: None),
+)
+def test_extract_github_url_no_url(mock_requests, mock_vertexai):
+    node = ExtractGithubUrlNode(llm_name="dummy-llm")
+    text = "No github url here"
+    summary = "summary"
+    result = node.execute(text, summary)
+    assert result == ""
 
-    graph_builder = StateGraph(State)
-    graph_builder.add_node(
-        "ExtractGithubUrlsNode",
-        ExtractGithubUrlsNode(
-            input_key=input_key,
-            output_key=output_key,
-        ),
-    )
-    graph_builder.set_entry_point("ExtractGithubUrlsNode")
-    graph_builder.set_finish_point("ExtractGithubUrlsNode")
 
-    graph = graph_builder.compile()
-    state = {
-        "paper_text": "This is a sample text with a GitHub URL: http://github.com/user/repo and another one: https://github.com/another/repo",
-    }
-    with unittest.mock.patch("requests.get") as mock_get:
-        mock_response = unittest.mock.Mock()
-        mock_response.status_code = 200
-        mock_response.raise_for_status.return_value = None
-        mock_get.return_value = mock_response
-        result = graph.invoke(state, debug=True)
-        mock_get.assert_called()
-
-        assert "github_url" in result
-        assert len(result["github_url"]) == 2
-        assert "https://github.com/user/repo" in result["github_url"]
-        assert "https://github.com/another/repo" in result["github_url"]
-
-        assert mock_get.call_count == 2
-
-    with unittest.mock.patch("requests.get") as mock_get:
-        mock_response = unittest.mock.Mock()
-        mock_response.status_code = 404
-        mock_response.raise_for_status.side_effect = requests.exceptions.HTTPError(
-            "404 Client Error: Not Found"
-        )
-        mock_get.return_value = mock_response
-        result = graph.invoke(state, debug=True)
-        assert "github_url" in result
-        assert len(result["github_url"]) == 0
+# Abnormal case test: returns empty string if vertexai_client returns None
+@patch(
+    "airas.retrieve_paper_subgraph.nodes.extract_github_url_node.vertexai_client",
+    return_value=None,
+)
+@patch(
+    "airas.retrieve_paper_subgraph.nodes.extract_github_url_node.requests.get",
+    return_value=MagicMock(status_code=200, raise_for_status=lambda: None),
+)
+def test_extract_github_url_vertexai_none(mock_requests, mock_vertexai):
+    node = ExtractGithubUrlNode(llm_name="dummy-llm")
+    text = "Check this repo: https://github.com/user/repo"
+    summary = "summary"
+    result = node.execute(text, summary)
+    assert result == ""

@@ -120,7 +120,6 @@ def test_check_refenrences_missing_entry(node: LatexNode) -> None:
     assert node._check_references(tex_missing) == "DUMMY"
 
 
-@pytest.mark.parametrize("remove_bib", [True])
 def test_check_references_error_missing_bib(
     node: LatexNode, tmp_env: dict[str, str]
 ) -> None:

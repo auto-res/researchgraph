@@ -3,7 +3,7 @@ import os.path as osp
 import time
 import json
 from pydantic import BaseModel, create_model
-from litellm import completion
+
 from jinja2 import Environment
 from typing import Optional
 

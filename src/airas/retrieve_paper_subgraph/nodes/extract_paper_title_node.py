@@ -2,7 +2,7 @@ from jinja2 import Environment
 from pydantic import BaseModel
 
 import json
-from airas.utils.openai_client import openai_client
+from airas.utils.api_client.openai_client import openai_client
 from airas.retrieve_paper_subgraph.prompt.extract_paper_title_node_prompt import (
     extract_paper_title_node_prompt,
 )

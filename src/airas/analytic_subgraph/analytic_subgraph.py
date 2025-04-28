@@ -68,7 +68,7 @@ class AnalyticSubgraph:
         return graph_builder.compile()
 
 
-Analyst = create_wrapped_subgraph(
+Analytics = create_wrapped_subgraph(
     AnalyticSubgraph,
     AnalyticSubgraphInputState,
     AnalyticSubgraphOutputState,
@@ -78,7 +78,7 @@ if __name__ == "__main__":
     llm_name = "o1-2024-12-17"
     github_repository = "auto-res2/test20"
     branch_name = "test2"
-    retriever = Analyst(
+    retriever = Analytics(
         github_repository=github_repository, branch_name=branch_name, llm_name=llm_name
     )
 
