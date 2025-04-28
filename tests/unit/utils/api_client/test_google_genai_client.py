@@ -49,7 +49,7 @@ def test_real_structured_outputs_all_models(model_name):
             message=message,
             data_model=DummyDataModel,
         )
-        assert isinstance(output, str)
+        assert isinstance(output, dict)
         assert "name" in output and "description" in output
         assert isinstance(cost, str)
     except Exception as e:

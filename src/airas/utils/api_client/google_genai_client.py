@@ -98,7 +98,7 @@ class GoogelGenAIClient:
         model_name: VERTEXAI_MODEL,
         message: str,
         data_model: type[BaseModel],
-    ) -> tuple[str | None, float]:
+    ) -> tuple[dict | None, float]:
         if not isinstance(message, str):
             raise TypeError("message must be a string")
         message = message.encode("utf-8", "ignore").decode("utf-8")

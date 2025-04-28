@@ -53,7 +53,7 @@ def test_real_structured_outputs_all_models(model_name):
         )
         print(f"=== Parsed Output for model {model_name} ===")
         print(output)
-        assert isinstance(output, str)
+        assert isinstance(output, dict)
         assert len(output) > 0
         assert isinstance(cost, float)
     except Exception as e:

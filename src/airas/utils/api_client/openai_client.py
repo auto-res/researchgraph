@@ -1,3 +1,4 @@
+import ast
 import tiktoken
 from openai import OpenAI
 from pydantic import BaseModel
@@ -41,12 +42,13 @@ OPENAI_MODEL_INFO = {
         "input_token_cost": 15 * 1 / 1000000,
         "output_token_cost": 60.00 * 1 / 1000000,
     },
-    "o1-mini-2024-09-12": {
-        "max_input_tokens": 128000 - 65536,
-        "max_output_tokens": 65536,
-        "input_token_cost": 1.10 * 1 / 1000000,
-        "output_token_cost": 4.40 * 1 / 1000000,
-    },
+    # 400 bad request error
+    # "o1-mini-2024-09-12": {
+    #     "max_input_tokens": 128000 - 65536,
+    #     "max_output_tokens": 65536,
+    #     "input_token_cost": 1.10 * 1 / 1000000,
+    #     "output_token_cost": 4.40 * 1 / 1000000,
+    # },
     # Flagship chat models
     "gpt-4.1-2025-04-14": {
         "max_input_tokens": 1047576 - 32768,
@@ -136,7 +138,7 @@ class OpenAIClient:
         model_name: OPENAI_MODEL,
         message: str,
         data_model: type[BaseModel],
-    ) -> tuple[str | None, float]:
+    ) -> tuple[dict | None, float]:
         if not isinstance(message, str):
             raise TypeError("message must be a string")
         message = message.encode("utf-8", "ignore").decode("utf-8")
@@ -148,6 +150,7 @@ class OpenAIClient:
             text_format=data_model,
         )
         output = response.output_text
+        output = ast.literal_eval(output)
         cost = self._calculate_cost(
             model_name,
             response.usage.input_tokens,
