@@ -74,7 +74,7 @@ CreateMethod = create_wrapped_subgraph(
 )
 
 if __name__ == "__main__":
-    llm_name = "o1-2024-12-17"
+    llm_name = "o3-mini-2025-01-31"
     subgraph = CreateMethodSubgraph(
         llm_name=llm_name,
     ).build_graph()

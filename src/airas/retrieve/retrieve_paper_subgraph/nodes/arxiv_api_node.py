@@ -80,6 +80,7 @@ class ArxivNode:
 
         retry_count = 0
         wait_time = self.initial_wait_time
+        response = None
         while retry_count < self.max_retries:
             try:
                 response = requests.get(base_url, params=params, timeout=15)
@@ -94,6 +95,7 @@ class ArxivNode:
                 wait_time = min(wait_time * 2, self.max_wait_time)
         else:
             logger.warning("Maximum retries reached. Failed to fetch data.")
+            return []  # ここで空リストを返すことで例外を防ぐ
 
         feed = feedparser.parse(response.text)
 

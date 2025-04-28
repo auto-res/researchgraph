@@ -1,6 +1,6 @@
 import pytest
 from pathlib import Path
-from airas.writer_subgraph.nodes.generate_note import generate_note
+from airas.write.writer_subgraph.nodes.generate_note import generate_note
 
 
 @pytest.fixture

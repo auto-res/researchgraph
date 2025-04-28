@@ -90,6 +90,10 @@ class PrepareRepositorySubgraph:
         )
         return {"fork_result": fork_result}
 
+    # リポジトリが存在する場合でもfork_resultの値を設定するメソッドを追加
+    def _set_fork_result(self, state: PrepareRepositoryState) -> dict:
+        return {"fork_result": True}  # リポジトリが既に存在する場合は成功とみなす
+
     @time_node("research_preparation", "_retrieve_branch_name")
     def _check_branch_existence(self, state: PrepareRepositoryState) -> dict:
         target_branch_sha = check_branch_existence(
@@ -121,7 +125,7 @@ class PrepareRepositorySubgraph:
         if not state["repository_exists"]:
             return "fork_repository"
         else:
-            return "check_branch_existence"
+            return "set_fork_result"
 
     def _should_create_branch(self, state: PrepareRepositoryState) -> str:
         if not state["target_branch_sha"]:
@@ -135,6 +139,9 @@ class PrepareRepositorySubgraph:
         graph_builder.add_node("init", self._init)
         graph_builder.add_node("check_github_repository", self._check_github_repository)
         graph_builder.add_node("fork_repository", self._fork_repository)
+        graph_builder.add_node(
+            "set_fork_result", self._set_fork_result
+        )  # 新しいノードを追加
         graph_builder.add_node("check_branch_existence", self._check_branch_existence)
         graph_builder.add_node(
             "retrieve_main_branch_sha", self._retrieve_main_branch_sha
@@ -149,10 +156,13 @@ class PrepareRepositorySubgraph:
             self._should_fork_repo,
             {
                 "fork_repository": "fork_repository",
-                "check_branch_existence": "check_branch_existence",
+                "set_fork_result": "set_fork_result",  # 分岐先を変更
             },
         )
         graph_builder.add_edge("fork_repository", "check_branch_existence")
+        graph_builder.add_edge(
+            "set_fork_result", "check_branch_existence"
+        )  # 新しいエッジを追加
         graph_builder.add_conditional_edges(
             "check_branch_existence",
             self._should_create_branch,

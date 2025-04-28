@@ -49,18 +49,22 @@ class LatexNode:
         wait=wait_fixed(1),
     )
     def _call_llm(self, prompt: str) -> str:
-        system_prompt = """\n
+        system_prompt = """
 You are a helpful LaTeX rewriting assistant.
-The value of "latex_full_text" must contain the complete LaTeX text."""
-
+The value of \"latex_full_text\" must contain the complete LaTeX text."""
         messages = system_prompt + prompt
-
         output, cost = self.openai_client.structured_outputs(
             model_name=self.llm_name,
             message=messages,
             data_model=LLMOutput,
         )
+        if output is None:
+            raise ValueError("No response")
+        if not isinstance(output, dict) or not output:
+            raise ValueError("Empty LaTeX content")
         if "latex_full_text" in output:
+            if not output["latex_full_text"]:
+                raise ValueError("Empty LaTeX content")
             return output["latex_full_text"]
         else:
             raise ValueError("Error: No response from LLM in _call_llm.")

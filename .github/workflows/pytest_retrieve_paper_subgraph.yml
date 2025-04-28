@@ -4,8 +4,9 @@ on:
   pull_request:
     types: [opened, reopened, synchronize]
     paths: [
-      'src/airas/retrieve_paper_subgraph/**',
-      'tests/unit/retrieve_paper_subgraph/**',
+      'src/airas/retrieve/retrieve_paper_subgraph/**',
+      'tests/integration/retrieve/retrieve_paper_subgraph.py',
+      'tests/unit/retrieve/retrieve_paper_subgraph/**',
       '.github/workflows/pytest_retrieve_paper_subgraph.yml'
     ]
 
@@ -22,21 +23,23 @@ jobs:
       matrix:
         include:
           - test_name: arxiv_api_node
-            test_file: tests/unit/retrieve_paper_subgraph/test_arxiv_api_node.py
+            test_file: tests/unit/retrieve/retrieve_paper_subgraph/test_arxiv_api_node.py
           - test_name: extract_github_url_node
-            test_file: tests/unit/retrieve_paper_subgraph/test_extract_github_url_node.py
+            test_file: tests/unit/retrieve/retrieve_paper_subgraph/test_extract_github_url_node.py
           - test_name: extract_paper_title_node
-            test_file: tests/unit/retrieve_paper_subgraph/test_extract_paper_title_node.py
+            test_file: tests/unit/retrieve/retrieve_paper_subgraph/test_extract_paper_title_node.py
           - test_name: generate_queries_node
-            test_file: tests/unit/retrieve_paper_subgraph/test_generate_queries_node.py
+            test_file: tests/unit/retrieve/retrieve_paper_subgraph/test_generate_queries_node.py
           - test_name: retrieve_arxiv_text_node
-            test_file: tests/unit/retrieve_paper_subgraph/test_retrieve_arxiv_text_node.py
+            test_file: tests/unit/retrieve/retrieve_paper_subgraph/test_retrieve_arxiv_text_node.py
           - test_name: select_best_paper_node
-            test_file: tests/unit/retrieve_paper_subgraph/test_select_best_paper_node.py
+            test_file: tests/unit/retrieve/retrieve_paper_subgraph/test_select_best_paper_node.py
           - test_name: summarize_paper_node
-            test_file: tests/unit/retrieve_paper_subgraph/test_summarize_paper_node.py
+            test_file: tests/unit/retrieve/retrieve_paper_subgraph/test_summarize_paper_node.py
           - test_name: web_scrape_node
-            test_file: tests/unit/retrieve_paper_subgraph/test_web_scrape_node.py
+            test_file: tests/unit/retrieve/retrieve_paper_subgraph/test_web_scrape_node.py
+          - test_name: integration_test_for_retrieve_paper_subgraph
+            test_file: tests/integration/retrieve/test_retrieve_paper_subgraph.py
     env:
       GITHUB_WORKSPACE: ${{ github.workspace }}
       SAVE_DIR: ${{ github.workspace }}/save_dir

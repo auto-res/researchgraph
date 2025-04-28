@@ -1,9 +1,8 @@
-import json
 from pydantic import BaseModel
 from jinja2 import Environment
 
-from airas.utils.api_client.openai_client import openai_client
-from airas.analytic_subgraph.prompt.analytic_node_prompt import (
+from airas.utils.api_client.llm_facade_client import LLMFacadeClient, LLM_MODEL
+from airas.analysis.analytic_subgraph.prompt.analytic_node_prompt import (
     analytic_node_prompt,
 )
 from logging import getLogger
@@ -16,7 +15,7 @@ class LLMOutput(BaseModel):
 
 
 def analytic_node(
-    llm_name: str,
+    llm_name: LLM_MODEL,
     new_method: str,
     verification_policy: str,
     experiment_code: str,
@@ -30,22 +29,13 @@ def analytic_node(
         "experiment_code": experiment_code,
         "output_text_data": output_text_data,
     }
-    prompt = template.render(data)
-
-    messages = [
-        {"role": "user", "content": prompt},
-    ]
-    response = openai_client(
-        model_name=llm_name, message=messages, data_model=LLMOutput
+    messages = template.render(data)
+    output, cost = LLMFacadeClient(llm_name=llm_name).structured_outputs(
+        message=messages, data_model=LLMOutput
     )
-    if response is None:
+    if output is None:
         logger.error("Error: No response from LLM.")
         return None
     else:
-        response = json.loads(response)
-        analysis_report = response.get("analysis_report")
-
-        if analysis_report is None:
-            logger.error("No 'analysis_report' found in the response.")
-
+        analysis_report = output.get("analysis_report")
         return analysis_report

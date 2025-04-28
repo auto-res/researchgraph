@@ -85,6 +85,7 @@ def retrieve_github_actions_artifacts(
         logger.info("Successfully retrieved artifacts information.")
     else:
         logger.error("Failure to retrieve artifacts information.")
+        raise RuntimeError("Failure to retrieve artifacts information.")
     get_artifacts_redirect_url_dict = _parse_artifacts_info(
         response_artifacts_infos, workflow_run_id
     )

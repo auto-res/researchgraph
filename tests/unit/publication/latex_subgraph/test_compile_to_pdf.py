@@ -1,10 +1,9 @@
 import os
 import pytest
 import subprocess
-import airas.latex_subgraph.nodes.compile_to_pdf as mod
-from typing import Any, Generator
+from unittest.mock import patch
 from types import SimpleNamespace
-from airas.latex_subgraph.nodes.compile_to_pdf import LatexNode
+from airas.publication.latex_subgraph.nodes.compile_to_pdf import LatexNode
 
 
 @pytest.fixture
@@ -36,11 +35,12 @@ def tmp_env(tmp_path) -> dict[str, str]:
 
 
 @pytest.fixture(autouse=True)
-def patch_openai(monkeypatch: pytest.MonkeyPatch) -> Generator[None, Any, None]:
-    monkeypatch.setattr(
-        mod, "openai_client", lambda *args, **kwargs: '{"latex_full_text": "DUMMY"}'
-    )
-    yield
+def patch_openai():
+    with patch(
+        "airas.utils.api_client.openai_client.OpenAIClient.structured_outputs",
+        return_value=({"latex_full_text": "DUMMY"}, 0.01),
+    ):
+        yield
 
 
 @pytest.fixture
@@ -90,20 +90,32 @@ def test_call_llm_success(node):
     "raw_response, expected_msg",
     [
         (None, "No response"),
-        ("", "No response"),
+        ("", "Empty LaTeX content"),
         ("{}", "Empty LaTeX content"),
         ('{"latex_full_text": ""}', "Empty LaTeX content"),
     ],
 )
 def test_call_llm_errors(
     node: LatexNode,
-    monkeypatch: pytest.MonkeyPatch,
     raw_response: str | None,
     expected_msg: str,
 ) -> None:
-    monkeypatch.setattr(mod, "openai_client", lambda *args, **kwargs: raw_response)
-    with pytest.raises(ValueError, match=expected_msg):
-        node._call_llm("prompt")
+    def fake_structured_outputs(*args, **kwargs):
+        if raw_response is None:
+            return None, 0.01
+        try:
+            import json
+
+            return json.loads(raw_response), 0.01
+        except Exception:
+            return raw_response, 0.01
+
+    with patch(
+        "airas.utils.api_client.openai_client.OpenAIClient.structured_outputs",
+        side_effect=fake_structured_outputs,
+    ):
+        with pytest.raises(ValueError, match=expected_msg):
+            node._call_llm("prompt")
 
 
 def test_check_references_success(node: LatexNode) -> None:
@@ -183,7 +195,7 @@ def test_fix_latex_errors_no_errors(
     node: LatexNode, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setattr(
-        mod.os, "popen", lambda *args, **kwargs: SimpleNamespace(read=lambda: "")
+        "os.popen", lambda *args, **kwargs: SimpleNamespace(read=lambda: "")
     )
     original = "clean tex"
     assert node._fix_latex_errors(original) == original
@@ -193,8 +205,7 @@ def test_fix_latex_errors_with_errors(
     node: LatexNode, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setattr(
-        mod.os,
-        "popen",
+        "os.popen",
         lambda *args, **kwargs: SimpleNamespace(
             read=lambda: "1: Undefined control sequence."
         ),
@@ -206,8 +217,7 @@ def test_compile_latex_no_exception(
     node: LatexNode, monkeypatch: pytest.MonkeyPatch, tmp_env: dict[str, str]
 ) -> None:
     monkeypatch.setattr(
-        mod.subprocess,
-        "run",
+        "subprocess.run",
         lambda *args, **kwargs: subprocess.CompletedProcess(
             args=[], returncode=0, stdout="", stderr=""
         ),

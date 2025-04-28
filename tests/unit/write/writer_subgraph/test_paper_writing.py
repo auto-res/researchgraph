@@ -1,7 +1,6 @@
 import json
 import pytest
-import airas.writer_subgraph.nodes.paper_writing as mod
-from airas.writer_subgraph.nodes.paper_writing import WritingNode
+from airas.write.writer_subgraph.nodes.paper_writing import WritingNode
 
 
 @pytest.fixture
@@ -21,7 +20,7 @@ def fake_llm_response() -> dict[str, str]:
 
 @pytest.fixture
 def node() -> WritingNode:
-    node = WritingNode(llm_name="dummy")
+    node = WritingNode(llm_name="gpt-4o-mini-2024-07-18")
     return node
 
 
@@ -37,7 +36,8 @@ def test_call_llm_success(
     fake_llm_response: dict[str, str],
 ) -> None:
     monkeypatch.setattr(
-        mod, "openai_client", lambda *args, **kwargs: json.dumps(fake_llm_response)
+        "airas.utils.api_client.llm_facade_client.LLMFacadeClient.structured_outputs",
+        lambda self, message, data_model: (fake_llm_response, 0.0),
     )
     result = node._call_llm(prompt="p", system_prompt="s")
     assert result["Related Work"] == fake_llm_response["Related_Work"]
@@ -72,7 +72,17 @@ def test_call_llm_errors(
     raw_response: str | None,
     expected_msg: str,
 ) -> None:
-    monkeypatch.setattr(mod, "openai_client", lambda *args, **kwargs: raw_response)
+    def fake_structured_outputs(self, message, data_model):
+        if raw_response is None or raw_response == "":
+            return None, 0.0
+        if isinstance(raw_response, str):
+            return json.loads(raw_response), 0.0
+        return raw_response, 0.0
+
+    monkeypatch.setattr(
+        "airas.utils.api_client.llm_facade_client.LLMFacadeClient.structured_outputs",
+        fake_structured_outputs,
+    )
     with pytest.raises(ValueError) as exc:
         node._call_llm(prompt="p", system_prompt="s")
     assert expected_msg in str(exc.value)
@@ -105,24 +115,18 @@ def test_execute_full(
     fake_llm_response: dict[str, str],
 ) -> None:
     monkeypatch.setattr(
-        mod, "openai_client", lambda *args, **kwargs: json.dumps(fake_llm_response)
+        "airas.utils.api_client.llm_facade_client.LLMFacadeClient.structured_outputs",
+        lambda self, message, data_model: (fake_llm_response, 0.0),
     )
     result = node.execute(note="My paper context")
     assert result["Title"] == fake_llm_response["Title"]
     assert result["Related Work"] == fake_llm_response["Related_Work"]
 
 
-def test_execute_refine_only_without_content() -> None:
-    node_refine = WritingNode(llm_name="dummy", refine_only=True)
-    with pytest.raises(ValueError) as exc:
-        node_refine.execute(note="ctx")
-    assert "paper_content must be provided" in str(exc.value)
-
-
 def test_execute_refine_only(
     monkeypatch: pytest.MonkeyPatch, fake_llm_response: dict[str, str]
 ) -> None:
-    node_refine = WritingNode(llm_name="dummy", refine_only=True)
+    node_refine = WritingNode(llm_name="gpt-4o-mini-2024-07-18", refine_only=True)
     initial_content = {
         "Title": "Init",
         "Abstract": "A",
@@ -135,8 +139,16 @@ def test_execute_refine_only(
         "Conclusions": "C",
     }
     monkeypatch.setattr(
-        mod, "openai_client", lambda *args, **kwargs: json.dumps(fake_llm_response)
+        "airas.utils.api_client.llm_facade_client.LLMFacadeClient.structured_outputs",
+        lambda self, message, data_model: (fake_llm_response, 0.0),
     )
     result = node_refine.execute(note="ctx", paper_content=initial_content)
     assert result["Title"] == fake_llm_response["Title"]
     assert result["Related Work"] == fake_llm_response["Related_Work"]
+
+
+def test_execute_refine_only_without_content() -> None:
+    node_refine = WritingNode(llm_name="gpt-4o-mini-2024-07-18", refine_only=True)
+    with pytest.raises(ValueError) as exc:
+        node_refine.execute(note="ctx")
+    assert "paper_content must be provided" in str(exc.value)

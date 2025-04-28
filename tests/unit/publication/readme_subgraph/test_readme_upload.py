@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import patch
-from airas.readme_subgraph.nodes.readme_upload import readme_upload
+from airas.publication.readme_subgraph.nodes.readme_upload import readme_upload
 
 
 @pytest.fixture
@@ -15,13 +15,13 @@ def sample_inputs():
     }
 
 
-# Normal case test: readme_upload returns True when all API calls succeed.
+# 正常系: 全てのAPI呼び出しが成功した場合にTrueを返す
 @patch(
-    "airas.readme_subgraph.nodes.readme_upload._request_github_file_upload",
+    "airas.publication.readme_subgraph.nodes.readme_upload._request_github_file_upload",
     return_value=None,
 )
 @patch(
-    "airas.readme_subgraph.nodes.readme_upload._request_get_github_content",
+    "airas.publication.readme_subgraph.nodes.readme_upload._request_get_github_content",
     return_value={"sha": "dummy-sha"},
 )
 def test_readme_upload_success(mock_get_content, mock_file_upload, sample_inputs):
@@ -29,13 +29,13 @@ def test_readme_upload_success(mock_get_content, mock_file_upload, sample_inputs
     assert result is True
 
 
-# Abnormal case test: readme_upload still returns True even if README does not exist (sha is None).
+# 異常系: READMEが存在しない場合（shaがNone）でもTrueを返す
 @patch(
-    "airas.readme_subgraph.nodes.readme_upload._request_github_file_upload",
+    "airas.publication.readme_subgraph.nodes.readme_upload._request_github_file_upload",
     return_value=None,
 )
 @patch(
-    "airas.readme_subgraph.nodes.readme_upload._request_get_github_content",
+    "airas.publication.readme_subgraph.nodes.readme_upload._request_get_github_content",
     return_value=None,
 )
 def test_readme_upload_no_readme(mock_get_content, mock_file_upload, sample_inputs):

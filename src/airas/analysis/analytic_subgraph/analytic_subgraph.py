@@ -4,12 +4,15 @@ from langgraph.graph import START, END, StateGraph
 from langgraph.graph.graph import CompiledGraph
 from typing import TypedDict
 
-from airas.analytic_subgraph.nodes.analytic_node import analytic_node
+from airas.analysis.analytic_subgraph.nodes.analytic_node import analytic_node
 
 from airas.utils.logging_utils import setup_logging
 
 from airas.utils.execution_timers import time_node, ExecutionTimeState
 from airas.utils.github_utils.graph_wrapper import create_wrapped_subgraph
+from airas.analysis.analytic_subgraph.input_data import (
+    analytic_subgraph_input_data,
+)
 
 setup_logging()
 logger = logging.getLogger(__name__)
@@ -78,9 +81,14 @@ if __name__ == "__main__":
     llm_name = "o1-2024-12-17"
     github_repository = "auto-res2/test20"
     branch_name = "test2"
-    retriever = Analytics(
-        github_repository=github_repository, branch_name=branch_name, llm_name=llm_name
-    )
+    subgraph = AnalyticSubgraph(
+        llm_name=llm_name,
+    ).build_graph()
+    output = subgraph.invoke(analytic_subgraph_input_data)
 
-    result = retriever.run()
-    print(f"result: {result}")
+    # retriever = Analytics(
+    #     github_repository=github_repository, branch_name=branch_name, llm_name=llm_name
+    # )
+
+    # result = retriever.run()
+    # print(f"result: {result}")

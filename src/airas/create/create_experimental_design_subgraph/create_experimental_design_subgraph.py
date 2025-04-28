@@ -117,7 +117,7 @@ class CreateExperimentalDesignSubgraph:
 
 
 CreateExperimentalDesign = create_wrapped_subgraph(
-    CreateExperimentalDesign,
+    CreateExperimentalDesignSubgraph,
     CreateExperimentalDesignInputState,
     CreateExperimentalDesignHiddenState,
 )
@@ -129,10 +129,11 @@ if __name__ == "__main__":
         create_experimental_design_subgraph_input_data,
     )
     print(f"output: {output}")
+
     # github_repository = "auto-res2/test20"
     # branch_name = "test"
 
-    # experimentalplaner = ExperimentalPlaner(
+    # experimentalplaner = CreateExperimentalDesign(
     #     github_repository=github_repository,
     #     branch_name=branch_name,
     # )

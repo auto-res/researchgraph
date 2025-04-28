@@ -4,9 +4,9 @@ on:
   pull_request:
     types: [opened, reopened, synchronize]
     paths: [
-      'src/airas/retrieve_code_subgraph/**',
-      'tests/retrieve_code_subgraph/**',
-      'tests/unit/retrieve_code_subgraph/**',
+      'src/airas/retrieve/retrieve_code_subgraph/**',
+      'tests/integration/retrieve/retrieve_code_subgraph.py',
+      'tests/unit/retrieve/retrieve_code_subgraph/**',
       '.github/workflows/pytest_retrieve_code_subgraph.yml'
     ]
 
@@ -23,9 +23,11 @@ jobs:
       matrix:
         include:
           - test_name: extract_experimental_info
-            test_file: tests/unit/retrieve_code_subgraph/test_extract_experimental_info.py
+            test_file: tests/unit/retrieve/retrieve_code_subgraph/test_extract_experimental_info.py
           - test_name: retrieve_repository_contents
-            test_file: tests/unit/retrieve_code_subgraph/test_retrieve_repository_contents.py
+            test_file: tests/unit/retrieve/retrieve_code_subgraph/test_retrieve_repository_contents.py
+          - test_name: integration_test_for_retrieve_code_subgraph
+            test_file: tests/integration/retrieve/test_retrieve_code_subgraph.py
     env:
       GITHUB_WORKSPACE: ${{ github.workspace }}
       SAVE_DIR: ${{ github.workspace }}/save_dir

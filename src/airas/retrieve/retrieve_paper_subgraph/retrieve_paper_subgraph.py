@@ -3,35 +3,34 @@ import shutil
 import operator
 import logging
 from typing import Annotated, TypedDict, Optional
-from pydantic import BaseModel
 
 from langgraph.graph import START, END, StateGraph
 from langgraph.graph.graph import CompiledGraph
 
 from airas.utils.logging_utils import setup_logging
 
-from airas.retrieve_paper_subgraph.nodes.web_scrape_node import web_scrape_node
-from airas.retrieve_paper_subgraph.nodes.extract_paper_title_node import (
+from airas.retrieve.retrieve_paper_subgraph.nodes.web_scrape_node import web_scrape_node
+from airas.retrieve.retrieve_paper_subgraph.nodes.extract_paper_title_node import (
     extract_paper_title_node,
 )
-from airas.retrieve_paper_subgraph.nodes.arxiv_api_node import ArxivNode
-from airas.retrieve_paper_subgraph.nodes.extract_github_url_node import (
+from airas.retrieve.retrieve_paper_subgraph.nodes.arxiv_api_node import ArxivNode
+from airas.retrieve.retrieve_paper_subgraph.nodes.extract_github_url_node import (
     ExtractGithubUrlNode,
 )
-from airas.retrieve_paper_subgraph.nodes.generate_queries_node import (
+from airas.retrieve.retrieve_paper_subgraph.nodes.generate_queries_node import (
     generate_queries_node,
     generate_queries_prompt_add,
 )
-from airas.retrieve_paper_subgraph.nodes.select_best_paper_node import (
+from airas.retrieve.retrieve_paper_subgraph.nodes.select_best_paper_node import (
     select_best_paper_node,
     select_base_paper_prompt,
     select_add_paper_prompt,
 )
-from airas.retrieve_paper_subgraph.nodes.summarize_paper_node import (
+from airas.retrieve.retrieve_paper_subgraph.nodes.summarize_paper_node import (
     summarize_paper_node,
     summarize_paper_prompt_base,
 )
-from airas.retrieve_paper_subgraph.nodes.retrieve_arxiv_text_node import (
+from airas.retrieve.retrieve_paper_subgraph.nodes.retrieve_arxiv_text_node import (
     RetrievearXivTextNode,
 )
 from airas.utils.execution_timers import time_node, ExecutionTimeState
@@ -41,7 +40,7 @@ setup_logging()
 logger = logging.getLogger(__name__)
 
 
-class CandidatePaperInfo(BaseModel):
+class CandidatePaperInfo(TypedDict):
     arxiv_id: str
     arxiv_url: str
     title: str

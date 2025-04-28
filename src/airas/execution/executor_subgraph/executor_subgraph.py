@@ -22,6 +22,9 @@ from airas.execution.executor_subgraph.nodes.check_devin_completion import (
     check_devin_completion,
 )
 from airas.execution.executor_subgraph.nodes.llm_decide import llm_decide
+from airas.execution.executor_subgraph.input_data import (
+    executor_subgraph_input_data,
+)
 
 from airas.utils.execution_timers import time_node, ExecutionTimeState
 from airas.utils.github_utils.graph_wrapper import create_wrapped_subgraph
@@ -37,6 +40,7 @@ class ExecutorSubgraphInputState(TypedDict):
     experiment_code: str
     github_owner: str
     repository_name: str
+    branch_name: str
 
 
 class ExecutorSubgraphHiddenState(TypedDict):
@@ -238,12 +242,20 @@ if __name__ == "__main__":
     branch_name = "test"
     save_dir = "/workspaces/airas/data"
 
-    executor = Executor(
-        github_repository=github_repository,
-        branch_name=branch_name,
+    subgraph = ExecutorSubgraph(
         save_dir=save_dir,
         max_code_fix_iteration=max_code_fix_iteration,
-    )
+    ).build_graph()
 
-    result = executor.run()
-    print(f"result: {result}")
+    output = subgraph.invoke(executor_subgraph_input_data)
+    print(output)
+
+    # executor = Executor(
+    #     github_repository=github_repository,
+    #     branch_name=branch_name,
+    #     save_dir=save_dir,
+    #     max_code_fix_iteration=max_code_fix_iteration,
+    # )
+
+    # result = executor.run()
+    # print(f"result: {result}")

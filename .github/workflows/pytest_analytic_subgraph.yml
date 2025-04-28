@@ -4,9 +4,9 @@ on:
   pull_request:
     types: [opened, reopened, synchronize]
     paths: [
-      'src/airas/analytic_subgraph/**',
-      'tests/analytic_subgraph/**',
-      'tests/unit/analytic_subgraph/**',
+      'src/airas/analysis/analytic_subgraph/**',
+      'tests/integration/test_analytic_subgraph.py',
+      'tests/unit/analysis/analytic_subgraph/**',
       '.github/workflows/pytest_analytic_subgraph.yml'
     ]
 
@@ -23,7 +23,9 @@ jobs:
       matrix:
         include:
           - test_name: analytic_node
-            test_file: tests/unit/analytic_subgraph/test_analytic_node.py
+            test_file: tests/unit/analysis/analytic_subgraph/test_analytic_node.py
+          - test_name: integration_test_for_analytic_subgraph
+            test_file: tests/integration/test_analytic_subgraph.py
     env:
       GITHUB_WORKSPACE: ${{ github.workspace }}
       SAVE_DIR: ${{ github.workspace }}/save_dir

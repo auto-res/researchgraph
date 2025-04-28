@@ -1,26 +1,27 @@
 import pytest
 from unittest.mock import patch, MagicMock
-from airas.executor_subgraph.nodes.retrieve_github_actions_artifacts import (
+from airas.execution.executor_subgraph.nodes.retrieve_github_actions_artifacts import (
     retrieve_github_actions_artifacts,
 )
 
 
 # Normal case: All external dependencies are mocked, and the contents of output.txt/error.txt are returned
 @patch(
-    "airas.executor_subgraph.nodes.retrieve_github_actions_artifacts._copy_images_to_latest_dir"
+    "airas.execution.executor_subgraph.nodes.retrieve_github_actions_artifacts._copy_images_to_latest_dir"
 )
 @patch(
-    "airas.executor_subgraph.nodes.retrieve_github_actions_artifacts.open", create=True
+    "airas.execution.executor_subgraph.nodes.retrieve_github_actions_artifacts.open",
+    create=True,
 )
 @patch(
-    "airas.executor_subgraph.nodes.retrieve_github_actions_artifacts._request_download_artifacts"
+    "airas.execution.executor_subgraph.nodes.retrieve_github_actions_artifacts._request_download_artifacts"
 )
 @patch(
-    "airas.executor_subgraph.nodes.retrieve_github_actions_artifacts._parse_artifacts_info",
+    "airas.execution.executor_subgraph.nodes.retrieve_github_actions_artifacts._parse_artifacts_info",
     return_value={"artifact1": "url"},
 )
 @patch(
-    "airas.executor_subgraph.nodes.retrieve_github_actions_artifacts._request_github_actions_artifacts",
+    "airas.execution.executor_subgraph.nodes.retrieve_github_actions_artifacts._request_github_actions_artifacts",
     return_value={
         "artifacts": [
             {
@@ -65,20 +66,21 @@ def test_retrieve_github_actions_artifacts_success(
 
 # Abnormal case: _request_github_actions_artifacts returns None
 @patch(
-    "airas.executor_subgraph.nodes.retrieve_github_actions_artifacts._copy_images_to_latest_dir"
+    "airas.execution.executor_subgraph.nodes.retrieve_github_actions_artifacts._copy_images_to_latest_dir"
 )
 @patch(
-    "airas.executor_subgraph.nodes.retrieve_github_actions_artifacts.open", create=True
+    "airas.execution.executor_subgraph.nodes.retrieve_github_actions_artifacts.open",
+    create=True,
 )
 @patch(
-    "airas.executor_subgraph.nodes.retrieve_github_actions_artifacts._request_download_artifacts"
+    "airas.execution.executor_subgraph.nodes.retrieve_github_actions_artifacts._request_download_artifacts"
 )
 @patch(
-    "airas.executor_subgraph.nodes.retrieve_github_actions_artifacts._parse_artifacts_info",
+    "airas.execution.executor_subgraph.nodes.retrieve_github_actions_artifacts._parse_artifacts_info",
     return_value={},
 )
 @patch(
-    "airas.executor_subgraph.nodes.retrieve_github_actions_artifacts._request_github_actions_artifacts",
+    "airas.execution.executor_subgraph.nodes.retrieve_github_actions_artifacts._request_github_actions_artifacts",
     return_value=None,
 )
 @patch("os.makedirs")
