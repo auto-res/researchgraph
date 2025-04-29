@@ -30,7 +30,7 @@ setup_logging()
 logger = logging.getLogger(__name__)
 
 
-class PrepareRepositoryStartState(TypedDict):
+class PrepareRepositoryInputState(TypedDict):
     github_repository: str
     branch_name: str
 
@@ -47,7 +47,7 @@ class PrepareRepositoryHiddenState(TypedDict):
 
 class PrepareRepositoryState(
     ExecutionTimeState,
-    PrepareRepositoryStartState,
+    PrepareRepositoryInputState,
     PrepareRepositoryHiddenState,
 ):
     pass
@@ -183,13 +183,13 @@ class PrepareRepositorySubgraph:
 
 
 if __name__ == "__main__":
-    github_repository = "auto-res2/test-tanaka-2"
-    # github_repository = "fuyu-quant/test-1"
+    # github_repository = "auto-res2/test-tanaka-2"
+    github_repository = "fuyu-quant/test-1"
     branch_name = "test"
 
     subgraph = PrepareRepositorySubgraph(
         device_type="gpu",
-        organization="auto-res2",
+        # organization="auto-res2",
     )
 
     input = {

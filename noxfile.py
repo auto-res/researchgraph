@@ -16,7 +16,7 @@ else:
     python_versions = local_python_versions
 
 
-@nox.session(python=python_versions)
+@nox.session(venv_backend="uv", python=python_versions)
 def tests(session):
     session.run("uv", "pip", "install", "-e", ".", external=True)
 

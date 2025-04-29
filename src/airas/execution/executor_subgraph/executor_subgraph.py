@@ -238,8 +238,8 @@ Executor = create_wrapped_subgraph(
 
 if __name__ == "__main__":
     max_code_fix_iteration = 3
-    github_repository = "auto-res2/test-tanaka-3"
-    branch_name = "test"
+    github_repository = "auto-res2/auto-research"
+    branch_name = "aaa"
     save_dir = "/workspaces/airas/data"
 
     subgraph = ExecutorSubgraph(

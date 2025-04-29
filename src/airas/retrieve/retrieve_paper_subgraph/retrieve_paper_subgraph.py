@@ -271,7 +271,7 @@ class RetrievePaperSubgraph:
             (
                 paper_info
                 for paper_info in candidate_papers_info_list
-                if paper_info.arxiv_id == selected_arxiv_id
+                if paper_info["arxiv_id"] == selected_arxiv_id
             ),
             None,
         )
@@ -363,11 +363,11 @@ class RetrievePaperSubgraph:
     @time_node("retrieve_paper_subgraph", "_add_select_best_paper_node")
     def _add_select_best_paper_node(self, state: RetrievePaperState) -> dict:
         candidate_papers_info_list = state["candidate_add_papers_info_list"]
-        base_arxiv_id = state["selected_base_paper_info"].arxiv_id
+        base_arxiv_id = state["selected_base_paper_info"]["arxiv_id"]
         filtered_candidates = [
             paper_info
             for paper_info in candidate_papers_info_list
-            if paper_info.arxiv_id != base_arxiv_id
+            if paper_info["arxiv_id"] != base_arxiv_id
         ]
 
         selected_arxiv_ids = select_best_paper_node(
@@ -382,19 +382,19 @@ class RetrievePaperSubgraph:
         selected_paper_info_list = [
             paper_info
             for paper_info in candidate_papers_info_list
-            if paper_info.arxiv_id in selected_arxiv_ids
+            if paper_info["arxiv_id"] in selected_arxiv_ids
         ]
         # 選択された論文を別のディレクトリにコピーする
         for paper_info in selected_paper_info_list:
             for ext in ["txt", "pdf"]:
                 source_path = os.path.join(
-                    self.papers_dir, f"{paper_info.arxiv_id}.{ext}"
+                    self.papers_dir, f"{paper_info['arxiv_id']}.{ext}"
                 )
                 if os.path.exists(source_path):
                     shutil.copy(
                         source_path,
                         os.path.join(
-                            self.selected_papers_dir, f"{paper_info.arxiv_id}.{ext}"
+                            self.selected_papers_dir, f"{paper_info['arxiv_id']}.{ext}"
                         ),
                     )
 
@@ -410,15 +410,14 @@ class RetrievePaperSubgraph:
             return "Continue"
 
     def _prepare_state(self, state: RetrievePaperState) -> dict:
-        base_github_url = state["selected_base_paper_info"].github_url
-        base_method_text = state["selected_base_paper_info"].model_dump_json()
+        base_github_url = state["selected_base_paper_info"]["github_url"]
+        base_method_text = state["selected_base_paper_info"]
         add_github_urls = [
-            paper_info.github_url
+            paper_info["github_url"]
             for paper_info in state["selected_add_paper_info_list"]
         ]
         add_method_texts = [
-            paper_info.model_dump_json()
-            for paper_info in state["selected_add_paper_info_list"]
+            paper_info for paper_info in state["selected_add_paper_info_list"]
         ]
 
         return {
