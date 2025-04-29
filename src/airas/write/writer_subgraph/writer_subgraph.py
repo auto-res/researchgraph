@@ -11,6 +11,9 @@ from airas.write.writer_subgraph.nodes.paper_writing import WritingNode
 
 from airas.utils.execution_timers import time_node, ExecutionTimeState
 from airas.utils.github_utils.graph_wrapper import create_wrapped_subgraph
+from airas.write.writer_subgraph.input_data import (
+    writer_subgraph_input_data,
+)
 
 setup_logging()
 logger = logging.getLogger(__name__)
@@ -98,13 +101,22 @@ if __name__ == "__main__":
     github_repository = "auto-res2/experiment_script_matsuzawa"
     branch_name = "base-branch"
 
-    paper_writer = PaperWriter(
-        github_repository=github_repository,
-        branch_name=branch_name,
-        llm_name=llm_name,
+    subgraph = WriterSubgraph(
         save_dir=save_dir,
+        llm_name=llm_name,
         refine_round=refine_round,
-    )
+    ).build_graph()
 
-    result = paper_writer.run({})
-    print(f"result: {result}")
+    output = subgraph.invoke(writer_subgraph_input_data)
+    print(f"output: {output}")
+
+    # paper_writer = PaperWriter(
+    #     github_repository=github_repository,
+    #     branch_name=branch_name,
+    #     llm_name=llm_name,
+    #     save_dir=save_dir,
+    #     refine_round=refine_round,
+    # )
+
+    # result = paper_writer.run({})
+    # print(f"result: {result}")

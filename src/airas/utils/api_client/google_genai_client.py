@@ -1,4 +1,5 @@
 import os
+import re
 import ast
 from typing import Literal
 from pydantic import BaseModel
@@ -113,6 +114,8 @@ class GoogelGenAIClient:
             },
         )
         output = response.text
+        if "null" in output:
+            output = re.sub(r"(?<=[:,\s])null(?=[,\s}])", "None", output)
         output = ast.literal_eval(output)[0]
         cost = self._calculate_cost(
             model_name,
