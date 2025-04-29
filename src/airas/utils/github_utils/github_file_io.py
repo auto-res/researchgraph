@@ -3,7 +3,10 @@ import base64
 import json
 import logging
 from typing import Any, TypedDict
-from airas.utils.api_request_handler import fetch_api_data, retry_request   # TODO: GithubClientの実装次第、変更します
+from airas.utils.api_request_handler import (
+    fetch_api_data,
+    retry_request,
+)  # TODO: GithubClientの実装次第、変更します
 
 logger = logging.getLogger(__name__)
 
@@ -56,10 +59,13 @@ def _upload_file_bytes_to_github(
         params={"ref": branch_name},
         method="GET",
     )
-    if existing is None or not isinstance(existing, dict):
-        logger.error(f"Cannot fetch existing file info for {repository_path} on {branch_name}")
-        return False
-    sha = existing.get("sha")
+
+    if isinstance(existing, dict) and "sha" in existing:
+        sha = existing["sha"]
+        logger.info(f"Updating existing file {repository_path} (sha={sha})")
+    else:
+        sha = None
+        logger.info(f"Creating new file {repository_path}")
 
     data = {
         "message": commit_message,
@@ -71,16 +77,21 @@ def _upload_file_bytes_to_github(
 
     try:
         response = retry_request(
-        fetch_api_data, url, headers=_build_headers(), data=data, method="PUT"
+            fetch_api_data, url, headers=_build_headers(), data=data, method="PUT"
         )
         if not isinstance(response, dict) or (msg := response.get("message")):
             logger.error(f"GitHub upload failed: {msg}")
             return False
-        logger.info(f"GitHub upload succeeded: {repository_path} → branch {branch_name}")
+        logger.info(
+            f"GitHub upload succeeded: {repository_path} → branch {branch_name}"
+        )
         return True
-    
+
     except Exception as e:
-        logger.error(f"Exception during GitHub upload to {repository_path} on branch {branch_name}: {e}", exc_info=True)
+        logger.error(
+            f"Exception during GitHub upload to {repository_path} on branch {branch_name}: {e}",
+            exc_info=True,
+        )
         return False
 
 
@@ -150,14 +161,19 @@ def upload_to_github(
                         github_owner,
                         repository_name,
                         cfg["upload_branch"],
-                        os.path.join(cfg["upload_dir"], os.path.basename(file_path)).replace("\\", "/"),
+                        os.path.join(
+                            cfg["upload_dir"], os.path.basename(file_path)
+                        ).replace("\\", "/"),
                         file_bytes,
                         commit_message=commit_message,
                     )
                     if not ok:
                         success = False
                 except Exception as e:
-                    logger.warning(f"Failed to read or upload extra file {file_path}: {e}", exc_info=True)
+                    logger.warning(
+                        f"Failed to read or upload extra file {file_path}: {e}",
+                        exc_info=True,
+                    )
                     success = False
     return success
 
