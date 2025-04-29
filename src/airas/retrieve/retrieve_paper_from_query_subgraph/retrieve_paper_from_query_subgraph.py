@@ -4,7 +4,7 @@ import shutil
 import operator
 import logging
 from typing import Annotated, TypedDict
-from pydantic import BaseModel, TypeAdapter
+from pydantic import TypeAdapter
 
 from langgraph.graph import START, END, StateGraph
 from langgraph.graph.graph import CompiledGraph
@@ -25,6 +25,8 @@ from airas.retrieve.retrieve_paper_from_query_subgraph.nodes.extract_github_url_
 )
 from airas.retrieve.retrieve_paper_from_query_subgraph.nodes.generate_queries_node import (
     generate_queries_node,
+)
+from airas.retrieve.retrieve_paper_from_query_subgraph.prompt.generate_queries_node_prompt import (
     generate_queries_prompt_add,
 )
 from airas.retrieve.retrieve_paper_from_query_subgraph.nodes.select_best_paper_node import (
@@ -45,7 +47,7 @@ setup_logging()
 logger = logging.getLogger(__name__)
 
 
-class CandidatePaperInfo(BaseModel):
+class CandidatePaperInfo(TypedDict):
     arxiv_id: str
     arxiv_url: str
     title: str
@@ -286,7 +288,7 @@ class RetrievePaperFromQuerySubgraph:
         filtered_candidates = [
             paper_info
             for paper_info in candidate_papers_info_list
-            if paper_info.arxiv_id != base_arxiv_id
+            if paper_info["arxiv_id"] != base_arxiv_id
         ]
 
         selected_arxiv_ids = select_best_paper_node(
@@ -307,13 +309,13 @@ class RetrievePaperFromQuerySubgraph:
         for paper_info in selected_paper_info_list:
             for ext in ["txt", "pdf"]:
                 source_path = os.path.join(
-                    self.papers_dir, f"{paper_info.arxiv_id}.{ext}"
+                    self.papers_dir, f"{paper_info['arxiv_id']}.{ext}"
                 )
                 if os.path.exists(source_path):
                     shutil.copy(
                         source_path,
                         os.path.join(
-                            self.selected_papers_dir, f"{paper_info.arxiv_id}.{ext}"
+                            self.selected_papers_dir, f"{paper_info['arxiv_id']}.{ext}"
                         ),
                     )
 
@@ -330,12 +332,11 @@ class RetrievePaperFromQuerySubgraph:
 
     def _prepare_state(self, state: RetrievePaperFromQueryState) -> dict:
         add_github_urls = [
-            paper_info.github_url
+            paper_info["github_url"]
             for paper_info in state["selected_add_paper_info_list"]
         ]
         add_method_texts = [
-            paper_info.model_dump_json()
-            for paper_info in state["selected_add_paper_info_list"]
+            paper_info for paper_info in state["selected_add_paper_info_list"]
         ]
 
         return {

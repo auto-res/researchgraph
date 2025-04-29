@@ -2,8 +2,8 @@ from typing import TypedDict, Optional
 from langgraph.graph import START, END, StateGraph
 from langgraph.graph.graph import CompiledGraph
 
-from airas.review_subgraph.nodes.review_node import ReviewNode
-from airas.review_subgraph.input_data import review_subgraph_input_data
+from airas.review.review_subgraph.nodes.review_node import ReviewNode
+from airas.review.review_subgraph.input_data import review_subgraph_input_data
 
 
 class ReviewSubgraphInputState(TypedDict):
