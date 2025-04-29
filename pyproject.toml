@@ -12,7 +12,6 @@ dependencies = [
     "langchain>=0.2.15",
     "langgraph>=0.2.23",
     "openai>=1.35.13",
-    "pyalex>=0.15.1",
     "pydantic>=2.9.2",
     "pypdf>=4.3.1",
     "semanticscholar>=0.8.4",

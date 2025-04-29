@@ -94,7 +94,7 @@ wheels = [
 
 [[package]]
 name = "airas"
-version = "0.0.11.dev3"
+version = "0.0.11.dev4"
 source = { editable = "." }
 dependencies = [
     { name = "google-genai" },
@@ -103,7 +103,6 @@ dependencies = [
     { name = "langchain-community" },
     { name = "langgraph" },
     { name = "openai" },
-    { name = "pyalex" },
     { name = "pydantic" },
     { name = "pypdf" },
     { name = "semanticscholar" },
@@ -141,7 +140,6 @@ requires-dist = [
     { name = "langgraph", specifier = ">=0.2.23" },
     { name = "mcp", extras = ["cli"], marker = "extra == 'mcp'", specifier = ">=1.6.0" },
     { name = "openai", specifier = ">=1.35.13" },
-    { name = "pyalex", specifier = ">=0.15.1" },
     { name = "pydantic", specifier = ">=2.9.2" },
     { name = "pypdf", specifier = ">=4.3.1" },
     { name = "python-dotenv", marker = "extra == 'mcp'", specifier = ">=1.0.1" },
@@ -2133,19 +2131,6 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/cd/05/0a34433a064256a578f1783a10da6df098ceaa4a57bbeaa96a6c0352786b/pure_eval-0.2.3.tar.gz", hash = "sha256:5f4e983f40564c576c7c8635ae88db5956bb2229d7e9237d03b3c0b0190eaf42", size = 19752, upload_time = "2024-07-21T12:58:21.801Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/8e/37/efad0257dc6e593a18957422533ff0f87ede7c9c6ea010a2177d738fb82f/pure_eval-0.2.3-py3-none-any.whl", hash = "sha256:1db8e35b67b3d218d818ae653e27f06c3aa420901fa7b081ca98cbedc874e0d0", size = 11842, upload_time = "2024-07-21T12:58:20.04Z" },
-]
-
-[[package]]
-name = "pyalex"
-version = "0.15.1"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "requests" },
-    { name = "urllib3" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/aa/de/1edd12185f2eb950a8a65042e7c5e1dec31aa2b04a78af8d6c72be22c246/pyalex-0.15.1.tar.gz", hash = "sha256:064ae2bc20b21e66a813bccf7f1aec3223ab112ca77e8a1f3e40d657281d181f", size = 44458, upload_time = "2024-08-26T09:19:50.104Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/da/3f/e2dfe66db69c2900099ec966b6405912c11be65f4f38ab0c2a3eb56b5730/pyalex-0.15.1-py3-none-any.whl", hash = "sha256:713a1aa1cee77f89f212afa58a0a262dbcea46b3c8a4a62dc232f2ed3ccf1ce3", size = 11095, upload_time = "2024-08-26T09:19:47.928Z" },
 ]
 
 [[package]]
