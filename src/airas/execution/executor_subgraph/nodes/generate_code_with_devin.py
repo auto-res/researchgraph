@@ -4,8 +4,6 @@ from logging import getLogger
 
 logger = getLogger(__name__)
 
-DEVIN_API_KEY = os.getenv("DEVIN_API_KEY")
-
 
 def _request_create_session(
     headers: dict,
@@ -14,6 +12,7 @@ def _request_create_session(
     new_method: str,
     experiment_code: str,
 ):
+    DEVIN_API_KEY = os.getenv("DEVIN_API_KEY")
     url = "https://api.devin.ai/v1/sessions"
     data = {
         "prompt": f"""\

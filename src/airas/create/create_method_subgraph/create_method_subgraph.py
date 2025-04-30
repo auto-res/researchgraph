@@ -7,9 +7,6 @@ from typing import TypedDict
 from airas.utils.logging_utils import setup_logging
 from airas.create.create_method_subgraph.nodes.generator_node import generator_node
 
-from airas.create.create_method_subgraph.input_data import (
-    create_method_subgraph_input_data,
-)
 from airas.utils.execution_timers import time_node, ExecutionTimeState
 from airas.utils.github_utils.graph_wrapper import create_wrapped_subgraph
 
@@ -46,9 +43,9 @@ class CreateMethodSubgraph:
     ):
         self.llm_name = llm_name
 
-    @time_node("generator_subgraph", "_generator_node")
+    @time_node("create_method_subgraph", "_generator_node")
     def _generator_node(self, state: CreateMethodSubgraphState) -> dict:
-        logger.info("---GeneratorSubgraph---")
+        logger.info("---CreateMethodSubgraph---")
         new_method = generator_node(
             llm_name=self.llm_name,
             base_method_text=state["base_method_text"],
@@ -74,10 +71,22 @@ CreateMethod = create_wrapped_subgraph(
 )
 
 if __name__ == "__main__":
-    llm_name = "o3-mini-2025-01-31"
-    subgraph = CreateMethodSubgraph(
-        llm_name=llm_name,
-    ).build_graph()
+    # llm_name = "o3-mini-2025-01-31"
+    # subgraph = CreateMethodSubgraph(
+    #     llm_name=llm_name,
+    # ).build_graph()
 
-    result = subgraph.invoke(create_method_subgraph_input_data)
-    print(result)
+    # result = subgraph.invoke(create_method_subgraph_input_data)
+    # print(result)
+
+    github_repository = "auto-res2/test-tanaka-2"
+    branch_name = "test"
+
+    cm = CreateMethod(
+        github_repository=github_repository,
+        branch_name=branch_name,
+        llm_name="o3-mini-2025-01-31",
+    )
+
+    result = cm.run()
+    print(f"result: {result}")

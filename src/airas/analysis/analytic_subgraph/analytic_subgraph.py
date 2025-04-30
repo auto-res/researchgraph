@@ -6,6 +6,7 @@ from typing import TypedDict
 
 from airas.analysis.analytic_subgraph.nodes.analytic_node import analytic_node
 
+from airas.utils.check_api_key import check_api_key
 from airas.utils.logging_utils import setup_logging
 
 from airas.utils.execution_timers import time_node, ExecutionTimeState
@@ -48,6 +49,7 @@ class AnalyticSubgraph:
         llm_name: str,
     ):
         self.llm_name = llm_name
+        check_api_key(llm_api_key_check=True)
 
     @time_node("analytic_subgraph", "_analytic_node")
     def _analytic_node(self, state: AnalyticSubgraphState) -> dict:

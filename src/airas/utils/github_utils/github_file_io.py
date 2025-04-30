@@ -10,8 +10,6 @@ from airas.utils.api_request_handler import (
 
 logger = logging.getLogger(__name__)
 
-GITHUB_TOKEN = os.getenv("GITHUB_PERSONAL_ACCESS_TOKEN")
-
 
 class ExtraFileConfig(TypedDict):
     upload_branch: str
@@ -22,7 +20,7 @@ class ExtraFileConfig(TypedDict):
 def _build_headers():
     return {
         "Accept": "application/vnd.github+json",
-        "Authorization": f"Bearer {GITHUB_TOKEN}",
+        "Authorization": f"Bearer {os.getenv('GITHUB_PERSONAL_ACCESS_TOKEN')}",
         "X-GitHub-Api-Version": "2022-11-28",
     }
 

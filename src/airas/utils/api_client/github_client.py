@@ -6,8 +6,6 @@ from airas.utils.logging_utils import setup_logging
 
 setup_logging()
 
-GITHUB_PERSONAL_ACCESS_TOKEN = os.getenv("GITHUB_PERSONAL_ACCESS_TOKEN")
-
 
 class GithubClient:
     def __init__(self) -> None:
@@ -21,7 +19,7 @@ class GithubClient:
         url = f"https://api.github.com/repos/{repository_owner}/{repository_name}/contents/{file_path}"
         headers = {
             "Accept": "application/vnd.github.raw+json",
-            "Authorization": f"Bearer {GITHUB_PERSONAL_ACCESS_TOKEN}",
+            "Authorization": f"Bearer {os.getenv('GITHUB_PERSONAL_ACCESS_TOKEN')}",
             "X-GitHub-Api-Version": "2022-11-28",
         }
         response = requests.get(url=url, headers=headers, timeout=10, stream=False)
@@ -52,7 +50,7 @@ class GithubClient:
         url = f"https://api.github.com/repos/{repository_owner}/{repository_name}/git/trees/{tree_sha}"
         headers = {
             "Accept": "application/vnd.github+json",
-            "Authorization": f"Bearer {GITHUB_PERSONAL_ACCESS_TOKEN}",
+            "Authorization": f"Bearer {os.getenv('GITHUB_PERSONAL_ACCESS_TOKEN')}",
             "X-GitHub-Api-Version": "2022-11-28",
         }
         params = {"recursive": "true"}
