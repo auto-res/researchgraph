@@ -88,7 +88,7 @@ class RetrieveCodeSubgraph:
         return graph_builder.compile()
 
 
-CodeRetriever = create_wrapped_subgraph(
+RetrieveCode = create_wrapped_subgraph(
     RetrieveCodeSubgraph,
     RetrieveCodeSubgraphInputState,
     RetrieveCodeSubgraphOutputState,
