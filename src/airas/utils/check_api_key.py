@@ -5,25 +5,29 @@ logger = logging.getLogger(__name__)
 
 
 def check_api_key(
-    openai_api_check: bool = True,
-    devin_api_check: bool = True,
-    fire_crawl_api_check: bool = True,
-    github_personal_access_token_check: bool = True,
-    vertex_ai_api_check: bool = True,
+    llm_api_key_check: bool = False,
+    devin_api_key_check: bool = False,
+    fire_crawl_api_key_check: bool = False,
+    github_personal_access_token_check: bool = False,
 ) -> None:
     missing_keys = []
 
-    if openai_api_check:
-        if not os.getenv("OPENAI_API_KEY"):
+    if llm_api_key_check:
+        openai_key = os.getenv("OPENAI_API_KEY")
+        vertex_key = os.getenv("VERTEX_AI_API_KEY")
+        if not openai_key and not vertex_key:
             missing_keys.append(
                 {
-                    "name": "OpenAI API Key",
-                    "env": "OPENAI_API_KEY",
-                    "url": "https://platform.openai.com/settings/organization/api-keys",
+                    "name": "OpenAI API Key or Vertex AI API Key",
+                    "env": "OPENAI_API_KEY or VERTEX_AI_API_KEY",
+                    "url": (
+                        "OpenAI: https://platform.openai.com/settings/organization/api-keys\n"
+                        "Vertex AI: https://aistudio.google.com/apikey"
+                    ),
                 }
             )
 
-    if devin_api_check:
+    if devin_api_key_check:
         if not os.getenv("DEVIN_API_KEY"):
             missing_keys.append(
                 {
@@ -33,7 +37,7 @@ def check_api_key(
                 }
             )
 
-    if fire_crawl_api_check:
+    if fire_crawl_api_key_check:
         if not os.getenv("FIRE_CRAWL_API_KEY"):
             missing_keys.append(
                 {
@@ -50,16 +54,6 @@ def check_api_key(
                     "name": "GitHub Personal Access Token",
                     "env": "GITHUB_PERSONAL_ACCESS_TOKEN",
                     "url": "https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens#creating-a-fine-grained-personal-access-token",
-                }
-            )
-
-    if vertex_ai_api_check:
-        if not os.getenv("VERTEX_AI_API_KEY"):
-            missing_keys.append(
-                {
-                    "name": "Vertex AI API Key",
-                    "env": "VERTEX_AI_API_KEY",
-                    "url": "https://aistudio.google.com/apikey",
                 }
             )
 
