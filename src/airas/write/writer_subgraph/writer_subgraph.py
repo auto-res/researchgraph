@@ -88,7 +88,7 @@ class WriterSubgraph:
         return graph_builder.compile()
 
 
-PaperWriter = create_wrapped_subgraph(
+PaperWrite = create_wrapped_subgraph(
     WriterSubgraph, WriterSubgraphInputState, WriterSubgraphOutputState
 )
 

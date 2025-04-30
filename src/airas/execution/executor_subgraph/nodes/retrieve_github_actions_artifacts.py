@@ -8,8 +8,6 @@ from logging import getLogger
 
 logger = getLogger(__name__)
 
-GITHUB_PERSONAL_ACCESS_TOKEN = os.getenv("GITHUB_PERSONAL_ACCESS_TOKEN")
-
 
 def _request_github_actions_artifacts(
     headers: dict, github_owner: str, repository_name: str
@@ -73,7 +71,7 @@ def retrieve_github_actions_artifacts(
 ) -> tuple[str, str]:
     headers = {
         "Accept": "application/vnd.github+json",
-        "Authorization": f"Bearer {GITHUB_PERSONAL_ACCESS_TOKEN}",
+        "Authorization": f"Bearer {os.getenv('GITHUB_PERSONAL_ACCESS_TOKEN')}",
         "X-GitHub-Api-Version": "2022-11-28",
     }
     iteration_save_dir = save_dir + f"/iteration_{fix_iteration_count}"

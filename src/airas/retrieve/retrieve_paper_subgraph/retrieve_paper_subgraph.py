@@ -561,7 +561,7 @@ class RetrievePaperSubgraph:
         return graph_builder.compile()
 
 
-Retriever = create_wrapped_subgraph(
+RetrievePaper = create_wrapped_subgraph(
     RetrievePaperSubgraph,
     RetrievePaperInputState,
     RetrievePaperOutputState,
@@ -585,7 +585,7 @@ if __name__ == "__main__":
         "queries": ["diffusion model"],
     }
 
-    retriever = Retriever(
+    retriever = RetrievePaper(
         github_repository=github_repository,
         branch_name=branch_name,
         perform_download=False,
