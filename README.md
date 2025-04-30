@@ -17,12 +17,9 @@
 
 # Quick Start
 
+```bash
+pip install airas
 ```
-uv sync [--dev] [--extra mcp]
-```
-
-- `--dev` to install development packages
-- `--extra mcp` to install MCP-related packages
 
 
 ## MCP
