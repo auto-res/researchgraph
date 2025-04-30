@@ -87,6 +87,7 @@ if __name__ == "__main__":
         llm_name=llm_name,
     ).build_graph()
     output = subgraph.invoke(analytic_subgraph_input_data)
+    print(f"output: {output}")
 
     # retriever = Analytics(
     #     github_repository=github_repository, branch_name=branch_name, llm_name=llm_name
