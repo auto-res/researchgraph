@@ -7,7 +7,7 @@ import type * as Preset from '@docusaurus/preset-classic';
 const config: Config = {
   title: 'AIRAS',
   tagline: 'AI Research Automation System',
-  favicon: 'img/favicon.ico',
+  favicon: 'img/airas_logo.png',
 
   // Set the production url of your site here
   url: 'https://www.autores.one',
@@ -86,7 +86,7 @@ const config: Config = {
       title: 'AIRAS',
       logo: {
         alt: 'AIRAS',
-        src: 'img/logo.svg',
+        src: 'img/airas_logo.png',
       },
       items: [
         {
