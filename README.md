@@ -1,7 +1,5 @@
 <!-- Title Image Placeholder -->
-<p align="center">
-  AIRAS
-</p>
+![Airas Logo](images/airas_short.png)
 
 <p align="center">
   <a href="https://pypi.org/project/airas/">
@@ -17,7 +15,11 @@
     <img src="https://img.shields.io/twitter/follow/fuyu_quant?style=social" alt="Twitter Follow" />
   </a>
 </p>
-AI Research Automation System(AIRAS)
+
+🌐 AIRAS(AI Research Automation System) is a framework for automating AI research.
+
+💡 See what others are building and share your projects in our [Discord](https://discord.gg/Qh5DmY6D)! 
+
 
 # Quick Start
 
