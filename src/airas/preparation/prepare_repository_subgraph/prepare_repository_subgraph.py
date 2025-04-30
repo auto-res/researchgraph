@@ -53,7 +53,7 @@ class PrepareRepositoryState(
     pass
 
 
-class PrepareRepositorySubgraph:
+class PrepareRepository:
     def __init__(
         self,
         device_type: DEVICETYPE = "cpu",
@@ -187,7 +187,7 @@ if __name__ == "__main__":
     github_repository = "fuyu-quant/test-1"
     branch_name = "test"
 
-    subgraph = PrepareRepositorySubgraph(
+    subgraph = PrepareRepository(
         device_type="gpu",
         # organization="auto-res2",
     )

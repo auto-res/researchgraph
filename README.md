@@ -4,16 +4,20 @@
 </p>
 
 <p align="center">
-  <a href="https://auto-res.github.io/researchgraph/">
+  <a href="https://pypi.org/project/airas/">
+    <img src="https://img.shields.io/pypi/v/airas" alt="Documentation" />
+  </a>
+  <a href="https://auto-res.github.io/airas/">
     <img src="https://img.shields.io/badge/Documentation-%F0%9F%93%95-blue" alt="Documentation" />
+  </a>
+  <a href="https://github.com/auto-res/airas/blob/main/LICENSE">
+    <img src="https://img.shields.io/badge/License-MIT-green.svg" alt="MIT License" />
   </a>
   <a href="https://x.com/fuyu_quant">
     <img src="https://img.shields.io/twitter/follow/fuyu_quant?style=social" alt="Twitter Follow" />
   </a>
-  <a href="https://github.com/auto-res/researchgraph/blob/main/LICENSE">
-    <img src="https://img.shields.io/badge/License-MIT-green.svg" alt="MIT License" />
-  </a>
 </p>
+AI Research Automation System(AIRAS)
 
 # Quick Start
 
@@ -89,7 +93,7 @@ If you use AIRAS in your research, please cite as follows:
 
 ```
 @software{airas2025,
-  author = {Toma Tanaka},
+  author = {Toma Tanaka, Wataru Kumagai, Takumi Matsuzawa, Yuki Yoshino, Ilya Horiguchi, Shiro Takagi, Ryutaro Yamauchi},
   title = {AIRAS},
   year = {2025},
   publisher = {GitHub},
