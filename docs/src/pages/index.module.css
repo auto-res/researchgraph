@@ -21,3 +21,20 @@
   align-items: center;
   justify-content: center;
 }
+
+/* 上部余白を削除するスタイル */
+.noTopPadding {
+  padding-top: 0 !important;
+  margin-top: 0 !important;
+}
+
+/* ページ全体にも適用 */
+:global(main) {
+  padding-top: 0 !important;
+  margin-top: 0 !important;
+}
+
+:global(.container) {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
