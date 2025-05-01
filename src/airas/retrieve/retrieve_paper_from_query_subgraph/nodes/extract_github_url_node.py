@@ -1,9 +1,7 @@
 import re
 import requests
 from jinja2 import Environment
-
-from tenacity import retry, stop_after_attempt, wait_fixed, retry_if_exception_type
-from airas.utils.api_client.google_genai_client import GoogelGenAIClient, VERTEXAI_MODEL
+from airas.utils.api_client.llm_facade_client import LLMFacadeClient, LLM_MODEL
 from airas.retrieve.retrieve_paper_subgraph.prompt.extract_github_url_node_prompt import (
     extract_github_url_node_prompt,
 )
@@ -20,7 +18,7 @@ class LLMOutput(BaseModel):
 class ExtractGithubUrlNode:
     def __init__(
         self,
-        llm_name: VERTEXAI_MODEL,
+        llm_name: LLM_MODEL,
     ):
         self.llm_name = llm_name
 
@@ -46,15 +44,10 @@ class ExtractGithubUrlNode:
             print(f"Error checking GitHub URL {url}: {e}")
             return False
 
-    @retry(
-        retry=retry_if_exception_type(requests.exceptions.ConnectionError),
-        stop=stop_after_attempt(3),
-        wait=wait_fixed(1),
-    )
     def _extract_related_github_url(
         self, paper_summary: str, extract_github_url_list: list[str]
     ) -> int | None:
-        genai_client = GoogelGenAIClient()
+        client = LLMFacadeClient(llm_name=self.llm_name)
 
         env = Environment()
         template = env.from_string(extract_github_url_node_prompt)
@@ -64,8 +57,7 @@ class ExtractGithubUrlNode:
         }
         messages = template.render(data)
 
-        output, cost = genai_client.structured_outputs(
-            model_name=self.llm_name,
+        output, cost = client.structured_outputs(
             message=messages,
             data_model=LLMOutput,
         )

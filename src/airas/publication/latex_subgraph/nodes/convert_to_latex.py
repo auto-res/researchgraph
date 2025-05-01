@@ -1,11 +1,7 @@
 from jinja2 import Environment
 from logging import getLogger
 from pydantic import BaseModel
-
-import requests
-from tenacity import retry, stop_after_attempt, wait_fixed, retry_if_exception_type
-
-from airas.utils.api_client.openai_client import OpenAIClient, OPENAI_MODEL
+from airas.utils.api_client.llm_facade_client import LLMFacadeClient, LLM_MODEL
 
 logger = getLogger(__name__)
 
@@ -26,17 +22,12 @@ def _replace_underscores_in_keys(paper_dict: dict[str, str]) -> dict[str, str]:
     return {key.replace("_", " "): value for key, value in paper_dict.items()}
 
 
-@retry(
-    retry=retry_if_exception_type(requests.exceptions.ConnectionError),
-    stop=stop_after_attempt(3),
-    wait=wait_fixed(1),
-)
 def convert_to_latex(
-    llm_name: OPENAI_MODEL,
+    llm_name: LLM_MODEL,
     prompt_template: str,
     paper_content: dict[str, str],
 ) -> dict[str, str]:
-    openai_client = OpenAIClient()
+    client = LLMFacadeClient(llm_name)
 
     data = {
         "sections": [
@@ -49,8 +40,7 @@ def convert_to_latex(
     template = env.from_string(prompt_template)
     messages = template.render(data)
 
-    output, cost = openai_client.structured_outputs(
-        model_name=llm_name,
+    output, cost = client.structured_outputs(
         message=messages,
         data_model=PaperContent,
     )

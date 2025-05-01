@@ -1,8 +1,5 @@
 from jinja2 import Environment
 from pydantic import BaseModel
-
-import requests
-from tenacity import retry, stop_after_attempt, wait_fixed, retry_if_exception_type
 from airas.utils.api_client.llm_facade_client import LLMFacadeClient, LLM_MODEL
 from airas.retrieve.retrieve_paper_subgraph.prompt.extract_paper_title_node_prompt import (
     extract_paper_title_node_prompt,
@@ -16,11 +13,6 @@ class LLMOutput(BaseModel):
     paper_titles: list[str]
 
 
-@retry(
-    retry=retry_if_exception_type(requests.exceptions.ConnectionError),
-    stop=stop_after_attempt(3),
-    wait=wait_fixed(1),
-)
 def extract_paper_title_node(
     llm_name: LLM_MODEL,
     queries: list,

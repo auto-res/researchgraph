@@ -1,28 +1,19 @@
-import requests
 from jinja2 import Environment
-from tenacity import retry, stop_after_attempt, wait_fixed, retry_if_exception_type
-
-from airas.utils.api_client.openai_client import OpenAIClient, OPENAI_MODEL
+from airas.utils.api_client.llm_facade_client import LLMFacadeClient, LLM_MODEL
 from airas.create.create_experimental_design_subgraph.prompt.generate_advantage_criteria_prompt import (
     generate_advantage_criteria_prompt,
 )
 
 
-@retry(
-    retry=retry_if_exception_type(requests.exceptions.ConnectionError),
-    stop=stop_after_attempt(3),
-    wait=wait_fixed(1),
-)
-def generate_advantage_criteria(llm_name: OPENAI_MODEL, new_method: str) -> str:
-    openai_client = OpenAIClient()
+def generate_advantage_criteria(llm_name: LLM_MODEL, new_method: str) -> str:
+    client = LLMFacadeClient(llm_name)
     env = Environment()
     template = env.from_string(generate_advantage_criteria_prompt)
     data = {
         "new_method": new_method,
     }
     messages = template.render(data)
-    output, cost = openai_client.generate(
-        model_name=llm_name,
+    output, cost = client.generate(
         message=messages,
     )
     if output is None:

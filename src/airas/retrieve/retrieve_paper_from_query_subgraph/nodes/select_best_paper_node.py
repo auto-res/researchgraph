@@ -1,8 +1,6 @@
 from pydantic import BaseModel
 from jinja2 import Environment
-import requests
-from tenacity import retry, stop_after_attempt, wait_fixed, retry_if_exception_type
-from airas.utils.api_client.google_genai_client import GoogelGenAIClient, VERTEXAI_MODEL
+from airas.utils.api_client.llm_facade_client import LLMFacadeClient, LLM_MODEL
 
 from logging import getLogger
 
@@ -13,13 +11,8 @@ class LLMOutput(BaseModel):
     selected_arxiv_id: str
 
 
-@retry(
-    retry=retry_if_exception_type(requests.exceptions.ConnectionError),
-    stop=stop_after_attempt(3),
-    wait=wait_fixed(1),
-)
 def select_best_paper_node(
-    llm_name: VERTEXAI_MODEL,
+    llm_name: LLM_MODEL,
     prompt_template: str,
     candidate_papers,
     selected_base_paper_info=None,
@@ -40,8 +33,8 @@ def select_best_paper_node(
     env = Environment()
     template = env.from_string(prompt_template)
     prompt = template.render(data)
-    output, cost = GoogelGenAIClient().structured_outputs(
-        model_name=llm_name, message=prompt, data_model=LLMOutput
+    output, cost = LLMFacadeClient(llm_name).structured_outputs(
+        message=prompt, data_model=LLMOutput
     )
     if output is None:
         raise ValueError("Error: No response from the model in select_best_paper_node.")

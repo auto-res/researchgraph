@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import patch
 from airas.preparation.prepare_repository_subgraph.prepare_repository_subgraph import (
-    PrepareRepositorySubgraph,
+    PrepareRepository,
 )
 
 
@@ -52,7 +52,7 @@ def test_prepare_repository_subgraph(
     dummy_input,
     expected_output,
 ):
-    subgraph = PrepareRepositorySubgraph(device_type="cpu", organization="test-org")
+    subgraph = PrepareRepository(device_type="cpu", organization="test-org")
     graph = subgraph.build_graph()
     result = graph.invoke(dummy_input)
     print("DEBUG result:", result)

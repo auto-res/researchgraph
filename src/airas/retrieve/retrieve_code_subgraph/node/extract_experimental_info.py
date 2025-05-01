@@ -1,9 +1,6 @@
 from pydantic import BaseModel
 from jinja2 import Environment
-import requests
-from tenacity import retry, stop_after_attempt, wait_fixed, retry_if_exception_type
-
-from airas.utils.api_client.google_genai_client import GoogelGenAIClient, VERTEXAI_MODEL
+from airas.utils.api_client.llm_facade_client import LLMFacadeClient, LLM_MODEL
 from airas.retrieve.retrieve_code_subgraph.prompt.extract_experimental_info_prompt import (
     extract_experimental_info_prompt,
 )
@@ -14,15 +11,10 @@ class LLMOutput(BaseModel):
     extract_info: str
 
 
-@retry(
-    retry=retry_if_exception_type(requests.exceptions.ConnectionError),
-    stop=stop_after_attempt(3),
-    wait=wait_fixed(1),
-)
 def extract_experimental_info(
-    model_name: VERTEXAI_MODEL, method_text: str, repository_content_str
+    model_name: LLM_MODEL, method_text: str, repository_content_str
 ) -> tuple[str, str]:
-    genai_client = GoogelGenAIClient()
+    client = LLMFacadeClient(model_name)
     env = Environment()
     template = env.from_string(extract_experimental_info_prompt)
     data = {
@@ -30,8 +22,7 @@ def extract_experimental_info(
         "repository_content_str": repository_content_str,
     }
     messages = template.render(data)
-    output, cost = genai_client.structured_outputs(
-        model_name=model_name,
+    output, cost = client.structured_outputs(
         message=messages,
         data_model=LLMOutput,
     )

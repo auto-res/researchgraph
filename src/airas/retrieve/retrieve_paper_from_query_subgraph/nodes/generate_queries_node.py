@@ -1,8 +1,6 @@
 from pydantic import BaseModel
 from jinja2 import Environment
-import requests
-from tenacity import retry, stop_after_attempt, wait_fixed, retry_if_exception_type
-from airas.utils.api_client.openai_client import OpenAIClient, OPENAI_MODEL
+from airas.utils.api_client.llm_facade_client import LLMFacadeClient, LLM_MODEL
 
 
 from logging import getLogger
@@ -18,13 +16,8 @@ class LLMOutput(BaseModel):
     generated_query_5: str
 
 
-@retry(
-    retry=retry_if_exception_type(requests.exceptions.ConnectionError),
-    stop=stop_after_attempt(3),
-    wait=wait_fixed(1),
-)
 def generate_queries_node(
-    llm_name: OPENAI_MODEL,
+    llm_name: LLM_MODEL,
     prompt_template: str,
     selected_base_paper_info: str,
     queries: list,
@@ -35,8 +28,8 @@ def generate_queries_node(
     template = env.from_string(prompt_template)
     prompt = template.render(data)
 
-    output, cost = OpenAIClient().structured_outputs(
-        llm_name, message=prompt, data_model=LLMOutput
+    output, cost = LLMFacadeClient(llm_name).structured_outputs(
+        message=prompt, data_model=LLMOutput
     )
     if output is None:
         raise ValueError("Error: No response from the model in generate_queries_node.")
