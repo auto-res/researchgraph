@@ -1,28 +1,31 @@
 <!-- Title Image Placeholder -->
-<p align="center">
-  AIRAS
-</p>
+![Airas Logo](images/airas_short.png)
 
 <p align="center">
-  <a href="https://auto-res.github.io/researchgraph/">
+  <a href="https://pypi.org/project/airas/">
+    <img src="https://img.shields.io/pypi/v/airas" alt="Documentation" />
+  </a>
+  <a href="https://auto-res.github.io/airas/">
     <img src="https://img.shields.io/badge/Documentation-%F0%9F%93%95-blue" alt="Documentation" />
+  </a>
+  <a href="https://github.com/auto-res/airas/blob/main/LICENSE">
+    <img src="https://img.shields.io/badge/License-MIT-green.svg" alt="MIT License" />
   </a>
   <a href="https://x.com/fuyu_quant">
     <img src="https://img.shields.io/twitter/follow/fuyu_quant?style=social" alt="Twitter Follow" />
   </a>
-  <a href="https://github.com/auto-res/researchgraph/blob/main/LICENSE">
-    <img src="https://img.shields.io/badge/License-MIT-green.svg" alt="MIT License" />
-  </a>
 </p>
+
+🌐 AIRAS(AI Research Automation System) is a framework for automating AI research.
+
+💡 See what others are building and share your projects in our [Discord](https://discord.gg/Qh5DmY6D)! 
+
 
 # Quick Start
 
+```bash
+pip install airas
 ```
-uv sync [--dev] [--extra mcp]
-```
-
-- `--dev` to install development packages
-- `--extra mcp` to install MCP-related packages
 
 
 ## MCP
@@ -92,7 +95,7 @@ If you use AIRAS in your research, please cite as follows:
 
 ```
 @software{airas2025,
-  author = {Toma Tanaka},
+  author = {Toma Tanaka, Wataru Kumagai, Takumi Matsuzawa, Yuki Yoshino, Ilya Horiguchi, Shiro Takagi, Ryutaro Yamauchi},
   title = {AIRAS},
   year = {2025},
   publisher = {GitHub},

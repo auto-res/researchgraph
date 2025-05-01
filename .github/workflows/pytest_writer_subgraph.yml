@@ -4,8 +4,9 @@ on:
   pull_request:
     types: [opened, reopened, synchronize]
     paths: [
-      'src/airas/writer_subgraph/**', 
-      'tests/writer_subgraph/**',
+      'src/airas/write/writer_subgraph/**', 
+      'tests/integration/write/test_writer_subgraph.py',
+      'tests/unit/write/writer_subgraph/**',
       '.github/workflows/pytest_writer_subgraph.yml'
       ]
 
@@ -22,10 +23,11 @@ jobs:
       matrix:
         include:
           - test_name: generate_note
-            test_file: tests/unit/writer_subgraph/test_generate_note.py
-            
+            test_file: tests/unit/write/writer_subgraph/test_generate_note.py
           - test_name: paper_writing
-            test_file: tests/unit/writer_subgraph/test_paper_writing.py
+            test_file: tests/unit/write/writer_subgraph/test_paper_writing.py
+          - test_name: integration_test_for_writer_subgraph
+            test_file: tests/integration/write/test_writer_subgraph.py
             
     env:
       GITHUB_WORKSPACE: ${{ github.workspace }}

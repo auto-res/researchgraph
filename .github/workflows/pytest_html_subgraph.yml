@@ -4,8 +4,9 @@ on:
   pull_request:
     types: [opened, reopened, synchronize]
     paths: [
-      'src/airas/html_subgraph/**', 
-      'tests/html_subgraph/**',
+      'src/airas/publication/html_subgraph/**', 
+      'tests/integration/publication/test_html_subgraph.py',
+      'tests/unit/publication/html_subgraph/**',
       '.github/workflows/pytest_html_subgraph.yml'
       ]
 
@@ -22,10 +23,11 @@ jobs:
       matrix:
         include:
           - test_name: convert_to_html
-            test_file: tests/unit/html_subgraph/test_convert_to_html.py
-            
+            test_file: tests/unit/publication/html_subgraph/test_convert_to_html.py
           - test_name: render_html
-            test_file: tests/unit/html_subgraph/test_render_html.py
+            test_file: tests/unit/publication/html_subgraph/test_render_html.py
+          - test_name: integration_test_for_html_subgraph
+            test_file: tests/integration/publication/test_html_subgraph.py
             
     env:
       GITHUB_WORKSPACE: ${{ github.workspace }}

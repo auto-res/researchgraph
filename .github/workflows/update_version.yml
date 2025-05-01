@@ -1,12 +1,12 @@
-name: Update Version and Create PR
+name: Update Version PR
 
 on:
   push:
     branches:
-      - main
+      - develop
 
 jobs:
-  prepare-release:
+  update-version-pr:
     if: "!contains(github.event.head_commit.message, 'Bump version to')"
     runs-on: ubuntu-latest
 
@@ -22,7 +22,7 @@ jobs:
       - name: Install tools
         run: |
           pip install toml-cli semver
-
+      
       - name: Bump version, commit, and create PR
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -31,19 +31,19 @@ jobs:
           echo "Current version: $CURRENT_VERSION"
 
           NEXT_VERSION=$(python -c "
-import re
-import semver
+          import re
+          import semver
 
-current = '$CURRENT_VERSION'
+          current = '$CURRENT_VERSION'
 
-m = re.match(r'(\\d+)\\.(\\d+)\\.(\\d+)\\.dev(\\d+)', current)
-if m:
-    major, minor, patch, dev = m.groups()
-    print(f'{major}.{minor}.{patch}.dev{int(dev) + 1}')
-else:
-    next_patch = semver.bump_patch(current)
-    print(f'{next_patch}.dev1')
-")
+          m = re.match(r'(\\d+)\\.(\\d+)\\.(\\d+)\\.dev(\\d+)', current)
+          if m:
+              major, minor, patch, dev = m.groups()
+              print(f'{major}.{minor}.{patch}.dev{int(dev) + 1}')
+          else:
+              next_patch = semver.bump_patch(current)
+              print(f'{next_patch}.dev1')
+          ")
           echo "Next version: $NEXT_VERSION"
 
           toml set --toml-path pyproject.toml project.version "$NEXT_VERSION"
@@ -58,6 +58,6 @@ else:
           git commit -m "Bump version to $NEXT_VERSION"
           git push origin "$BRANCH_NAME"
 
-          gh pr create --fill --base main --head "$BRANCH_NAME"
+          gh pr create --fill --base develop --head "$BRANCH_NAME"
 
 

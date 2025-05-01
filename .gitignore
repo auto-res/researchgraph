@@ -165,6 +165,5 @@ cython_debug/
 .DS_Store
 !.gitkeep
 data/*
-src/researchgraph.egg-info
 .gitmessage.txt
-.streamlit/*
+.github/copilot-instructions.md

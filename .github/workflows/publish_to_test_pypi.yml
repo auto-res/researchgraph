@@ -1,12 +1,17 @@
 name: Publish to Test PyPI
 
 on:
-  push:
+  pull_request:
     branches:
-      - main
+      - develop
+    types:
+      - closed
 
 jobs:
   publish-testpypi:
+    if: |
+      github.event.pull_request.merged == true &&
+      contains(github.event.pull_request.title, 'Bump version to')
     runs-on: ubuntu-latest
 
     permissions:
