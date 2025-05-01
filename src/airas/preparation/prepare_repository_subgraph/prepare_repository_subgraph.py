@@ -184,12 +184,12 @@ class PrepareRepository:
 
 if __name__ == "__main__":
     # github_repository = "auto-res2/test-tanaka-2"
-    github_repository = "fuyu-quant/test-1"
-    branch_name = "test"
+    github_repository = "genga6/test-repository"
+    branch_name = "base_branch"
 
     subgraph = PrepareRepository(
         device_type="gpu",
-        # organization="auto-res2",
+        # organization="genga6org",
     )
 
     input = {
