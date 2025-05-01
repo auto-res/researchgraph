@@ -1,9 +1,6 @@
-import requests
 from pydantic import BaseModel
 from jinja2 import Environment
-from tenacity import retry, stop_after_attempt, wait_fixed, retry_if_exception_type
-
-from airas.utils.api_client.openai_client import OpenAIClient, OPENAI_MODEL
+from airas.utils.api_client.llm_facade_client import LLMFacadeClient, LLM_MODEL
 from airas.execution.executor_subgraph.prompt.llm_decide import (
     llm_decide_prompt,
 )
@@ -16,26 +13,20 @@ class LLMOutput(BaseModel):
     judgment_result: bool
 
 
-@retry(
-    retry=retry_if_exception_type(requests.exceptions.ConnectionError),
-    stop=stop_after_attempt(3),
-    wait=wait_fixed(1),
-)
 def llm_decide(
-    llm_name: OPENAI_MODEL,
+    llm_name: LLM_MODEL,
     output_text_data: str,
     error_text_data: str,
     prompt_template: str = llm_decide_prompt,
 ) -> bool | None:
-    openai_client = OpenAIClient()
+    client = LLMFacadeClient(llm_name)
 
     data = {"output_text_data": output_text_data, "error_text_data": error_text_data}
 
     env = Environment()
     template = env.from_string(prompt_template)
     messages = template.render(data)
-    output, cost = openai_client.structured_outputs(
-        model_name=llm_name,
+    output, cost = client.structured_outputs(
         message=messages,
         data_model=LLMOutput,
     )

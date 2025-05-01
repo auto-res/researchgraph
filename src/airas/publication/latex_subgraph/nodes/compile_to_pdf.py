@@ -4,10 +4,7 @@ import subprocess
 import shutil
 import tempfile
 from pydantic import BaseModel
-import requests
-from tenacity import retry, stop_after_attempt, wait_fixed, retry_if_exception_type
-
-from airas.utils.api_client.openai_client import OpenAIClient
+from airas.utils.api_client.llm_facade_client import LLMFacadeClient, LLM_MODEL
 from logging import getLogger
 
 logger = getLogger(__name__)
@@ -22,7 +19,7 @@ class LLMOutput(BaseModel):
 class LatexNode:
     def __init__(
         self,
-        llm_name: str,
+        llm_name: LLM_MODEL,
         figures_dir: str,
         pdf_file_path: str,
         save_dir: str,
@@ -41,20 +38,14 @@ class LatexNode:
         self.latex_save_dir = os.path.join(self.save_dir, "latex")
         os.makedirs(self.latex_save_dir, exist_ok=True)
         self.template_copy_file = os.path.join(self.latex_save_dir, "template.tex")
-        self.openai_client = OpenAIClient()
+        self.client = LLMFacadeClient(self.llm_name)
 
-    @retry(
-        retry=retry_if_exception_type(requests.exceptions.ConnectionError),
-        stop=stop_after_attempt(3),
-        wait=wait_fixed(1),
-    )
     def _call_llm(self, prompt: str) -> str:
         system_prompt = """
 You are a helpful LaTeX rewriting assistant.
 The value of \"latex_full_text\" must contain the complete LaTeX text."""
         messages = system_prompt + prompt
-        output, cost = self.openai_client.structured_outputs(
-            model_name=self.llm_name,
+        output, cost = self.client.structured_outputs(
             message=messages,
             data_model=LLMOutput,
         )

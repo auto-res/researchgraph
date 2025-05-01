@@ -68,6 +68,7 @@ class GithubClient:
             url=url, headers=hdrs, json=json, timeout=timeout, stream=stream
         )
 
+    @GITHUB_RETRY
     def get_repository_content(
         self, repository_owner: str, repository_name: str, file_path: str
     ) -> str | None:
