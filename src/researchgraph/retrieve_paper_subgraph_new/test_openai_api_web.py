@@ -1,10 +1,21 @@
 from openai import OpenAI
 client = OpenAI()
 
-response = client.responses.create(
+# Print API key availability
+import os
+api_key = os.environ.get("OPENAI_API_KEY")
+if api_key:
+    print("OpenAI API key found")
+else:
+    print("WARNING: OpenAI API key not found in environment variables")
+
+# Simple test without web search capability
+print("Testing basic API functionality without web search...")
+response = client.chat.completions.create(
     model="gpt-4o",
-    tools=[{"type": "web_search_preview"}],
-    input="Please provide a comprehensive report on recent advancements in optimization techniques, with a particular focus on improvements to the Adam optimizer. The report should reference up-to-date research from leading conferences such as NeurIPS and ICLR."
+    messages=[
+        {"role": "user", "content": "What is the Adam optimizer in machine learning? Keep it brief."}
+    ]
 )
 
-print(response.output_text)
+print(response.choices[0].message.content)
